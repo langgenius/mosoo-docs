@@ -1,19 +1,43 @@
-import { Inter } from 'next/font/google';
+import { DM_Sans, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google';
 import { Provider } from '@/components/provider';
 import type { Metadata } from 'next';
 import './global.css';
 
-const inter = Inter({
+// Body & UI — calm neo-grotesque
+const sans = Hanken_Grotesk({
   subsets: ['latin'],
+  variable: '--font-hanken',
+  display: 'swap',
+});
+
+// Display — warm, soft headings
+const display = DM_Sans({
+  subsets: ['latin'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+});
+
+// Code
+const mono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-jetbrains',
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mosoo.ai'),
+  icons: {
+    icon: '/docs/images/brand/favicon.svg',
+  },
 };
 
 export default function Layout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="en" className={inter.className} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${sans.variable} ${display.variable} ${mono.variable}`}
+      suppressHydrationWarning
+    >
       <body className="flex flex-col min-h-screen">
         <Provider>{children}</Provider>
       </body>
