@@ -1,0 +1,28 @@
+---
+title: 列出 Agent API Endpoint 的 Thread
+full: true
+_openapi:
+  preload:
+    - zh-Hans
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: 返回由已认证 API token 调用方创建的 Thread。
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans" operations={[{"path":"/agents/{agentId}/threads","method":"get"}]} showDescription />
+    </>
+  );
+}

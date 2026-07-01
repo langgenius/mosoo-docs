@@ -1,0 +1,25 @@
+---
+title: API Reference
+description: Mosoo 公开 Thread API 的生成参考。
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+<Cards>
+<Card href="/docs/zh-Hans/api-reference/complete-thread-file-upload" title="完成 Thread 文件上传" description="完成待处理的单次 PUT Thread 文件上传。该文件必须已通过 POST /threads/{threadId}/files/uploads 创建、通过 PUT /files/{fileId}/content 上传，并且属于 API token 调用方可见的公开 Thread。" />
+<Card href="/docs/zh-Hans/api-reference/download-thread-file-content" title="下载 Thread 文件内容" description="下载已准备好的 Thread 附件或 Agent artifact 的字节内容。该文件必须属于 API token 调用方可见的公开 Thread。" />
+<Card href="/docs/zh-Hans/api-reference/upload-thread-file-content" title="上传 Thread 文件内容" description="为待处理的单次 PUT Thread 文件上传上传原始字节。该文件必须已通过 POST /threads/{threadId}/files/uploads 创建，并且属于 API token 调用方可见的公开 Thread。" />
+<Card href="/docs/zh-Hans/api-reference/list-threads-for-an-agent-api-endpoint" title="列出 Agent API Endpoint 的 Thread" description="返回由已认证 API token 调用方创建的 Thread。" />
+<Card href="/docs/zh-Hans/api-reference/create-a-thread-for-an-agent-api-endpoint" title="为 Agent API Endpoint 创建 Thread" description="创建 Thread 及其底层 AgentSession。如果提供 input，Mosoo 也会排队启动初始 Run。如果省略 input，Thread 会立即以 IDLE 状态可见，且没有 Run。API token 调用方会归属于 API token 所有者。" />
+<Card href="/docs/zh-Hans/api-reference/retrieve-thread-summary" title="读取 Thread 摘要" description="返回当前 Thread 摘要、最近一次 Run 和链接。" />
+<Card href="/docs/zh-Hans/api-reference/delete-a-thread" title="删除 Thread" description="永久删除该 Thread 及其底层 AgentSession。" />
+<Card href="/docs/zh-Hans/api-reference/archive-a-thread" title="归档 Thread" description="归档该 Thread，使其从默认 Thread 列表中隐藏。" />
+<Card href="/docs/zh-Hans/api-reference/list-thread-events" title="列出 Thread 事件" description="按时间顺序返回此 Thread 的最新公开事件日志条目。如果因为达到上限而省略了更早的公开条目，`truncated` 会为 true。事件 ID 是稳定的，因此调用方可以重试或轮询，而不会把同一个 ID 当作新事件处理。这是面向 CLI 和 API 使用方的稳定快照读取接口；不会暴露原始运行时 payload、转写内容或诊断信息。" />
+<Card href="/docs/zh-Hans/api-reference/send-user-messages-permission-decisions-or-interrupts-to-a-thread" title="向 Thread 发送用户消息、权限决策或中断" description="向 Thread 应用一批事件：发送用户消息、回答待处理的权限请求，或中断当前 Run。当 Thread 空闲时，用户消息会排队启动新的 Run。" />
+<Card href="/docs/zh-Hans/api-reference/stream-thread-events" title="流式读取 Thread 事件" description="以 Server-Sent Events 形式流式返回公开 Thread 事件日志条目。每个 `thread.event` data payload 都使用与 GET /threads/{threadId}/events 相同的 ThreadEventLogEntry 结构。事件按稳定事件 ID 发出，流会抑制轮询期间观察到的重复 ID。此流用于长时间运行的消费端体验，不会暴露原始运行时 payload、内部诊断信息或私有转写内容。" />
+<Card href="/docs/zh-Hans/api-reference/list-thread-files" title="列出 Thread 文件" description="列出附加到 Thread 的文件，包括调用方附件和 Agent artifact。" />
+<Card href="/docs/zh-Hans/api-reference/add-a-thread-file" title="添加 Thread 文件" description="把已准备好的草稿文件句柄声明到这个 Thread 中。请先通过文件数据平面上传文件字节，然后在这里传入得到的 fileId。" />
+<Card href="/docs/zh-Hans/api-reference/create-a-thread-file-upload" title="创建 Thread 文件上传" description="创建作用于此 Thread 的 Files API 上传会话。请求只提供文件元数据；Mosoo 会从 Thread 解析对应的 App 和 Session，并创建 Session 附件上传。MVP 公开上传必须不超过 67108864 字节，并使用单次 PUT。" />
+<Card href="/docs/zh-Hans/api-reference/remove-a-thread-file" title="移除 Thread 文件" description="从 Thread 中移除文件关联。" />
+<Card href="/docs/zh-Hans/api-reference/unarchive-a-thread" title="取消归档 Thread" description="将之前归档的 Thread 恢复到活动 Thread 列表。" />
+</Cards>

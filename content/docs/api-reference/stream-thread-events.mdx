@@ -1,0 +1,34 @@
+---
+title: Stream Thread events
+full: true
+_openapi:
+  preload:
+    - en
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          Streams public Thread event log entries as Server-Sent Events. Each
+          `thread.event` data payload uses the same ThreadEventLogEntry shape as
+          GET /threads/{threadId}/events. Events are emitted by stable event ID
+          and the stream suppresses duplicate IDs observed during polling. The
+          stream is for long-running consumer UX and does not expose raw runtime
+          payloads, internal diagnostics, or private transcripts.
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="en" operations={[{"path":"/threads/{threadId}/events/stream","method":"get"}]} showDescription />
+    </>
+  );
+}

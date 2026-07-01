@@ -1,0 +1,32 @@
+---
+title: Create a Thread for an Agent API Endpoint
+full: true
+_openapi:
+  preload:
+    - en
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          Creates a Thread and the backing AgentSession. If input is present,
+          Mosoo also queues the initial Run. If input is omitted, the Thread is
+          immediately visible with IDLE status and no run. API token callers are
+          attributed to the API token owner.
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="en" operations={[{"path":"/agents/{agentId}/threads","method":"post"}]} showDescription />
+    </>
+  );
+}

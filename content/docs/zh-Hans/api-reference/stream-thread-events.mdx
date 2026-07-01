@@ -1,0 +1,32 @@
+---
+title: 流式读取 Thread 事件
+full: true
+_openapi:
+  preload:
+    - zh-Hans
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          以 Server-Sent Events 形式流式返回公开 Thread 事件日志条目。每个 `thread.event` data
+          payload 都使用与 GET /threads/{threadId}/events 相同的 ThreadEventLogEntry
+          结构。事件按稳定事件 ID 发出，流会抑制轮询期间观察到的重复 ID。此流用于长时间运行的消费端体验，不会暴露原始运行时
+          payload、内部诊断信息或私有转写内容。
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans" operations={[{"path":"/threads/{threadId}/events/stream","method":"get"}]} showDescription />
+    </>
+  );
+}

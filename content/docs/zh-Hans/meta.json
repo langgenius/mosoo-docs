@@ -1,0 +1,4 @@
+{
+  "title": "简体中文",
+  "pages": ["index", "quickstart", "auth-and-access", "api-reference", "cli"]
+}

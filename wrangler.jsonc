@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mosoo-docs",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-07-01",
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "mosoo.ai/docs",
+      "zone_name": "mosoo.ai"
+    },
+    {
+      "pattern": "mosoo.ai/docs/*",
+      "zone_name": "mosoo.ai"
+    }
+  ],
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS"
+  }
+}

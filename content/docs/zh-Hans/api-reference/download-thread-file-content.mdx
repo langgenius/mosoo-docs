@@ -1,0 +1,30 @@
+---
+title: 下载 Thread 文件内容
+full: true
+_openapi:
+  preload:
+    - zh-Hans
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          下载已准备好的 Thread 附件或 Agent artifact 的字节内容。该文件必须属于 API token 调用方可见的公开
+          Thread。
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans" operations={[{"path":"/files/{fileId}/content","method":"get"}]} showDescription />
+    </>
+  );
+}

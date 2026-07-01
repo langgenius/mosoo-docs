@@ -1,0 +1,28 @@
+---
+title: 归档 Thread
+full: true
+_openapi:
+  preload:
+    - zh-Hans
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: 归档该 Thread，使其从默认 Thread 列表中隐藏。
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans" operations={[{"path":"/threads/{threadId}/archive","method":"post"}]} showDescription />
+    </>
+  );
+}

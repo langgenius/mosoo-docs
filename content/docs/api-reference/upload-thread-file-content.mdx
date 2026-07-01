@@ -1,0 +1,32 @@
+---
+title: Upload Thread file content
+full: true
+_openapi:
+  preload:
+    - en
+  method: PUT
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          Uploads raw bytes for a pending single PUT Thread file upload. The
+          file must have been created through POST
+          /threads/{threadId}/files/uploads and belong to a public Thread
+          visible to the API token caller.
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="en" operations={[{"path":"/files/{fileId}/content","method":"put"}]} showDescription />
+    </>
+  );
+}

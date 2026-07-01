@@ -1,0 +1,128 @@
+---
+title: "快速开始"
+description: "用 curl 为已发布的 Mosoo Agent 创建 Thread。"
+---
+
+在已发布 Agent 上创建一个 Thread，发送一条后续消息，并读取公开事件日志。
+
+## 开始之前
+
+你需要：
+
+- 一个已经在 Mosoo 中发布的 Agent。
+- Agent API 接入面板里的 `agentId`。
+- 被允许调用这个 Agent 的 API token。
+
+```bash
+export MOSOO_API_TOKEN="mst_..."
+export MOSOO_AGENT_ID="agent_..."
+```
+
+<Callout type="info">
+  如果你是从 Agent 的 **API 接入（API Access）** 动作打开这份文档，就使用那里展示的 `agentId`。
+</Callout>
+
+## 1. 创建 Thread
+
+Thread 是已发布 Agent 的 API 对话容器。创建 Thread 也会启动初始运行。
+
+```bash
+curl -X POST "https://mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: quickstart-create-thread" \
+  -d '{
+    "client_external_ref": "quickstart-001",
+    "input": {
+      "type": "user.message",
+      "content": [
+        {
+          "type": "text",
+          "text": "Say hello and explain what you can help with."
+        }
+      ]
+    }
+  }'
+```
+
+从响应中复制 `thread.id`：
+
+```bash
+export MOSOO_THREAD_ID="thread-id-from-response"
+```
+
+## 2. 发送下一条消息
+
+使用 `thread.id` 继续同一个 Agent 交互。
+
+```bash
+curl -X POST "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: quickstart-send-message-1" \
+  -d '{
+    "events": [
+      {
+        "type": "user_message",
+        "text": "Give me the three most important next steps."
+      }
+    ]
+  }'
+```
+
+当 Agent 正在等待输入时，你也可以发送 `permission_decision` 或 `user_interrupt` 事件。
+
+## 3. 读取事件日志
+
+按时间顺序读取公开事件。
+
+```bash
+curl "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events?limit=100" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+```
+
+事件日志是 API 调用方稳定读取结果的位置。它可能包含用户消息、Agent 消息增量、thinking 增量、工具状态、文件变化、用量更新和运行状态。
+
+## 4. 附加文件
+
+当 Agent 需要读取文档或载荷时，可以给 Thread 添加文件。
+
+```bash
+CONTENT_BASE64="$(printf 'Customer asks for an implementation plan.' | base64)"
+
+curl -X POST "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"name\": \"brief.txt\",
+    \"contentType\": \"text/plain\",
+    \"contentBase64\": \"$CONTENT_BASE64\"
+  }"
+```
+
+## 常用下一步
+
+<Cards>
+  <Card title="创建 Thread" href="/docs/zh-Hans/api-reference/create-a-thread-for-an-agent-api-endpoint">
+    用已发布 Agent 开始一次新的 API 交互。
+  </Card>
+
+  <Card title="发送事件" href="/docs/zh-Hans/api-reference/send-user-messages-permission-decisions-or-interrupts-to-a-thread">
+    用消息、权限决策或中断继续一个 Thread。
+  </Card>
+
+  <Card title="列出事件" href="/docs/zh-Hans/api-reference/list-thread-events">
+    读取 Thread 的公开事件日志。
+  </Card>
+
+  <Card title="添加文件" href="/docs/zh-Hans/api-reference/add-a-thread-file">
+    给 Thread 附加 base64 编码文件。
+  </Card>
+</Cards>
+
+## 注意事项
+
+- API token 本身不会解锁所有 Agent。
+- Agent 必须已经发布。
+- 调用方必须通过组织成员和 Agent 访问检查。
+- 创建 Thread 和发送事件时建议使用 `Idempotency-Key` 来支持安全重试。

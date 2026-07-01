@@ -1,0 +1,28 @@
+---
+title: Unarchive a Thread
+full: true
+_openapi:
+  preload:
+    - en
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: Restores a previously archived Thread to active Thread lists.
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="en" operations={[{"path":"/threads/{threadId}/unarchive","method":"post"}]} showDescription />
+    </>
+  );
+}

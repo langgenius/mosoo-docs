@@ -1,0 +1,125 @@
+---
+title: "Quickstart"
+description: "Create a Thread on a published Mosoo Agent with curl."
+---
+
+Create a Thread on a published Agent, send one follow-up message, and read the public event log.
+
+## Before you start
+
+You need:
+
+- A published Agent in Mosoo.
+- The `agentId` from the Agent's API Access panel.
+- An API token that is allowed to call that Agent.
+
+```bash
+export MOSOO_API_TOKEN="mst_..."
+export MOSOO_AGENT_ID="agent_..."
+```
+
+<Callout type="info">
+  If you opened the API docs from an Agent's **API Access** action, use the `agentId` shown for that published Agent.
+</Callout>
+
+## 1. Create a Thread
+
+A Thread is the API conversation container for a published Agent. Creating one also starts the first run.
+
+```bash
+curl -X POST "https://mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: quickstart-create-thread" \
+  -d '{
+    "client_external_ref": "quickstart-001",
+    "input": {
+      "type": "user.message",
+      "content": [
+        {
+          "type": "text",
+          "text": "Say hello and explain what you can help with."
+        }
+      ]
+    }
+  }'
+```
+
+Copy `thread.id` from the response:
+
+```bash
+export MOSOO_THREAD_ID="thread-id-from-response"
+```
+
+## 2. Send another message
+
+Use `thread.id` to continue the same Agent interaction.
+
+```bash
+curl -X POST "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: quickstart-send-message-1" \
+  -d '{
+    "events": [
+      {
+        "type": "user_message",
+        "text": "Give me the three most important next steps."
+      }
+    ]
+  }'
+```
+
+You can also send `permission_decision` or `user_interrupt` events when the Agent is waiting for input.
+
+## 3. Read the event log
+
+Read public events in chronological order.
+
+```bash
+curl "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events?limit=100" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+```
+
+The event log is the stable place to read results. It can include user messages, Agent message deltas, thinking deltas, tool status, file changes, usage updates, and run status.
+
+## 4. Attach a file
+
+Add a file to the Thread when the Agent needs input from a document or payload.
+
+```bash
+CONTENT_BASE64="$(printf 'Customer asks for an implementation plan.' | base64)"
+
+curl -X POST "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"name\": \"brief.txt\",
+    \"contentType\": \"text/plain\",
+    \"contentBase64\": \"$CONTENT_BASE64\"
+  }"
+```
+
+## Common next calls
+
+<Cards>
+  <Card title="Create a Thread" href="/docs/api-reference/create-a-thread-for-an-agent-api-endpoint">
+    Start a new API interaction with a published Agent.
+  </Card>
+  <Card title="Send events" href="/docs/api-reference/send-user-messages-permission-decisions-or-interrupts-to-a-thread">
+    Continue a Thread with messages, permission decisions, or interrupts.
+  </Card>
+  <Card title="List events" href="/docs/api-reference/list-thread-events">
+    Read the public event log for a Thread.
+  </Card>
+  <Card title="Add files" href="/docs/api-reference/add-a-thread-file">
+    Attach base64-encoded files to a Thread.
+  </Card>
+</Cards>
+
+## Notes
+
+- An API token alone does not unlock every Agent.
+- The Agent must be published.
+- The caller must pass Organization membership and Agent access checks.
+- Use `Idempotency-Key` for retry-safe create-thread and send-events calls.

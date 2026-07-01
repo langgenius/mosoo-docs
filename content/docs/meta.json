@@ -1,0 +1,12 @@
+{
+  "title": "Mosoo API",
+  "pages": [
+    "index",
+    "quickstart",
+    "auth-and-access",
+    "api-reference",
+    "coding-agents",
+    "cli",
+    "zh-Hans"
+  ]
+}

@@ -1,0 +1,2576 @@
+{
+  "components": {
+    "responses": {
+      "Conflict": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "当前 Agent/session 状态拒绝此操作，或 Idempotency-Key 正在处理，或被用于不同的请求。"
+      },
+      "Forbidden": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "调用方不能使用这个 Agent。"
+      },
+      "InternalError": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "请求发生意外失败。"
+      },
+      "InvalidRequest": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "请求结构或查询参数值无效。"
+      },
+      "NotFound": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "没有找到该调用方可访问的资源。"
+      },
+      "RateLimited": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "该 API token 已超过当前时间窗口内的公开 API 请求额度。",
+        "headers": {
+          "Retry-After": {
+            "description": "重试请求前需要等待的秒数。",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "Unauthenticated": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "需要提供有效的 API token。"
+      }
+    },
+    "schemas": {
+      "ThreadEventInput": {
+        "description": "提交到 Thread 的单个事件。只能选择一种事件类型：发送用户消息、回答待处理的权限请求，或中断正在运行的 Run。",
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "description": "向 Thread 发送新的用户消息，可选择附带文件附件。",
+            "properties": {
+              "attachmentIds": {
+                "description": "要附加到此消息的文件 ID（不带前缀的 ULID）。每个文件都必须已经上传，并已声明到这个 Thread 中。",
+                "items": {
+                  "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                  "format": "ulid",
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "clientRequestId": {
+                "description": "调用方可选提供的关联 ID。它会在匹配的事件结果中原样返回，便于你把响应与发送的消息对应起来。",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "text": {
+                "description": "用户消息文本。不能为空。",
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": {
+                "const": "user_message",
+                "description": "用于选择发送用户消息事件类型的判别字段。"
+              }
+            },
+            "required": [
+              "type",
+              "text"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "description": "回答 Agent 在等待输入时发起的权限请求，例如工具确认请求。",
+            "properties": {
+              "decision": {
+                "description": "是否允许或拒绝本次请求的操作。`allow_once` 表示本次允许；`reject_once` 表示本次拒绝。",
+                "enum": [
+                  "allow_once",
+                  "reject_once"
+                ]
+              },
+              "requestId": {
+                "description": "正在回答的权限请求 ID，来自对应的 `tool.confirmation.required` 事件。",
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": {
+                "const": "permission_decision",
+                "description": "用于选择权限决策事件类型的判别字段。"
+              }
+            },
+            "required": [
+              "type",
+              "requestId",
+              "decision"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "description": "中断当前正在这个 Thread 上执行的 Run。",
+            "properties": {
+              "runId": {
+                "description": "要中断的 Run ID（不带前缀的 ULID）。省略或传入 null 时，会中断该 Thread 当前的 Run。",
+                "oneOf": [
+                  {
+                    "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                    "format": "ulid",
+                    "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "const": "user_interrupt",
+                "description": "用于选择中断事件类型的判别字段。"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "SendEventsRequest": {
+        "additionalProperties": false,
+        "description": "向 Thread 批量提交事件的请求体。",
+        "properties": {
+          "events": {
+            "description": "要应用到 Thread 的有序事件列表。至少需要一个事件。",
+            "items": {
+              "$ref": "#/components/schemas/ThreadEventInput"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "events"
+        ],
+        "type": "object"
+      },
+      "CreateThreadFileRequest": {
+        "additionalProperties": false,
+        "description": "把之前上传的草稿文件句柄声明到 Thread 中的请求体。",
+        "properties": {
+          "fileId": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "maxLength": 26,
+            "minLength": 1,
+            "description": "同一个 API token 调用方之前通过文件数据平面上传、且已准备好的草稿文件 ID（不带前缀的 ULID）。"
+          }
+        },
+        "required": [
+          "fileId"
+        ],
+        "type": "object"
+      },
+      "CreateThreadFileUploadRequest": {
+        "additionalProperties": false,
+        "description": "创建作用于此 Thread 的 Files API 上传会话时使用的请求体。",
+        "properties": {
+          "file": {
+            "additionalProperties": false,
+            "description": "即将上传的文件字节对应的元数据。",
+            "properties": {
+              "contentType": {
+                "description": "文件字节的 MIME type。",
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "description": "要记录到此 Thread 附件上的原始文件名。",
+                "minLength": 1,
+                "type": "string"
+              },
+              "size": {
+                "description": "文件大小，单位为字节。公开 Thread 上传创建当前仅接受单次 PUT 上传。",
+                "maximum": 67108864,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "name",
+              "contentType",
+              "size"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "type": "object"
+      },
+      "FileUploadSummary": {
+        "additionalProperties": false,
+        "description": "创建上传目标后返回的 Files API 上传会话摘要。",
+        "properties": {
+          "contentType": {
+            "description": "此次上传期望的标准化 MIME type。",
+            "type": "string"
+          },
+          "expectedSize": {
+            "description": "用于完整性校验的预期文件大小，单位为字节。",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "expiresAt": {
+            "description": "此上传会话过期的时间戳（RFC 3339）。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "fileId": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "maxLength": 26,
+            "minLength": 1,
+            "description": "此上传会话对应的文件 ID（不带前缀的 ULID）。"
+          },
+          "partSize": {
+            "description": "分片上传的分片大小，单位为字节；使用单次 PUT 上传时为 null。",
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "path": {
+            "description": "Files API 上传摘要中暴露的实体化文件路径。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "description": "当前 Files API 上传会话状态。",
+            "enum": [
+              "aborted",
+              "completed",
+              "completing",
+              "expired",
+              "failed",
+              "pending",
+              "uploading"
+            ]
+          },
+          "strategy": {
+            "description": "根据文件大小选择的 Files API 上传传输策略。",
+            "enum": [
+              "multipart",
+              "single_put"
+            ]
+          }
+        },
+        "required": [
+          "contentType",
+          "expectedSize",
+          "expiresAt",
+          "fileId",
+          "partSize",
+          "path",
+          "status",
+          "strategy"
+        ],
+        "type": "object"
+      },
+      "CompleteFileUploadPart": {
+        "additionalProperties": false,
+        "description": "已完成的分片上传 part。公开 Thread MVP 上传使用单次 PUT，不发送 parts。",
+        "properties": {
+          "etag": {
+            "description": "已上传分片返回的 ETag。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "partNumber": {
+            "description": "从 1 开始计数的分片编号，用于完成上传时排序。",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "etag",
+          "partNumber"
+        ],
+        "type": "object"
+      },
+      "CompleteFileUploadRequest": {
+        "additionalProperties": false,
+        "description": "完成 Files API 上传会话时使用的请求体。公开 Thread MVP 的单次 PUT 上传发送空对象。",
+        "properties": {
+          "parts": {
+            "description": "用于完成分片上传的 parts。公开 MVP 单次 PUT 上传请省略此字段。",
+            "items": {
+              "$ref": "#/components/schemas/CompleteFileUploadPart"
+            },
+            "type": "array"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "FileEntry": {
+        "additionalProperties": false,
+        "description": "上传完成后返回的 Files API 文件条目。",
+        "properties": {
+          "createdAt": {
+            "description": "文件记录创建时间戳（RFC 3339）。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdBy": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "创建该文件记录的账号 ID（不带前缀的 ULID）。"
+          },
+          "etag": {
+            "description": "已完成对象的存储 ETag；不可用时为 null。",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expiresAt": {
+            "description": "临时文件的过期时间戳；持久 Thread 文件为 null。",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "maxLength": 26,
+            "minLength": 1,
+            "description": "已完成文件的文件 ID（不带前缀的 ULID）。"
+          },
+          "mimeType": {
+            "description": "为文件字节存储的 MIME type；未知时为 null。",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "description": "为此文件记录的原始文件名。",
+            "type": "string"
+          },
+          "path": {
+            "description": "已完成文件的 Files API 记录路径。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "sessionKind": {
+            "description": "Thread 作用域文件的 Session 文件类型；非 Session 文件为 null。",
+            "enum": [
+              "artifact",
+              "attachment",
+              null
+            ]
+          },
+          "size": {
+            "description": "已完成文件的大小，单位为字节。",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "status": {
+            "description": "当前 Files API 文件生命周期状态。",
+            "enum": [
+              "deleting",
+              "failed",
+              "pending",
+              "ready"
+            ]
+          },
+          "updatedAt": {
+            "description": "文件记录最后更新时间戳（RFC 3339）。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "version": {
+            "description": "该路径内单调递增的文件版本号。",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "createdAt",
+          "createdBy",
+          "etag",
+          "expiresAt",
+          "id",
+          "mimeType",
+          "name",
+          "path",
+          "sessionKind",
+          "size",
+          "status",
+          "updatedAt",
+          "version"
+        ],
+        "type": "object"
+      },
+      "CompleteFileUploadResponse": {
+        "additionalProperties": false,
+        "description": "完成 Files API 上传会话后的结果。",
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/FileEntry",
+            "description": "已完成的 Files API 文件条目。"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "description": "所有非 2xx 公开 API 响应返回的标准错误包裹结构。",
+        "properties": {
+          "error": {
+            "description": "请求失败原因的详细信息。",
+            "properties": {
+              "code": {
+                "description": "稳定的、机器可读的错误码，可用于分支处理。",
+                "enum": [
+                  "agent_not_published",
+                  "forbidden",
+                  "idempotency_conflict",
+                  "internal_error",
+                  "invalid_json",
+                  "invalid_request",
+                  "not_found",
+                  "rate_limited",
+                  "readiness_blocked",
+                  "service_inactive",
+                  "unauthenticated"
+                ]
+              },
+              "message": {
+                "description": "面向开发者的错误说明，不用于直接展示给最终用户。",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "SendEventsResponse": {
+        "additionalProperties": false,
+        "description": "接受提交到 Thread 的一批事件后的结果。",
+        "properties": {
+          "acceptedAt": {
+            "description": "这批事件被接受处理的时间戳（RFC 3339）。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "events": {
+            "description": "每个事件对应的处理结果，顺序与提交的事件一致。",
+            "items": {
+              "$ref": "#/components/schemas/ThreadEventResult"
+            },
+            "type": "array"
+          },
+          "thread": {
+            "$ref": "#/components/schemas/ThreadSummary",
+            "description": "应用这批事件后的 Thread 状态。"
+          },
+          "warnings": {
+            "description": "接受这批事件时产生的非致命警告，例如请求只被部分接受。没有警告时为空。",
+            "items": {
+              "$ref": "#/components/schemas/UserWarning"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "acceptedAt",
+          "events",
+          "thread",
+          "warnings"
+        ],
+        "type": "object"
+      },
+      "ThreadEventLogEntry": {
+        "additionalProperties": false,
+        "description": "Thread 的单条公开事件日志。这是稳定的读取接口，不会暴露原始运行时 payload、转写内容或诊断信息。",
+        "properties": {
+          "content": {
+            "description": "事件的公开内容，通常是相关 payload 的引用（例如消息 ID），而不是原始运行时数据。",
+            "type": "string"
+          },
+          "durationMs": {
+            "description": "事件的实际耗时，单位为毫秒；仅在适用时返回，例如已完成的 Run。未测量时为 null。",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "唯一事件 ID（不带前缀的 ULID），按时间顺序单调递增。"
+          },
+          "occurredAt": {
+            "description": "事件发生的时间戳（RFC 3339）。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "runId": {
+            "description": "与此事件关联的 Run ID（不带前缀的 ULID）。如果事件不属于某个 Run，则为 null。可用它重建当前单个 Run 的输出，避免混入较早的 Thread 输出。",
+            "oneOf": [
+              {
+                "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                "format": "ulid",
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "description": "事件交付状态：`available` 表示事件内容完整；`error` 表示事件失败；`unsupported` 表示该事件类型不能在公开接口上渲染。",
+            "enum": [
+              "available",
+              "error",
+              "unsupported"
+            ]
+          },
+          "tokens": {
+            "description": "与事件相关的 token 数量；仅在适用时返回，例如模型用量。未测量时为 null。",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "事件类型，例如 `run.started`、`run.completed`、`agent.message.delta` 或 `tool.use.started`。",
+            "enum": [
+              "agent.message.delta",
+              "agent.thinking.delta",
+              "file.changed",
+              "run.completed",
+              "run.failed",
+              "run.started",
+              "session.status",
+              "session_files.updated",
+              "tool.confirmation.required",
+              "tool.use.completed",
+              "tool.use.started",
+              "usage.updated",
+              "user.message"
+            ]
+          }
+        },
+        "required": [
+          "content",
+          "durationMs",
+          "id",
+          "occurredAt",
+          "runId",
+          "status",
+          "tokens",
+          "type"
+        ],
+        "type": "object"
+      },
+      "ThreadEventListResponse": {
+        "additionalProperties": false,
+        "description": "按时间顺序返回的一页最新 Thread 事件日志。",
+        "properties": {
+          "events": {
+            "description": "返回的事件日志条目。在请求窗口内，最早的事件排在最前。",
+            "items": {
+              "$ref": "#/components/schemas/ThreadEventLogEntry"
+            },
+            "type": "array"
+          },
+          "truncated": {
+            "description": "如果因为达到请求上限而没有返回更早的事件，则为 true。",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "events",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "ThreadEventResult": {
+        "additionalProperties": false,
+        "description": "单个已提交事件的处理结果。",
+        "properties": {
+          "clientRequestId": {
+            "description": "从提交的用户消息中回传的 `clientRequestId`。如果没有提供，或该事件类型不携带此字段，则为 null。",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "run": {
+            "description": "此事件创建或影响的 Run。如果该事件没有启动或改变 Run，则为 null。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "description": "此结果对应的事件类型。",
+            "enum": [
+              "permission_decision",
+              "user_interrupt",
+              "user_message"
+            ]
+          }
+        },
+        "required": [
+          "clientRequestId",
+          "run",
+          "type"
+        ],
+        "type": "object"
+      },
+      "CreateThreadRequest": {
+        "additionalProperties": false,
+        "description": "创建 Thread 的请求体。所有字段都是可选的：省略 `input` 会创建一个空的 IDLE Thread；提供 `input` 会排队启动初始 Run。",
+        "properties": {
+          "client_external_ref": {
+            "description": "调用方自定义的可选引用，例如外部工单 key。该值会存储在 Thread 上用于关联；不要求唯一，也不会由 Mosoo 校验。",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "files": {
+            "description": "同一个 API token 调用方上传的草稿文件句柄。",
+            "items": {
+              "additionalProperties": false,
+              "description": "要附加到 Thread 的单个已上传草稿文件引用。",
+              "properties": {
+                "file_id": {
+                  "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                  "format": "ulid",
+                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                  "type": "string",
+                  "maxLength": 26,
+                  "minLength": 1,
+                  "description": "同一调用方上传、且已准备好的草稿文件 ID（不带前缀的 ULID）。"
+                }
+              },
+              "required": [
+                "file_id"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "input": {
+            "additionalProperties": false,
+            "description": "用于初始化 Thread 并排队启动第一个 Run 的用户消息。省略时会创建一个没有 Run 的空 Thread。",
+            "properties": {
+              "content": {
+                "description": "组成初始消息的有序内容片段。",
+                "items": {
+                  "additionalProperties": false,
+                  "description": "初始消息中的单个内容片段。",
+                  "properties": {
+                    "text": {
+                      "description": "该内容片段的文本。不能为空。",
+                      "maxLength": 32000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": {
+                      "const": "text",
+                      "description": "内容片段判别字段。目前仅支持 `text`。"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "text"
+                  ],
+                  "type": "object"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "type": {
+                "const": "user.message",
+                "description": "初始输入的判别字段。固定为 `user.message`。"
+              }
+            },
+            "required": [
+              "type",
+              "content"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "CreateThreadResponse": {
+        "additionalProperties": false,
+        "description": "创建 Thread 的结果。",
+        "properties": {
+          "links": {
+            "$ref": "#/components/schemas/ThreadLinks",
+            "description": "已创建 Thread 的便捷链接。"
+          },
+          "run": {
+            "description": "提供 `input` 时排队启动的初始 Run；创建空 Thread 时为 null。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "thread": {
+            "$ref": "#/components/schemas/ThreadSummary",
+            "description": "已创建的 Thread。"
+          }
+        },
+        "required": [
+          "links",
+          "run",
+          "thread"
+        ],
+        "type": "object"
+      },
+      "RetrieveThreadResponse": {
+        "additionalProperties": false,
+        "description": "Thread 的当前状态。",
+        "properties": {
+          "links": {
+            "$ref": "#/components/schemas/ThreadLinks",
+            "description": "Thread 的便捷链接。"
+          },
+          "run": {
+            "description": "该 Thread 最近一次 Run；如果尚未创建 Run，则为 null。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "thread": {
+            "$ref": "#/components/schemas/ThreadSummary",
+            "description": "Thread 摘要。"
+          }
+        },
+        "required": [
+          "links",
+          "run",
+          "thread"
+        ],
+        "type": "object"
+      },
+      "ThreadFile": {
+        "additionalProperties": false,
+        "description": "与 Thread 关联的文件。",
+        "properties": {
+          "committed": {
+            "description": "文件持久附加到 Thread 后为 true；仍是草稿句柄时为 false。",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "description": "文件创建时间戳（RFC 3339）。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "唯一文件 ID（不带前缀的 ULID）。"
+          },
+          "kind": {
+            "description": "通过公开 API 添加的文件是附件；artifact 是 Agent 生成的文件。",
+            "enum": [
+              "attachment",
+              "artifact"
+            ]
+          },
+          "mimeType": {
+            "description": "检测到的文件 MIME type；未知时为 null。",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "description": "原始文件名。",
+            "type": "string"
+          },
+          "size": {
+            "description": "文件大小，单位为字节。",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "committed",
+          "createdAt",
+          "id",
+          "kind",
+          "mimeType",
+          "name",
+          "size"
+        ],
+        "type": "object"
+      },
+      "ThreadFileListResponse": {
+        "additionalProperties": false,
+        "description": "附加到 Thread 的文件列表。",
+        "properties": {
+          "files": {
+            "description": "该 Thread 的文件。",
+            "items": {
+              "$ref": "#/components/schemas/ThreadFile"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "type": "object"
+      },
+      "ThreadFileResponse": {
+        "additionalProperties": false,
+        "description": "单个 Thread 文件。",
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/ThreadFile",
+            "description": "Thread 文件的元数据，包括标识符、名称、MIME type 和来源。"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "type": "object"
+      },
+      "ThreadAttributedUser": {
+        "additionalProperties": false,
+        "description": "该 Thread 归属的账号，即 API token 所有者。",
+        "properties": {
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "该 Thread 归属账号的账号 ID（不带前缀的 ULID）。"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "ThreadCaller": {
+        "additionalProperties": false,
+        "description": "创建该 Thread 的凭证。",
+        "properties": {
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "创建该 Thread 的调用方 ID（不带前缀的 ULID）。"
+          },
+          "kind": {
+            "description": "调用方凭证类型。`access_token` 表示 API token 调用方。",
+            "enum": [
+              "access_token"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "ThreadLinks": {
+        "additionalProperties": false,
+        "description": "Thread 的便捷链接。",
+        "properties": {
+          "thread": {
+            "description": "Thread 资源的绝对 API URL。",
+            "type": "string"
+          }
+        },
+        "required": [
+          "thread"
+        ],
+        "type": "object"
+      },
+      "ThreadSummary": {
+        "additionalProperties": false,
+        "description": "Agent API Endpoint 上的 Thread 摘要。",
+        "properties": {
+          "agent_id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "此 Thread 所属 Agent API Endpoint 的 ID（不带前缀的 ULID）。"
+          },
+          "attributed_user": {
+            "description": "该 Thread 归属的账号；未归属到账号时为 null。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ThreadAttributedUser"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_external_ref": {
+            "description": "创建时由调用方提供的自定义引用；未提供时为 null。",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "description": "Thread 创建时间戳（RFC 3339）。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/ThreadCaller",
+            "description": "创建该 Thread 的凭证。"
+          },
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "唯一 Thread ID（不带前缀的 ULID）。"
+          },
+          "kind": {
+            "description": "支撑此 Thread 的 Agent 类型，例如持久型或一次性 Agent API Endpoint。",
+            "enum": [
+              "pet",
+              "cattle"
+            ]
+          },
+          "last_run_id": {
+            "description": "最近一次 Run 的 ID（不带前缀的 ULID）；尚无 Run 时为 null。",
+            "oneOf": [
+              {
+                "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                "format": "ulid",
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "const": "api",
+            "description": "Thread 来源。通过此 API 创建的 Thread 固定为 `api`。"
+          },
+          "status": {
+            "description": "Thread 生命周期状态：`IDLE` 表示没有活动 Run；`RUNNING` 表示 Run 正在执行；`RESCHEDULING` 表示处于两次 Run 之间；`TERMINATED` 表示已结束。",
+            "enum": [
+              "IDLE",
+              "RUNNING",
+              "RESCHEDULING",
+              "TERMINATED"
+            ]
+          },
+          "title": {
+            "description": "便于阅读的 Thread 标题；尚未生成时为 null。",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "description": "Thread 最近一次变更的时间戳（RFC 3339）。",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent_id",
+          "attributed_user",
+          "client_external_ref",
+          "created_at",
+          "created_by",
+          "id",
+          "kind",
+          "last_run_id",
+          "source",
+          "status",
+          "title",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "RunSummary": {
+        "additionalProperties": false,
+        "description": "Thread 上单个 Agent Run 的摘要。",
+        "properties": {
+          "completedAt": {
+            "description": "Run 到达终态的时间戳（RFC 3339）；尚未结束时为 null。",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "description": "Run 创建时间戳（RFC 3339）。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "error": {
+            "description": "当状态为 `failed` 时返回结构化失败摘要；成功、活动中、已取消或已过期的 Run 返回 null。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finalOutput": {
+            "description": "已完成 Run 的稳定最终答案。Mosoo 会按时间顺序从该 Run 的公开 `agent.message.delta` 事件构建此内容。Run 状态变为 `completed` 前为 null。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunFinalOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "唯一 Run ID（不带前缀的 ULID）。"
+          },
+          "startedAt": {
+            "description": "Run 开始执行的时间戳（RFC 3339）；仍在排队时为 null。",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "description": "当前 Run 状态。`queued` 和 `booting` 发生在执行前；`running` 和 `waiting_input` 表示处于活动状态；`completed`、`failed`、`cancelled`、`expired` 是终态。",
+            "enum": [
+              "queued",
+              "booting",
+              "running",
+              "waiting_input",
+              "completed",
+              "failed",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "trigger": {
+            "description": "触发 Run 的原因：`user_prompt`（用户消息）、`retry`、`resume` 或 `system`。",
+            "enum": [
+              "user_prompt",
+              "retry",
+              "resume",
+              "system"
+            ]
+          },
+          "updatedAt": {
+            "description": "Run 最近一次变更的时间戳（RFC 3339）。",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "completedAt",
+          "createdAt",
+          "error",
+          "finalOutput",
+          "id",
+          "startedAt",
+          "status",
+          "trigger",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "RunError": {
+        "additionalProperties": false,
+        "description": "失败的公开 Run 暴露的公开安全失败摘要。",
+        "properties": {
+          "code": {
+            "description": "稳定的、机器可读的失败代码。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "message": {
+            "description": "便于阅读的失败摘要。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "retryable": {
+            "description": "在不改变输入的情况下，重试该 Run 是否可能成功。",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "type": "object"
+      },
+      "RunFinalOutput": {
+        "additionalProperties": false,
+        "description": "已完成公开 Thread Run 的最终助手答案。",
+        "properties": {
+          "text": {
+            "description": "按时间顺序从当前 Run 的公开 `agent.message.delta` 事件重建出的文本。",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object"
+      },
+      "UserWarning": {
+        "additionalProperties": false,
+        "description": "返回给调用方的非致命警告。",
+        "properties": {
+          "code": {
+            "description": "稳定的、机器可读的警告码。",
+            "type": "string"
+          },
+          "message": {
+            "description": "面向开发者的警告说明。",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "publicApiBearer": {
+        "bearerFormat": "Mosoo API token",
+        "description": "使用 Authorization: Bearer mst_...。API token 用于识别账号，不携带 scope。",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "用于在 Mosoo Agent API Endpoint 上创建和读取 Thread 的公开 HTTPS API。v1 资源标识符是不带前缀的 ULID。API token 用于识别发起调用的账号。运行时执行会解析 Agent API Endpoint 所有者的能力，同时 Thread 归属于 API token 所有者。",
+    "title": "Mosoo 公开 Thread API",
+    "version": "v1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/files/{fileId}/complete": {
+      "post": {
+        "description": "完成待处理的单次 PUT Thread 文件上传。该文件必须已通过 POST /threads/{threadId}/files/uploads 创建、通过 PUT /files/{fileId}/content 上传，并且属于 API token 调用方可见的公开 Thread。",
+        "parameters": [
+          {
+            "description": "添加或列出 Thread 文件时返回的文件 ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J0000000000000000000000J",
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "example": "01J0000000000000000000000J",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J0000000000000000000000J"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteFileUploadRequest"
+              },
+              "example": {}
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "完成 Thread 文件上传",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "file": {
+                    "createdAt": "2026-05-19T00:02:00.000Z",
+                    "createdBy": "01J00000000000000000000002",
+                    "etag": "etag-1",
+                    "expiresAt": null,
+                    "id": "01J0000000000000000000000J",
+                    "mimeType": "text/plain",
+                    "name": "brief.txt",
+                    "path": "session-files/01J0000000000000000000000J/brief.txt",
+                    "sessionKind": "attachment",
+                    "size": 19,
+                    "status": "ready",
+                    "updatedAt": "2026-05-19T00:03:00.000Z",
+                    "version": 1
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/CompleteFileUploadResponse"
+                }
+              }
+            },
+            "description": "已完成 Files API 上传。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/files/{fileId}/content": {
+      "get": {
+        "description": "下载已准备好的 Thread 附件或 Agent artifact 的字节内容。该文件必须属于 API token 调用方可见的公开 Thread。",
+        "parameters": [
+          {
+            "description": "添加或列出 Thread 文件时返回的文件 ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J0000000000000000000000J",
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "example": "01J0000000000000000000000J",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J0000000000000000000000J"
+            }
+          },
+          {
+            "description": "控制 Content-Disposition 响应头。下载时使用 attachment，可预览内容使用 inline。",
+            "example": "attachment",
+            "in": "query",
+            "name": "disposition",
+            "schema": {
+              "default": "attachment",
+              "enum": [
+                "attachment",
+                "inline"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "下载 Thread 文件内容",
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Thread 文件内容。",
+            "headers": {
+              "Cache-Control": {
+                "description": "公开 API 文件下载时设置为 no-store。",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "description": "返回文件的下载或内联展示 disposition。",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Length": {
+                "description": "文件大小，单位为字节。",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "ETag": {
+                "description": "返回对象的存储 ETag。",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "put": {
+        "description": "为待处理的单次 PUT Thread 文件上传上传原始字节。该文件必须已通过 POST /threads/{threadId}/files/uploads 创建，并且属于 API token 调用方可见的公开 Thread。",
+        "parameters": [
+          {
+            "description": "添加或列出 Thread 文件时返回的文件 ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J0000000000000000000000J",
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "example": "01J0000000000000000000000J",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J0000000000000000000000J"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "format": "binary",
+                "type": "string"
+              }
+            }
+          },
+          "description": "此上传会话的原始文件字节。",
+          "required": true
+        },
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "上传 Thread 文件内容",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "已上传。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/agents/{agentId}/threads": {
+      "get": {
+        "description": "返回由已认证 API token 调用方创建的 Thread。",
+        "parameters": [
+          {
+            "description": "来自 Agent API Access 面板的 Agent API Endpoint ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000001",
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000001",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000001"
+            }
+          },
+          {
+            "description": "按归档状态筛选：true 仅返回已归档 Thread，false 仅返回活动 Thread。省略时返回全部 Thread。",
+            "in": "query",
+            "name": "archived",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "列出 Agent API Endpoint 的 Thread",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "threads": {
+                      "items": {
+                        "$ref": "#/components/schemas/ThreadSummary"
+                      },
+                      "maxItems": 100,
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "threads"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Thread 列表。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "post": {
+        "description": "创建 Thread 及其底层 AgentSession。如果提供 input，Mosoo 也会排队启动初始 Run。如果省略 input，Thread 会立即以 IDLE 状态可见，且没有 Run。API token 调用方会归属于 API token 所有者。",
+        "parameters": [
+          {
+            "description": "来自 Agent API Access 面板的 Agent API Endpoint ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000001",
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000001",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000001"
+            }
+          },
+          {
+            "description": "用于安全重试 create-thread 和 send-events 调用的可选键。用同一个键重复提交相同请求会返回原始响应。如果原始请求仍在处理中就重复使用该键，会返回 409。",
+            "example": "thread-20260528-linear-eng-123",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "emptyThread": {
+                  "summary": "创建空 Thread",
+                  "value": {
+                    "client_external_ref": "draft-empty-thread"
+                  }
+                },
+                "accessTokenWithFile": {
+                  "summary": "带已上传文件的 API token",
+                  "value": {
+                    "client_external_ref": "linear-ENG-123",
+                    "files": [
+                      {
+                        "file_id": "01J0000000000000000000000J"
+                      }
+                    ],
+                    "input": {
+                      "content": [
+                        {
+                          "text": "Summarize the attached launch plan and list follow-ups.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "user.message"
+                    }
+                  }
+                },
+                "accessTokenBasic": {
+                  "summary": "API token",
+                  "value": {
+                    "client_external_ref": "demo-thread-001",
+                    "input": {
+                      "content": [
+                        {
+                          "text": "Say hello from the API.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "user.message"
+                    }
+                  }
+                },
+                "cattleAgentSameShape": {
+                  "summary": "使用相同请求结构的 Cattle Agent",
+                  "value": {
+                    "input": {
+                      "content": [
+                        {
+                          "text": "Run this one-off Public Thread API request.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "user.message"
+                    }
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/CreateThreadRequest"
+              }
+            }
+          },
+          "required": false
+        },
+        "summary": "为 Agent API Endpoint 创建 Thread",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateThreadResponse"
+                }
+              }
+            },
+            "description": "已创建 Thread。",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "如果此响应是从之前已完成请求中重放的，则该值为 true。",
+                "schema": {
+                  "const": "true",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}": {
+      "delete": {
+        "description": "永久删除该 Thread 及其底层 AgentSession。",
+        "parameters": [
+          {
+            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "删除 Thread",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "已删除。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "description": "返回当前 Thread 摘要、最近一次 Run 和链接。",
+        "parameters": [
+          {
+            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "summary": "读取 Thread 摘要",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetrieveThreadResponse"
+                }
+              }
+            },
+            "description": "Thread 摘要。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/archive": {
+      "post": {
+        "description": "归档该 Thread，使其从默认 Thread 列表中隐藏。",
+        "parameters": [
+          {
+            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "归档 Thread",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "已归档。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/events": {
+      "get": {
+        "description": "按时间顺序返回此 Thread 的最新公开事件日志条目。如果因为达到上限而省略了更早的公开条目，`truncated` 会为 true。事件 ID 是稳定的，因此调用方可以重试或轮询，而不会把同一个 ID 当作新事件处理。这是面向 CLI 和 API 使用方的稳定快照读取接口；不会暴露原始运行时 payload、转写内容或诊断信息。",
+        "parameters": [
+          {
+            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          },
+          {
+            "description": "要返回的最新 Thread 事件数量上限。",
+            "example": 100,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "summary": "列出 Thread 事件",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadEventListResponse"
+                }
+              }
+            },
+            "description": "Thread 事件列表。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "post": {
+        "description": "向 Thread 应用一批事件：发送用户消息、回答待处理的权限请求，或中断当前 Run。当 Thread 空闲时，用户消息会排队启动新的 Run。",
+        "parameters": [
+          {
+            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          },
+          {
+            "description": "用于安全重试 create-thread 和 send-events 调用的可选键。用同一个键重复提交相同请求会返回原始响应。如果原始请求仍在处理中就重复使用该键，会返回 409。",
+            "example": "thread-20260528-linear-eng-123",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEventsRequest"
+              },
+              "example": {
+                "events": [
+                  {
+                    "text": "Say hello from the API.",
+                    "type": "user_message"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "向 Thread 发送用户消息、权限决策或中断",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendEventsResponse"
+                }
+              }
+            },
+            "description": "已接受事件批次。",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "如果此响应是从之前已完成请求中重放的，则该值为 true。",
+                "schema": {
+                  "const": "true",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/events/stream": {
+      "get": {
+        "description": "以 Server-Sent Events 形式流式返回公开 Thread 事件日志条目。每个 `thread.event` data payload 都使用与 GET /threads/{threadId}/events 相同的 ThreadEventLogEntry 结构。事件按稳定事件 ID 发出，流会抑制轮询期间观察到的重复 ID。此流用于长时间运行的消费端体验，不会暴露原始运行时 payload、内部诊断信息或私有转写内容。",
+        "parameters": [
+          {
+            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          },
+          {
+            "description": "要返回的最新 Thread 事件数量上限。",
+            "example": 100,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "summary": "流式读取 Thread 事件",
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "example": ": connected\n\nevent: thread.event\nid: 01J00000000000000000000010\ndata: {\"id\":\"01J00000000000000000000010\",\"runId\":\"01J0000000000000000000000A\",\"type\":\"run.started\",\"status\":\"available\",\"content\":\"01J0000000000000000000000A\",\"occurredAt\":\"2026-05-19T00:00:01.000Z\",\"durationMs\":null,\"tokens\":null}\n\n",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Thread 事件流。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/files": {
+      "get": {
+        "description": "列出附加到 Thread 的文件，包括调用方附件和 Agent artifact。",
+        "parameters": [
+          {
+            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "列出 Thread 文件",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "files": [
+                    {
+                      "committed": true,
+                      "createdAt": "2026-05-19T00:02:00.000Z",
+                      "id": "01J0000000000000000000000J",
+                      "kind": "attachment",
+                      "mimeType": "text/plain",
+                      "name": "brief.txt",
+                      "size": 19
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadFileListResponse"
+                }
+              }
+            },
+            "description": "Thread 文件列表。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "post": {
+        "description": "把已准备好的草稿文件句柄声明到这个 Thread 中。请先通过文件数据平面上传文件字节，然后在这里传入得到的 fileId。",
+        "parameters": [
+          {
+            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateThreadFileRequest"
+              },
+              "example": {
+                "fileId": "01J0000000000000000000000J"
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "添加 Thread 文件",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "file": {
+                    "committed": true,
+                    "createdAt": "2026-05-19T00:02:00.000Z",
+                    "id": "01J0000000000000000000000J",
+                    "kind": "attachment",
+                    "mimeType": "text/plain",
+                    "name": "brief.txt",
+                    "size": 19
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadFileResponse"
+                }
+              }
+            },
+            "description": "已创建 Thread 文件。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/files/uploads": {
+      "post": {
+        "description": "创建作用于此 Thread 的 Files API 上传会话。请求只提供文件元数据；Mosoo 会从 Thread 解析对应的 App 和 Session，并创建 Session 附件上传。MVP 公开上传必须不超过 67108864 字节，并使用单次 PUT。",
+        "parameters": [
+          {
+            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateThreadFileUploadRequest"
+              },
+              "example": {
+                "file": {
+                  "contentType": "text/plain",
+                  "name": "brief.txt",
+                  "size": 19
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "summary": "创建 Thread 文件上传",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "contentType": "text/plain",
+                  "expectedSize": 19,
+                  "expiresAt": "2026-05-20T00:02:00.000Z",
+                  "fileId": "01J0000000000000000000000J",
+                  "partSize": null,
+                  "path": "session-files/01J0000000000000000000000J/brief.txt",
+                  "status": "pending",
+                  "strategy": "single_put"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/FileUploadSummary"
+                }
+              }
+            },
+            "description": "已创建 Files API 上传会话。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/files/{fileId}": {
+      "delete": {
+        "description": "从 Thread 中移除文件关联。",
+        "parameters": [
+          {
+            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          },
+          {
+            "description": "添加或列出 Thread 文件时返回的文件 ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J0000000000000000000000J",
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "example": "01J0000000000000000000000J",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J0000000000000000000000J"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "移除 Thread 文件",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "已移除。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/unarchive": {
+      "post": {
+        "description": "将之前归档的 Thread 恢复到活动 Thread 列表。",
+        "parameters": [
+          {
+            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "取消归档 Thread",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "已取消归档。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "publicApiBearer": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://mosoo.ai/docs/api/v1"
+    }
+  ]
+}

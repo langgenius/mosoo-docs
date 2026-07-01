@@ -1,0 +1,30 @@
+---
+title: 上传 Thread 文件内容
+full: true
+_openapi:
+  preload:
+    - zh-Hans
+  method: PUT
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          为待处理的单次 PUT Thread 文件上传上传原始字节。该文件必须已通过 POST
+          /threads/{threadId}/files/uploads 创建，并且属于 API token 调用方可见的公开 Thread。
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans" operations={[{"path":"/files/{fileId}/content","method":"put"}]} showDescription />
+    </>
+  );
+}

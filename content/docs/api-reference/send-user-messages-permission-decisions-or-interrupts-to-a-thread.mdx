@@ -1,0 +1,31 @@
+---
+title: Send user messages, permission decisions, or interrupts to a Thread
+full: true
+_openapi:
+  preload:
+    - en
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          Applies a batch of events to the Thread: send user messages, answer
+          pending permission requests, or interrupt the current Run. A user
+          message queues a new Run when the Thread is idle.
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="en" operations={[{"path":"/threads/{threadId}/events","method":"post"}]} showDescription />
+    </>
+  );
+}

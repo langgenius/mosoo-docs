@@ -1,0 +1,25 @@
+---
+title: API Reference
+description: Generated reference for the Mosoo Public Thread API.
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+<Cards>
+<Card href="/docs/api-reference/complete-thread-file-upload" title="Complete Thread file upload" description="Completes a pending single PUT Thread file upload. The file must have been created through POST /threads/{threadId}/files/uploads, uploaded through PUT /files/{fileId}/content, and belong to a public Thread visible to the API token caller." />
+<Card href="/docs/api-reference/download-thread-file-content" title="Download Thread file content" description="Downloads bytes for a ready Thread attachment or Agent artifact. The file must belong to a public Thread visible to the API token caller." />
+<Card href="/docs/api-reference/upload-thread-file-content" title="Upload Thread file content" description="Uploads raw bytes for a pending single PUT Thread file upload. The file must have been created through POST /threads/{threadId}/files/uploads and belong to a public Thread visible to the API token caller." />
+<Card href="/docs/api-reference/list-threads-for-an-agent-api-endpoint" title="List Threads for an Agent API Endpoint" description="Returns Threads created by the authenticated API token caller." />
+<Card href="/docs/api-reference/create-a-thread-for-an-agent-api-endpoint" title="Create a Thread for an Agent API Endpoint" description="Creates a Thread and the backing AgentSession. If input is present, Mosoo also queues the initial Run. If input is omitted, the Thread is immediately visible with IDLE status and no run. API token callers are attributed to the API token owner." />
+<Card href="/docs/api-reference/retrieve-thread-summary" title="Retrieve Thread summary" description="Returns the current Thread summary, its most recent Run, and links." />
+<Card href="/docs/api-reference/delete-a-thread" title="Delete a Thread" description="Permanently deletes the Thread and its backing AgentSession." />
+<Card href="/docs/api-reference/archive-a-thread" title="Archive a Thread" description="Archives the Thread so it is hidden from default Thread lists." />
+<Card href="/docs/api-reference/list-thread-events" title="List Thread events" description="Returns the latest public event log entries for this Thread in chronological order. If older public entries are omitted because the limit was reached, `truncated` is true. Event IDs are stable, so callers can retry or poll without treating the same ID as a new event. This is the stable snapshot read surface for CLI and API consumers; it does not expose raw runtime payloads, transcript, or diagnostics." />
+<Card href="/docs/api-reference/send-user-messages-permission-decisions-or-interrupts-to-a-thread" title="Send user messages, permission decisions, or interrupts to a Thread" description="Applies a batch of events to the Thread: send user messages, answer pending permission requests, or interrupt the current Run. A user message queues a new Run when the Thread is idle." />
+<Card href="/docs/api-reference/stream-thread-events" title="Stream Thread events" description="Streams public Thread event log entries as Server-Sent Events. Each `thread.event` data payload uses the same ThreadEventLogEntry shape as GET /threads/{threadId}/events. Events are emitted by stable event ID and the stream suppresses duplicate IDs observed during polling. The stream is for long-running consumer UX and does not expose raw runtime payloads, internal diagnostics, or private transcripts." />
+<Card href="/docs/api-reference/list-thread-files" title="List Thread files" description="Lists files attached to the Thread, including caller attachments and Agent artifacts." />
+<Card href="/docs/api-reference/add-a-thread-file" title="Add a Thread file" description="Claims a ready draft file handle into this Thread. Upload file bytes through the files data plane first, then pass the resulting fileId here." />
+<Card href="/docs/api-reference/create-a-thread-file-upload" title="Create a Thread file upload" description="Creates a files API upload session scoped to this Thread. The request only supplies file metadata; Mosoo resolves the backing App and Session from the Thread and creates a session attachment upload. MVP public uploads must be 67108864 bytes or fewer and use single PUT." />
+<Card href="/docs/api-reference/remove-a-thread-file" title="Remove a Thread file" description="Detaches a file from the Thread." />
+<Card href="/docs/api-reference/unarchive-a-thread" title="Unarchive a Thread" description="Restores a previously archived Thread to active Thread lists." />
+</Cards>

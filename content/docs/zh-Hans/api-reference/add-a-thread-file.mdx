@@ -1,0 +1,28 @@
+---
+title: 添加 Thread 文件
+full: true
+_openapi:
+  preload:
+    - zh-Hans
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: 把已准备好的草稿文件句柄声明到这个 Thread 中。请先通过文件数据平面上传文件字节，然后在这里传入得到的 fileId。
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans" operations={[{"path":"/threads/{threadId}/files","method":"post"}]} showDescription />
+    </>
+  );
+}

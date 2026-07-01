@@ -1,0 +1,92 @@
+---
+title: "Mosoo API"
+description: "在你的应用中通过 API 集成并调用 Mosoo Agent。"
+---
+
+## 可以用来做什么
+
+<Cards>
+  <Card title="聊天机器人和应用后端">
+    为聊天机器人、移动 App 或网页应用接入 Mosoo Agent，让你的后端调用 Agent。
+  </Card>
+
+  <Card title="定制应用能力">
+    给定制应用接入一个已经配置好的 Agent，让它处理用户请求、文件和上下文。
+  </Card>
+
+  <Card title="多 Agent 协作">
+    用代码协调多个 Agent，把它们组合成一个协作工作台或自动化流程。
+  </Card>
+
+  <Card title="持续触发的任务">
+    用定时任务、外部事件或自己的服务触发 Agent，让它持续处理某类工作。
+  </Card>
+</Cards>
+
+<Callout type="info">
+  API 只适用于已发布的 Agent。Agent 配置、模型服务商连接和渠道绑定都需要先在 Mosoo 中完成。
+</Callout>
+
+## 该怎么做？
+
+<Cards>
+  <Card title="发布 Agent">
+    在 Mosoo 中连接模型服务商，配置并发布 Agent 以获得 `agentId`。
+  </Card>
+
+  <Card title="创建 API token">
+    在用户头像的 Settings / API tokens 中，创建代表你身份的 `API token`。
+  </Card>
+
+  <Card title="创建 Thread" href="/docs/zh-Hans/api-reference/create-a-thread-for-an-agent-api-endpoint">
+    携带 `API token` 和 `agentId` 通过 API 创建 Thread，发送事件、文件并读取结果。
+  </Card>
+</Cards>
+
+## 第一个请求
+
+把 `API token` 和 `agentId` 组合起来，就可以创建 Thread。
+
+```bash
+curl -X POST "https://mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: ticket-182-create-thread" \
+  -d '{
+    "client_external_ref": "ticket-182",
+    "input": {
+      "type": "user.message",
+      "content": [
+        {
+          "type": "text",
+          "text": "Triage this customer escalation and suggest next steps."
+        }
+      ]
+    }
+  }'
+```
+
+响应里会包含 `thread.id` 和第一个 `run`。后续发送消息、读取事件、附加文件和管理生命周期都使用这个 `thread.id`。
+
+<Card title="查看完整快速开始" href="/docs/zh-Hans/quickstart">
+  设置环境变量，创建 Thread，发送下一条用户消息，并读取事件日志。
+</Card>
+
+## 核心概念
+
+- **Agent**：你在 Mosoo 中配置的智能体，可以在 Agents 面板和 Agent 详情页获取它的 `agentId`。
+- **API token**：调用 Mosoo API 的身份凭证，用来证明调用者是谁，并决定其对 Agent 和 Thread 的可见性。
+- **Thread**：API 创建的对话容器。Thread 记录历史消息、文件、运行状态和 Agent 的生命周期状态。
+- **Event**：Thread 中的输入、输出、工具、文件、运行状态和用量这些公开可见变化，都是一种 Event。
+
+## 访问模型
+
+每个请求都会同时校验 Agent 和 API token：
+
+- Agent 必须存在，并启用 API 接入。
+- API token 必须有效且未被撤销。
+- 调用方仍需具备访问此 Agent 的权限。
+
+<Card title="理解 API token 和访问控制" href="/docs/zh-Hans/auth-and-access">
+  了解 API token、Agent 访问路径、调用方身份和所有者配置如何配合。
+</Card>

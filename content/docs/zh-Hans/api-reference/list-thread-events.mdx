@@ -1,0 +1,31 @@
+---
+title: 列出 Thread 事件
+full: true
+_openapi:
+  preload:
+    - zh-Hans
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          按时间顺序返回此 Thread 的最新公开事件日志条目。如果因为达到上限而省略了更早的公开条目，`truncated` 会为 true。事件
+          ID 是稳定的，因此调用方可以重试或轮询，而不会把同一个 ID 当作新事件处理。这是面向 CLI 和 API
+          使用方的稳定快照读取接口；不会暴露原始运行时 payload、转写内容或诊断信息。
+---
+
+{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans" operations={[{"path":"/threads/{threadId}/events","method":"get"}]} showDescription />
+    </>
+  );
+}
