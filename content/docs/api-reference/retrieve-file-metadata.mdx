@@ -1,20 +1,18 @@
 ---
-title: Upload Thread file content
+title: Retrieve file metadata
 full: true
 _openapi:
   preload:
     - en
-  method: PUT
+  method: GET
   webhook: false
   toc: []
   structuredData:
     headings: []
     contents:
       - content: >-
-          Uploads raw bytes for a pending single PUT Thread file upload. The
-          file must have been created through POST
-          /threads/{threadId}/files/uploads and belong to a public Thread
-          visible to the API token caller.
+          Returns public file metadata for a pre-Thread uploaded file or a file
+          attached to a public Thread visible to the API token caller.
 ---
 
 {/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
@@ -26,7 +24,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document="en" operations={[{"path":"/files/{fileId}/content","method":"put"}]} showDescription />
+      <Comp document="en" operations={[{"path":"/files/{fileId}","method":"get"}]} showDescription />
     </>
   );
 }

@@ -1,19 +1,18 @@
 ---
-title: 完成 Thread 文件上传
+title: Delete a file
 full: true
 _openapi:
   preload:
-    - zh-Hans
-  method: POST
+    - en
+  method: DELETE
   webhook: false
   toc: []
   structuredData:
     headings: []
     contents:
       - content: >-
-          完成待处理的单次 PUT Thread 文件上传。该文件必须已通过 POST
-          /threads/{threadId}/files/uploads 创建、通过 PUT /files/{fileId}/content
-          上传，并且属于 API token 调用方可见的公开 Thread。
+          Deletes a pre-Thread uploaded file or a file attached to a public
+          Thread visible to the API token caller.
 ---
 
 {/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
@@ -25,7 +24,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document="zh-Hans" operations={[{"path":"/files/{fileId}/complete","method":"post"}]} showDescription />
+      <Comp document="en" operations={[{"path":"/files/{fileId}","method":"delete"}]} showDescription />
     </>
   );
 }

@@ -1,74 +1,82 @@
 ---
 title: "Files"
-description: "上传字节并把 ready file 附加到 Mosoo API Thread。"
+description: "上传文件并挂载到 Mosoo API Thread。"
 ---
 
-通过公开 API 添加的文件是 Thread attachment。Agent 生成的文件是 artifact。只要 API token 调用方可见，它们都会出现在 Thread file list 中。
+通过公开 API 上传的文件是作用于 Agent API Endpoint App 的 draft file resource。创建 Thread 或发送用户消息时挂载它们。Agent 生成的文件是 artifact。只要 API token 调用方可见，它们都会出现在 Thread file list 中。
 
 ## 上传流程
 
-公开上传目前是最大 67108864 字节的 single PUT upload。
+公开上传使用 `multipart/form-data`，文件大小上限是 67108864 字节。
 
-1. 创建 Thread-scoped upload session。
-2. 把字节上传到返回的 `fileId`。
-3. 完成上传。
-4. 把 ready file 附加到 Thread。
-5. 在后续用户消息中通过 `attachmentIds` 引用这个文件。
+1. 用 `POST /agents/{agentId}/files` 把文件上传到 Agent。
+2. 保存返回的 `file.id`。
+3. 创建 Thread 或发送后续用户消息时，通过 `resources` 挂载该文件。
 
-## 创建 upload
+## 上传文件
 
 ```bash
-curl -X POST "https://try.mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files/uploads" \
+printf 'Customer asks for an implementation plan.' > brief.txt
+
+curl -X POST "https://try.mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -F "file=@brief.txt;type=text/plain"
+```
+
+响应是 `PublicFileResponse`。保存其中的 `file.id`：
+
+```json
+{
+  "file": {
+    "id": "01J0000000000000000000000J",
+    "name": "brief.txt",
+    "mimeType": "text/plain",
+    "size": 41,
+    "createdAt": "2026-05-19T00:02:00.000Z"
+  }
+}
+```
+
+## 在首条消息中使用文件
+
+```bash
+curl -X POST "https://try.mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "file": {
-      "name": "brief.txt",
-      "contentType": "text/plain",
-      "size": 41
+    "resources": [
+      {
+        "type": "file",
+        "file_id": "01J0000000000000000000000J"
+      }
+    ],
+    "input": {
+      "type": "user.message",
+      "content": [
+        {
+          "type": "text",
+          "text": "Summarize the attached file."
+        }
+      ]
     }
   }'
 ```
 
-响应是 `FileUploadSummary`。保存其中的 `fileId`。
+## 在后续消息中使用文件
 
-## 上传并完成字节
-
-```bash
-curl -X PUT "https://try.mosoo.ai/api/v1/files/$MOSOO_FILE_ID/content" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/octet-stream" \
-  --data-binary @brief.txt
-
-curl -X POST "https://try.mosoo.ai/api/v1/files/$MOSOO_FILE_ID/complete" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
-
-## 附加到 Thread
-
-```bash
-curl -X POST "https://try.mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fileId": "01J0000000000000000000000J"
-  }'
-```
-
-`POST /threads/{threadId}/files` 会通过 `fileId` 附加一个已准备好的上传文件。它不接受 inline `contentBase64` payload。
-
-## 使用附件
-
-后续用户消息通过 `attachmentIds` 发送文件 ID：
+后续用户消息通过 `resources` 发送文件 ID：
 
 ```json
 {
   "events": [
     {
       "type": "user_message",
-      "attachmentIds": ["01J0000000000000000000000J"],
+      "resources": [
+        {
+          "type": "file",
+          "file_id": "01J0000000000000000000000J"
+        }
+      ],
       "text": "Summarize the attached file."
     }
   ]
@@ -76,16 +84,16 @@ curl -X POST "https://try.mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files" \
 ```
 
 <Cards>
-  <Card title="创建 upload" href="/docs/zh-Hans/api-reference/create-a-thread-file-upload">
-    创建 Thread-scoped upload session。
+  <Card title="上传 Agent file" href="/docs/zh-Hans/api-reference/upload-an-agent-file">
+    在创建或继续 Thread 之前上传文件。
   </Card>
-  <Card title="上传内容" href="/docs/zh-Hans/api-reference/upload-thread-file-content">
-    为 pending upload PUT 原始字节。
+  <Card title="读取 file metadata" href="/docs/zh-Hans/api-reference/retrieve-file-metadata">
+    读取已上传或已挂载文件的 metadata。
   </Card>
-  <Card title="完成上传" href="/docs/zh-Hans/api-reference/complete-thread-file-upload">
-    完成已上传字节。
+  <Card title="下载内容" href="/docs/zh-Hans/api-reference/download-thread-file-content">
+    下载已挂载文件或 Agent artifact 的字节内容。
   </Card>
-  <Card title="添加 Thread file" href="/docs/zh-Hans/api-reference/add-a-thread-file">
-    把 ready file 附加到 Thread。
+  <Card title="删除 file" href="/docs/zh-Hans/api-reference/delete-a-file">
+    删除 pre-Thread upload 或可见的 Thread file。
   </Card>
 </Cards>

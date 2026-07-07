@@ -1,18 +1,16 @@
 ---
-title: 创建 Thread 文件上传
+title: 读取 file metadata
 full: true
 _openapi:
   preload:
     - zh-Hans
-  method: POST
+  method: GET
   webhook: false
   toc: []
   structuredData:
     headings: []
     contents:
-      - content: >-
-          创建作用于此 Thread 的 Files API 上传会话。请求只提供文件元数据；Mosoo 会从 Thread 解析对应的 App 和
-          Session，并创建 Session 附件上传。MVP 公开上传必须不超过 67108864 字节，并使用单次 PUT。
+      - content: 返回 pre-Thread 上传文件或 API token 调用方可见公开 Thread 文件的公开 metadata。
 ---
 
 {/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
@@ -24,7 +22,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document="zh-Hans" operations={[{"path":"/threads/{threadId}/files/uploads","method":"post"}]} showDescription />
+      <Comp document="zh-Hans" operations={[{"path":"/files/{fileId}","method":"get"}]} showDescription />
     </>
   );
 }
