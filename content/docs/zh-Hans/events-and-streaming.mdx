@@ -1,0 +1,103 @@
+---
+title: "Events and streaming"
+description: "通过事件快照或 Server-Sent Events 读取 Thread 输出。"
+---
+
+Thread events 是 Mosoo API 集成的稳定读取面。它只暴露公开状态。原始 runtime payload、私有 transcript 和内部诊断不属于这个 API。
+
+## 读取快照
+
+轮询、任务和后端状态对账使用快照：
+
+```http
+GET /api/v1/threads/{threadId}/events?limit=100
+```
+
+响应按时间顺序返回 `events`。当因为 limit 达到上限而省略更早的公开事件时，`truncated` 为 true。默认 limit 是 100，最大是 1000。
+
+每个 event 包含：
+
+| 字段 | 含义 |
+| --- | --- |
+| `id` | 稳定事件 ID，裸 ULID。 |
+| `runId` | Run 相关事件的 Run ID；否则为 `null`。 |
+| `type` | 公开事件类型，例如 `agent.message.delta` 或 `run.completed`。 |
+| `status` | `available`、`error` 或 `unsupported`。 |
+| `content` | 公开事件内容，或相关 payload 的引用。 |
+| `occurredAt` | RFC 3339 时间戳。 |
+| `durationMs` | 适用时的持续时间。 |
+| `tokens` | 适用时的 token 数。 |
+
+## 流式读取
+
+长时间运行的用户体验使用 SSE：
+
+```http
+GET /api/v1/threads/{threadId}/events/stream?limit=100
+```
+
+Stream 会先发送注释 heartbeat：
+
+```text
+: connected
+```
+
+每个公开事件按以下格式发送：
+
+```text
+event: thread.event
+id: 01J00000000000000000000010
+data: {"id":"01J00000000000000000000010","runId":"01J0000000000000000000000A","type":"run.started","status":"available","content":"01J0000000000000000000000A","occurredAt":"2026-05-19T00:00:01.000Z","durationMs":null,"tokens":null}
+```
+
+Stream 会抑制已通过轮询观察到的重复 event ID。没有新事件时会发送 keepalive 注释。如果 stream 启动后失败，Mosoo 会发送 `event: thread.error`，其中包含标准错误 envelope。
+
+## 提交事件
+
+向 Thread 发送调用方输入：
+
+```http
+POST /api/v1/threads/{threadId}/events
+```
+
+支持的提交事件变体：
+
+```json
+{
+  "events": [
+    {
+      "type": "user_message",
+      "clientRequestId": "ticket-182-message-1",
+      "attachmentIds": ["01J0000000000000000000000J"],
+      "text": "Summarize the attached file."
+    },
+    {
+      "type": "permission_decision",
+      "requestId": "tool-request-1",
+      "decision": "allow_once"
+    },
+    {
+      "type": "user_interrupt",
+      "runId": null
+    }
+  ]
+}
+```
+
+提交事件时使用 `Idempotency-Key`，避免网络重试时重复发送相同用户输入。
+
+## 重建输出
+
+渲染当前 UI 时，按 `runId` 分组公开事件。对目标 Run 按时间顺序拼接 `agent.message.delta`。Run `completed` 后，如果 Thread 或 send-event 响应中存在 `run.finalOutput.text`，优先使用它。
+
+<Cards>
+  <Card title="列出 Thread events" href="/docs/zh-Hans/api-reference/list-thread-events">
+    快照端点参考。
+  </Card>
+  <Card title="流式读取 Thread events" href="/docs/zh-Hans/api-reference/stream-thread-events">
+    SSE 端点参考。
+  </Card>
+  <Card title="发送事件" href="/docs/zh-Hans/api-reference/send-user-messages-permission-decisions-or-interrupts-to-a-thread">
+    提交事件 schema。
+  </Card>
+</Cards>

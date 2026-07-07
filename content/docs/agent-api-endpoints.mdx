@@ -1,0 +1,60 @@
+---
+title: "Agent API Endpoints"
+description: "How a published Mosoo Agent becomes callable from the public API."
+---
+
+An Agent API Endpoint is the public API entry point for a published Mosoo Agent. Your application calls it with `agentId` and a Mosoo API token.
+
+## What must exist
+
+A valid Agent API Endpoint has:
+
+- A real Agent ID.
+- Agent status `published`.
+- A live API endpoint version.
+- An owning App owned by the API token owner.
+- Matching Agent owner and App owner.
+
+If the Agent is not published, Mosoo returns `409 agent_not_published`. If the Agent has no live API endpoint version, Mosoo returns `409 service_inactive`. If the token owner does not own the Agent's App, Mosoo returns `403 forbidden`.
+
+## `agentId`
+
+Get `agentId` from the Agent API Access panel in Mosoo. In v1, `agentId` is a bare ULID:
+
+```text
+01J00000000000000000000001
+```
+
+Do not add an `agent_` prefix. The same bare-ULID rule applies to `threadId`, `fileId`, and `runId`.
+
+## What the endpoint owns
+
+The Agent API Endpoint owns the runtime boundary:
+
+| Mosoo owns | Your application owns |
+| --- | --- |
+| Published Agent configuration, model provider setup, tool execution, sandbox/runtime behavior, Agent memory/runtime state, and public event generation. | Product UI, backend APIs, jobs, app-side users, business logic, storage, `thread.id` persistence, and client-owned correlation IDs. |
+
+Requests cannot override model provider credentials, tools, channels, runtime settings, or Agent configuration. Change those in Mosoo, then publish the Agent again.
+
+## First API call
+
+Create a Thread on the Agent API Endpoint:
+
+```http
+POST /api/v1/agents/{agentId}/threads
+```
+
+Use `input` to queue the first Run immediately, or omit `input` to create an empty `IDLE` Thread.
+
+<Cards>
+  <Card title="Authentication and access" href="/docs/auth-and-access">
+    API token checks and resource visibility.
+  </Card>
+  <Card title="Create a Thread" href="/docs/api-reference/create-a-thread-for-an-agent-api-endpoint">
+    Full endpoint reference.
+  </Card>
+  <Card title="Threads and Runs" href="/docs/threads-and-runs">
+    Thread and Run lifecycle state.
+  </Card>
+</Cards>

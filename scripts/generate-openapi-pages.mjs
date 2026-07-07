@@ -29,6 +29,7 @@ const englishSpec = JSON.parse(
 );
 
 const englishOperationTitles = new Map();
+const englishOperationSlugs = new Map();
 for (const [operationPath, methods] of Object.entries(englishSpec.paths ?? {})) {
   for (const [method, operation] of Object.entries(methods ?? {})) {
     if (!operation || typeof operation !== 'object' || !('summary' in operation)) {
@@ -41,6 +42,45 @@ for (const [operationPath, methods] of Object.entries(englishSpec.paths ?? {})) 
     );
   }
 }
+
+const apiReferenceGroups = [
+  {
+    enTitle: 'Threads',
+    zhHansTitle: 'Threads',
+    keys: [
+      'POST /agents/{agentId}/threads',
+      'GET /agents/{agentId}/threads',
+      'GET /threads/{threadId}',
+      'POST /threads/{threadId}/archive',
+      'POST /threads/{threadId}/unarchive',
+      'DELETE /threads/{threadId}',
+    ],
+  },
+  {
+    enTitle: 'Events',
+    zhHansTitle: 'Events',
+    keys: [
+      'POST /threads/{threadId}/events',
+      'GET /threads/{threadId}/events',
+      'GET /threads/{threadId}/events/stream',
+    ],
+  },
+  {
+    enTitle: 'Files',
+    zhHansTitle: 'Files',
+    keys: [
+      'POST /threads/{threadId}/files/uploads',
+      'PUT /files/{fileId}/content',
+      'POST /files/{fileId}/complete',
+      'POST /threads/{threadId}/files',
+      'GET /threads/{threadId}/files',
+      'GET /files/{fileId}/content',
+      'DELETE /threads/{threadId}/files/{fileId}',
+    ],
+  },
+];
+
+const apiReferenceOrder = apiReferenceGroups.flatMap((group) => group.keys);
 
 function slugify(value) {
   return value
@@ -76,6 +116,63 @@ function operationSlug(output) {
   return slugify(englishTitle ?? output.info.title) || fallbackOperationSlug(output);
 }
 
+for (const [operationPath, methods] of Object.entries(englishSpec.paths ?? {})) {
+  for (const [method, operation] of Object.entries(methods ?? {})) {
+    if (!operation || typeof operation !== 'object') {
+      continue;
+    }
+
+    const key = `${method.toUpperCase()} ${operationPath}`;
+    englishOperationSlugs.set(
+      key,
+      slugify(englishOperationTitles.get(key) ?? operation.summary ?? key),
+    );
+  }
+}
+
+const orderedApiReferenceSlugs = apiReferenceOrder
+  .map((key) => englishOperationSlugs.get(key))
+  .filter((slug) => typeof slug === 'string');
+
+function titleFromGeneratedFile(file) {
+  const match = /^title:\s*(?:"([^"]+)"|(.+))$/m.exec(file.content);
+  return match?.[1] ?? match?.[2]?.trim() ?? path.basename(file.path, '.mdx');
+}
+
+function groupedIndexContent(spec, files) {
+  const title = JSON.stringify(spec.title);
+  const description = JSON.stringify(spec.description);
+  const lines = [
+    '---',
+    `title: ${title}`,
+    `description: ${description}`,
+    '---',
+    '',
+    '{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}',
+  ];
+
+  for (const group of apiReferenceGroups) {
+    const groupTitle = spec.id === 'zh-Hans' ? group.zhHansTitle : group.enTitle;
+    lines.push('', `## ${groupTitle}`, '', '<Cards>');
+
+    for (const key of group.keys) {
+      const slug = englishOperationSlugs.get(key);
+      const file = files.find((entry) => entry.path === `${slug}.mdx`);
+
+      if (!slug || !file) {
+        continue;
+      }
+
+      const titleAttr = JSON.stringify(titleFromGeneratedFile(file));
+      lines.push(`<Card href="${spec.baseUrl}/${slug}" title=${titleAttr} />`);
+    }
+
+    lines.push('</Cards>');
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
 async function generateSpecPages(spec) {
   await rm(spec.output, { force: true, recursive: true });
 
@@ -103,11 +200,34 @@ async function generateSpecPages(spec) {
           path: 'index.mdx',
           title: spec.title,
           description: spec.description,
+          only: orderedApiReferenceSlugs.map((slug) => `${slug}.mdx`),
         },
       ],
     },
     name(output) {
       return path.posix.join(operationSlug(output));
+    },
+    beforeWrite(files) {
+      const meta = files.find((file) => file.path === 'meta.json');
+      if (meta) {
+        const parsed = JSON.parse(meta.content);
+        const pages = new Set(parsed.pages);
+        const orderedPages = orderedApiReferenceSlugs.filter((slug) => pages.has(slug));
+        const remainingPages = parsed.pages.filter((page) => !orderedPages.includes(page));
+        meta.content = JSON.stringify(
+          {
+            ...parsed,
+            pages: [...orderedPages, ...remainingPages],
+          },
+          null,
+          2,
+        );
+      }
+
+      const index = files.find((file) => file.path === 'index.mdx');
+      if (index) {
+        index.content = groupedIndexContent(spec, files);
+      }
     },
   });
 }

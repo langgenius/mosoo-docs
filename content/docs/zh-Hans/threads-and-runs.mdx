@@ -1,0 +1,82 @@
+---
+title: "Threads and Runs"
+description: "Mosoo 如何把已发布 Agent 调用映射为 Thread 和 Run 生命周期状态。"
+---
+
+Mosoo 通过 Thread API 暴露已发布 Agent。你的应用创建或复用 Thread，然后发送用户事件排队 Run。Mosoo 在已发布 Agent 配置内执行每个 Run，并把公开事件写回 Thread。
+
+## 资源模型
+
+| 概念 | 含义 |
+| --- | --- |
+| Agent API Endpoint | Agent API Access 面板中的已发布 Agent 入口。v1 的 `agentId` 是裸 ULID。 |
+| Thread | 通过 API 创建的对话容器。你的应用需要保存 `thread.id`。 |
+| Run | Agent 在 Thread 上的一次执行。create-thread input 或用户消息可以排队一个 Run。 |
+| Event | 输入、Agent 输出、工具状态、文件、用量和 Run 生命周期变化的公开时间线。 |
+
+v1 资源 ID 是裸 ULID。不要添加 `agent_`、`thread_`、`file_` 或 `run_` 前缀。
+
+## 创建和读取
+
+为已发布 Agent 创建 Thread：
+
+```http
+POST /api/v1/agents/{agentId}/threads
+```
+
+如果提供 `input`，Mosoo 会排队初始 Run。如果省略 `input`，Mosoo 会创建一个没有 Run 的空 `IDLE` Thread。
+
+读取当前 Thread 状态：
+
+```http
+GET /api/v1/threads/{threadId}
+```
+
+响应会包含 `thread`、存在时的最新 `run`，以及便捷 `links`。
+
+## Thread status
+
+| Status | 含义 |
+| --- | --- |
+| `IDLE` | 没有活跃 Run。用户消息可以排队新工作。 |
+| `RUNNING` | Run 正在执行。 |
+| `RESCHEDULING` | Thread 处于两个 Run 之间。 |
+| `TERMINATED` | Thread 已结束。 |
+
+## Run status
+
+| Status | 含义 |
+| --- | --- |
+| `queued` | Run 已存在，但尚未开始。 |
+| `booting` | Runtime 正在准备。 |
+| `running` | Run 正在执行。 |
+| `waiting_input` | Run 正在等待调用方输入，常见于权限决策。 |
+| `completed` | 终态成功。存在时 `finalOutput.text` 是稳定结果。 |
+| `failed` | 终态失败。查看 `run.error`。 |
+| `cancelled` | 终态取消。 |
+| `expired` | 终态超时或过期。 |
+
+## 生命周期操作
+
+用生命周期端点管理应用侧 Thread 列表：
+
+| 操作 | Endpoint |
+| --- | --- |
+| 列出某个 Agent 的 Threads | `GET /api/v1/agents/{agentId}/threads` |
+| Archive Thread | `POST /api/v1/threads/{threadId}/archive` |
+| Unarchive Thread | `POST /api/v1/threads/{threadId}/unarchive` |
+| Delete Thread | `DELETE /api/v1/threads/{threadId}` |
+
+Archive 会让 Thread 从默认 active list 中隐藏。Delete 会永久删除 Thread 及其底层 AgentSession。
+
+<Cards>
+  <Card title="创建 Thread" href="/docs/zh-Hans/api-reference/create-a-thread-for-an-agent-api-endpoint">
+    完整请求和响应 schema。
+  </Card>
+  <Card title="发送事件" href="/docs/zh-Hans/api-reference/send-user-messages-permission-decisions-or-interrupts-to-a-thread">
+    排队 Run、回答权限请求或中断执行。
+  </Card>
+  <Card title="列出 Thread events" href="/docs/zh-Hans/api-reference/list-thread-events">
+    读取公开事件以渲染输出和状态。
+  </Card>
+</Cards>

@@ -30,10 +30,10 @@ Build the app-side integration layer around Mosoo Threads, events, files, and pu
 
 Primary contract:
 
-- Human docs: `/docs`, `/docs/quickstart`, `/docs/auth-and-access`
+- Human docs: `/docs`, `/docs/quickstart`, `/docs/auth-and-access`, `/docs/agent-api-endpoints`, `/docs/threads-and-runs`, `/docs/events-and-streaming`, `/docs/files`, `/docs/errors-and-limits`
 - Raw OpenAPI: `/docs/openapi/mosoo-openapi.en.generated.json`
 - API version: `v1`
-- Base URL used in examples: `https://mosoo.ai/api/v1`
+- Base URL used in examples: `https://try.mosoo.ai/api/v1`
 
 Do not infer request fields that are not listed here or in the raw OpenAPI. The public API rejects unsupported fields.
 
@@ -45,7 +45,7 @@ Mosoo exposes published Agents through Thread-based HTTP APIs. If required crede
 | --- | --- |
 | Agent | A configured Mosoo Agent. It must be published and have API access enabled before the API can call it. |
 | `agentId` | The published Agent ID shown in the Agent API Access panel |
-| API token | Bearer credential used by your code. In the current single-user model, it authenticates the Mosoo user who owns the local Agents, Threads, and files. |
+| API token | Bearer credential used by your code. It authenticates the Mosoo account that owns the Agent API Endpoint App and public Thread resources. |
 | Thread | The API conversation container. It records messages, files, run status, and public event history. |
 | Run | One execution pass of the Agent on a Thread. A user message can create or resume a Run. |
 | Event | A public timeline entry for Thread inputs, Agent output deltas, tool updates, file changes, status changes, and usage updates. |
@@ -72,9 +72,11 @@ A valid request must pass all of these checks:
 1. The Agent exists.
 2. The Agent is published and has API access enabled.
 3. The API token is valid and not revoked.
-4. The requested Thread or file exists in the same single-user Mosoo workspace.
+4. The Agent has a live API endpoint version.
+5. The API token owner owns the App that owns the Agent.
+6. The requested Thread or file is visible to the API token owner.
 
-Mosoo currently exposes this API as a single-user integration surface. The API token authenticates requests for that user; it does not switch users, create a multi-user access context, or let a request override model provider, channel, tool, or runtime settings. Configure and publish the Agent in Mosoo before calling the API.
+The API token does not switch users, create a multi-user access context, or let a request override model provider, channel, tool, or runtime settings. Configure and publish the Agent in Mosoo before calling the API.
 
 ## Responsibility boundary
 
@@ -92,7 +94,7 @@ Use this workflow when implementing the quickstart in application code. It is ba
 | 2. Create a Thread | `POST /agents/{agentId}/threads` with the first user input. | Persist `thread.id`. Optionally persist `client_external_ref` for your app record. | A Thread exists and the first Run has been queued. |
 | 3. Continue the Thread | `POST /threads/{threadId}/events` with `user_message`, `permission_decision`, or `user_interrupt` events. | Persist caller-owned references such as `clientRequestId` if your app needs correlation. | The follow-up input has been accepted by the API. |
 | 4. Read output | `GET /threads/{threadId}/events` for the event log, or `GET /threads/{threadId}/events/stream` for streaming. | Read public Agent output, run status, usage updates, tool status, and file events from events. | The app has enough public events to render the Agent response or current status. |
-| 5. Attach files if needed | For small base64 payloads, `POST /threads/{threadId}/files`. For binary or larger uploads, use the file upload flow below. | Persist returned `file.id` when the app needs to reference or remove the file later. | The file is attached before sending the message that depends on it. |
+| 5. Attach files if needed | Use the file upload flow below, then `POST /threads/{threadId}/files` with the ready `fileId`. | Persist returned `file.id` when the app needs to reference or remove the file later. | The file is attached before sending the message that depends on it. |
 
 Implementation rules:
 
@@ -116,7 +118,7 @@ export MOSOO_AGENT_ID="01J00000000000000000000001"
 Create a Thread and queue the initial Run:
 
 ```bash
-curl -X POST "https://mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
+curl -X POST "https://try.mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: ticket-182-create-thread" \
@@ -143,7 +145,7 @@ export MOSOO_THREAD_ID="01J00000000000000000000002"
 Send a follow-up message:
 
 ```bash
-curl -X POST "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events" \
+curl -X POST "https://try.mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: ticket-182-follow-up-1" \
@@ -161,7 +163,7 @@ curl -X POST "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events" \
 Read the public event log:
 
 ```bash
-curl "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events?limit=100" \
+curl "https://try.mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events?limit=100" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN"
 ```
 
@@ -172,7 +174,7 @@ Use this flow when a Thread needs a file attachment. Public uploads are currentl
 Create a Thread-scoped upload session:
 
 ```bash
-curl -X POST "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files/uploads" \
+curl -X POST "https://try.mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files/uploads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -193,7 +195,7 @@ export MOSOO_FILE_ID="01J0000000000000000000000J"
 Upload bytes:
 
 ```bash
-curl -X PUT "https://mosoo.ai/api/v1/files/$MOSOO_FILE_ID/content" \
+curl -X PUT "https://try.mosoo.ai/api/v1/files/$MOSOO_FILE_ID/content" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/octet-stream" \
   --data-binary @brief.txt
@@ -202,7 +204,7 @@ curl -X PUT "https://mosoo.ai/api/v1/files/$MOSOO_FILE_ID/content" \
 Complete the upload:
 
 ```bash
-curl -X POST "https://mosoo.ai/api/v1/files/$MOSOO_FILE_ID/complete" \
+curl -X POST "https://try.mosoo.ai/api/v1/files/$MOSOO_FILE_ID/complete" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{}'
@@ -211,7 +213,7 @@ curl -X POST "https://mosoo.ai/api/v1/files/$MOSOO_FILE_ID/complete" \
 Claim the ready draft file into the Thread:
 
 ```bash
-curl -X POST "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files" \
+curl -X POST "https://try.mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -222,7 +224,7 @@ curl -X POST "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files" \
 Use the file in a later user message with `attachmentIds`:
 
 ```bash
-curl -X POST "https://mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events" \
+curl -X POST "https://try.mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: ticket-182-file-question-1" \
@@ -359,22 +361,22 @@ All endpoints below are relative to `/api/v1`.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/files/{fileId}/complete` | Complete Thread file upload |
-| `GET` | `/files/{fileId}/content` | Download Thread file content |
-| `PUT` | `/files/{fileId}/content` | Upload Thread file content |
-| `GET` | `/agents/{agentId}/threads` | List Threads for an Agent API Endpoint |
 | `POST` | `/agents/{agentId}/threads` | Create a Thread for an Agent API Endpoint |
+| `GET` | `/agents/{agentId}/threads` | List Threads for an Agent API Endpoint |
 | `GET` | `/threads/{threadId}` | Retrieve Thread summary |
-| `DELETE` | `/threads/{threadId}` | Delete a Thread |
-| `POST` | `/threads/{threadId}/archive` | Archive a Thread |
-| `GET` | `/threads/{threadId}/events` | List Thread events |
 | `POST` | `/threads/{threadId}/events` | Send user messages, permission decisions, or interrupts to a Thread |
+| `GET` | `/threads/{threadId}/events` | List Thread events |
 | `GET` | `/threads/{threadId}/events/stream` | Stream Thread events |
-| `GET` | `/threads/{threadId}/files` | List Thread files |
-| `POST` | `/threads/{threadId}/files` | Add a Thread file |
 | `POST` | `/threads/{threadId}/files/uploads` | Create a Thread file upload |
+| `PUT` | `/files/{fileId}/content` | Upload Thread file content |
+| `POST` | `/files/{fileId}/complete` | Complete Thread file upload |
+| `POST` | `/threads/{threadId}/files` | Add a Thread file |
+| `GET` | `/threads/{threadId}/files` | List Thread files |
+| `GET` | `/files/{fileId}/content` | Download Thread file content |
 | `DELETE` | `/threads/{threadId}/files/{fileId}` | Remove a Thread file |
+| `POST` | `/threads/{threadId}/archive` | Archive a Thread |
 | `POST` | `/threads/{threadId}/unarchive` | Unarchive a Thread |
+| `DELETE` | `/threads/{threadId}` | Delete a Thread |
 
 Common error response envelope:
 
@@ -386,138 +388,6 @@ Common error response envelope:
   }
 }
 ```
-
-### `POST /files/{fileId}/complete`
-
-Purpose: Completes a pending single PUT Thread file upload. The file must have been created through POST /threads/\{threadId\}/files/uploads, uploaded through PUT /files/\{fileId\}/content, and belong to a public Thread visible to the API token.
-
-Path params:
-
-- `fileId` required, `string(ulid)`. File ID returned by add or list Thread files. v1 IDs are bare ULIDs.
-
-Request body:
-
-- `application/json`: `CompleteFileUploadRequest`
-
-Example:
-
-```json
-{}
-```
-
-Success responses:
-
-- `200`: Completed files API upload. (`application/json` -> `CompleteFileUploadResponse`)
-
-Example `200`:
-
-```json
-{
-  "file": {
-    "createdAt": "2026-05-19T00:02:00.000Z",
-    "createdBy": "01J00000000000000000000002",
-    "etag": "etag-1",
-    "expiresAt": null,
-    "id": "01J0000000000000000000000J",
-    "mimeType": "text/plain",
-    "name": "brief.txt",
-    "path": "session-files/01J0000000000000000000000J/brief.txt",
-    "sessionKind": "attachment",
-    "size": 19,
-    "status": "ready",
-    "updatedAt": "2026-05-19T00:03:00.000Z",
-    "version": 1
-  }
-}
-```
-
-Error responses:
-
-- `400` `InvalidRequest`: The request shape or query value is invalid.
-- `401` `Unauthenticated`: A valid API token is required.
-- `403` `Forbidden`: This operation is not allowed for this Agent.
-- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
-- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
-- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
-- `500` `InternalError`: The request failed unexpectedly.
-
-### `GET /files/{fileId}/content`
-
-Purpose: Downloads bytes for a ready Thread attachment or Agent artifact. The file must belong to a public Thread visible to the API token.
-
-Path params:
-
-- `fileId` required, `string(ulid)`. File ID returned by add or list Thread files. v1 IDs are bare ULIDs.
-
-Query params:
-
-- `disposition` optional, `"attachment" | "inline"`. Controls the Content-Disposition response header. Use attachment for downloads or inline for previewable content.
-
-Success responses:
-
-- `200`: Thread file content. (`application/octet-stream` -> `string(binary)`)
-
-Error responses:
-
-- `400` `InvalidRequest`: The request shape or query value is invalid.
-- `401` `Unauthenticated`: A valid API token is required.
-- `403` `Forbidden`: This operation is not allowed for this Agent.
-- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
-- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
-- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
-- `500` `InternalError`: The request failed unexpectedly.
-
-### `PUT /files/{fileId}/content`
-
-Purpose: Uploads raw bytes for a pending single PUT Thread file upload. The file must have been created through POST /threads/\{threadId\}/files/uploads and belong to a public Thread visible to the API token.
-
-Path params:
-
-- `fileId` required, `string(ulid)`. File ID returned by add or list Thread files. v1 IDs are bare ULIDs.
-
-Request body:
-
-- `application/octet-stream`: `string(binary)`
-
-Success responses:
-
-- `200`: Uploaded. (`application/json` -> `object`)
-
-Error responses:
-
-- `400` `InvalidRequest`: The request shape or query value is invalid.
-- `401` `Unauthenticated`: A valid API token is required.
-- `403` `Forbidden`: This operation is not allowed for this Agent.
-- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
-- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
-- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
-- `500` `InternalError`: The request failed unexpectedly.
-
-### `GET /agents/{agentId}/threads`
-
-Purpose: Returns Threads created by the authenticated API token.
-
-Path params:
-
-- `agentId` required, `string(ulid)`. Agent API Endpoint ID from the Agent's API Access panel. v1 IDs are bare ULIDs.
-
-Query params:
-
-- `archived` optional, `boolean`. Filter by archived state: true returns only archived Threads, false only active ones. Omit to return all Threads.
-
-Success responses:
-
-- `200`: Thread list. (`application/json` -> `object`)
-
-Error responses:
-
-- `400` `InvalidRequest`: The request shape or query value is invalid.
-- `401` `Unauthenticated`: A valid API token is required.
-- `403` `Forbidden`: This operation is not allowed for this Agent.
-- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
-- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
-- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
-- `500` `InternalError`: The request failed unexpectedly.
 
 ### `POST /agents/{agentId}/threads`
 
@@ -612,6 +482,32 @@ Error responses:
 - `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
 - `500` `InternalError`: The request failed unexpectedly.
 
+### `GET /agents/{agentId}/threads`
+
+Purpose: Returns Threads created by the authenticated API token.
+
+Path params:
+
+- `agentId` required, `string(ulid)`. Agent API Endpoint ID from the Agent's API Access panel. v1 IDs are bare ULIDs.
+
+Query params:
+
+- `archived` optional, `boolean`. Filter by archived state: true returns only archived Threads, false only active ones. Omit to return all Threads.
+
+Success responses:
+
+- `200`: Thread list. (`application/json` -> `object`)
+
+Error responses:
+
+- `400` `InvalidRequest`: The request shape or query value is invalid.
+- `401` `Unauthenticated`: A valid API token is required.
+- `403` `Forbidden`: This operation is not allowed for this Agent.
+- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
+- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
+- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
+- `500` `InternalError`: The request failed unexpectedly.
+
 ### `GET /threads/{threadId}`
 
 Purpose: Returns the current Thread summary, its most recent Run, and links.
@@ -623,76 +519,6 @@ Path params:
 Success responses:
 
 - `200`: Thread summary. (`application/json` -> `RetrieveThreadResponse`)
-
-Error responses:
-
-- `400` `InvalidRequest`: The request shape or query value is invalid.
-- `401` `Unauthenticated`: A valid API token is required.
-- `403` `Forbidden`: This operation is not allowed for this Agent.
-- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
-- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
-- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
-- `500` `InternalError`: The request failed unexpectedly.
-
-### `DELETE /threads/{threadId}`
-
-Purpose: Permanently deletes the Thread and its backing AgentSession.
-
-Path params:
-
-- `threadId` required, `string(ulid)`. Thread ID returned by create thread. v1 IDs are bare ULIDs.
-
-Success responses:
-
-- `200`: Deleted. (`application/json` -> `object`)
-
-Error responses:
-
-- `400` `InvalidRequest`: The request shape or query value is invalid.
-- `401` `Unauthenticated`: A valid API token is required.
-- `403` `Forbidden`: This operation is not allowed for this Agent.
-- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
-- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
-- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
-- `500` `InternalError`: The request failed unexpectedly.
-
-### `POST /threads/{threadId}/archive`
-
-Purpose: Archives the Thread so it is hidden from default Thread lists.
-
-Path params:
-
-- `threadId` required, `string(ulid)`. Thread ID returned by create thread. v1 IDs are bare ULIDs.
-
-Success responses:
-
-- `200`: Archived. (`application/json` -> `object`)
-
-Error responses:
-
-- `400` `InvalidRequest`: The request shape or query value is invalid.
-- `401` `Unauthenticated`: A valid API token is required.
-- `403` `Forbidden`: This operation is not allowed for this Agent.
-- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
-- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
-- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
-- `500` `InternalError`: The request failed unexpectedly.
-
-### `GET /threads/{threadId}/events`
-
-Purpose: Returns the latest public event log entries for this Thread in chronological order. If older public entries are omitted because the limit was reached, `truncated` is true. Event IDs are stable, so callers can retry or poll without treating the same ID as a new event. This is the stable snapshot read surface for CLI and API consumers; it does not expose raw runtime payloads, transcript, or diagnostics.
-
-Path params:
-
-- `threadId` required, `string(ulid)`. Thread ID returned by create thread. v1 IDs are bare ULIDs.
-
-Query params:
-
-- `limit` optional, `integer`. Maximum number of latest Thread events to return.
-
-Success responses:
-
-- `200`: Thread event list. (`application/json` -> `ThreadEventListResponse`)
 
 Error responses:
 
@@ -747,6 +573,32 @@ Error responses:
 - `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
 - `500` `InternalError`: The request failed unexpectedly.
 
+### `GET /threads/{threadId}/events`
+
+Purpose: Returns the latest public event log entries for this Thread in chronological order. If older public entries are omitted because the limit was reached, `truncated` is true. Event IDs are stable, so callers can retry or poll without treating the same ID as a new event. This is the stable snapshot read surface for CLI and API consumers; it does not expose raw runtime payloads, transcript, or diagnostics.
+
+Path params:
+
+- `threadId` required, `string(ulid)`. Thread ID returned by create thread. v1 IDs are bare ULIDs.
+
+Query params:
+
+- `limit` optional, `integer`. Maximum number of latest Thread events to return.
+
+Success responses:
+
+- `200`: Thread event list. (`application/json` -> `ThreadEventListResponse`)
+
+Error responses:
+
+- `400` `InvalidRequest`: The request shape or query value is invalid.
+- `401` `Unauthenticated`: A valid API token is required.
+- `403` `Forbidden`: This operation is not allowed for this Agent.
+- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
+- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
+- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
+- `500` `InternalError`: The request failed unexpectedly.
+
 ### `GET /threads/{threadId}/events/stream`
 
 Purpose: Streams public Thread event log entries as Server-Sent Events. Each `thread.event` data payload uses the same ThreadEventLogEntry shape as GET /threads/\{threadId\}/events. Events are emitted by stable event ID and the stream suppresses duplicate IDs observed during polling. The stream is for long-running consumer UX and does not expose raw runtime payloads, internal diagnostics, or private transcripts.
@@ -767,96 +619,6 @@ Example `200`:
 
 ```json
 ": connected\n\nevent: thread.event\nid: 01J00000000000000000000010\ndata: {\"id\":\"01J00000000000000000000010\",\"runId\":\"01J0000000000000000000000A\",\"type\":\"run.started\",\"status\":\"available\",\"content\":\"01J0000000000000000000000A\",\"occurredAt\":\"2026-05-19T00:00:01.000Z\",\"durationMs\":null,\"tokens\":null}\n\n"
-```
-
-Error responses:
-
-- `400` `InvalidRequest`: The request shape or query value is invalid.
-- `401` `Unauthenticated`: A valid API token is required.
-- `403` `Forbidden`: This operation is not allowed for this Agent.
-- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
-- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
-- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
-- `500` `InternalError`: The request failed unexpectedly.
-
-### `GET /threads/{threadId}/files`
-
-Purpose: Lists files attached to the Thread, including caller attachments and Agent artifacts.
-
-Path params:
-
-- `threadId` required, `string(ulid)`. Thread ID returned by create thread. v1 IDs are bare ULIDs.
-
-Success responses:
-
-- `200`: Thread file list. (`application/json` -> `ThreadFileListResponse`)
-
-Example `200`:
-
-```json
-{
-  "files": [
-    {
-      "committed": true,
-      "createdAt": "2026-05-19T00:02:00.000Z",
-      "id": "01J0000000000000000000000J",
-      "kind": "attachment",
-      "mimeType": "text/plain",
-      "name": "brief.txt",
-      "size": 19
-    }
-  ]
-}
-```
-
-Error responses:
-
-- `400` `InvalidRequest`: The request shape or query value is invalid.
-- `401` `Unauthenticated`: A valid API token is required.
-- `403` `Forbidden`: This operation is not allowed for this Agent.
-- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
-- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
-- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
-- `500` `InternalError`: The request failed unexpectedly.
-
-### `POST /threads/{threadId}/files`
-
-Purpose: Claims a ready draft file handle into this Thread. Upload file bytes through the files data plane first, then pass the resulting fileId here.
-
-Path params:
-
-- `threadId` required, `string(ulid)`. Thread ID returned by create thread. v1 IDs are bare ULIDs.
-
-Request body:
-
-- `application/json`: `CreateThreadFileRequest`
-
-Example:
-
-```json
-{
-  "fileId": "01J0000000000000000000000J"
-}
-```
-
-Success responses:
-
-- `201`: Created Thread file. (`application/json` -> `ThreadFileResponse`)
-
-Example `201`:
-
-```json
-{
-  "file": {
-    "committed": true,
-    "createdAt": "2026-05-19T00:02:00.000Z",
-    "id": "01J0000000000000000000000J",
-    "kind": "attachment",
-    "mimeType": "text/plain",
-    "name": "brief.txt",
-    "size": 19
-  }
-}
 ```
 
 Error responses:
@@ -922,6 +684,202 @@ Error responses:
 - `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
 - `500` `InternalError`: The request failed unexpectedly.
 
+### `PUT /files/{fileId}/content`
+
+Purpose: Uploads raw bytes for a pending single PUT Thread file upload. The file must have been created through POST /threads/\{threadId\}/files/uploads and belong to a public Thread visible to the API token.
+
+Path params:
+
+- `fileId` required, `string(ulid)`. File ID returned by add or list Thread files. v1 IDs are bare ULIDs.
+
+Request body:
+
+- `application/octet-stream`: `string(binary)`
+
+Success responses:
+
+- `200`: Uploaded. (`application/json` -> `object`)
+
+Error responses:
+
+- `400` `InvalidRequest`: The request shape or query value is invalid.
+- `401` `Unauthenticated`: A valid API token is required.
+- `403` `Forbidden`: This operation is not allowed for this Agent.
+- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
+- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
+- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
+- `500` `InternalError`: The request failed unexpectedly.
+
+### `POST /files/{fileId}/complete`
+
+Purpose: Completes a pending single PUT Thread file upload. The file must have been created through POST /threads/\{threadId\}/files/uploads, uploaded through PUT /files/\{fileId\}/content, and belong to a public Thread visible to the API token.
+
+Path params:
+
+- `fileId` required, `string(ulid)`. File ID returned by add or list Thread files. v1 IDs are bare ULIDs.
+
+Request body:
+
+- `application/json`: `CompleteFileUploadRequest`
+
+Example:
+
+```json
+{}
+```
+
+Success responses:
+
+- `200`: Completed files API upload. (`application/json` -> `CompleteFileUploadResponse`)
+
+Example `200`:
+
+```json
+{
+  "file": {
+    "createdAt": "2026-05-19T00:02:00.000Z",
+    "createdBy": "01J00000000000000000000002",
+    "etag": "etag-1",
+    "expiresAt": null,
+    "id": "01J0000000000000000000000J",
+    "mimeType": "text/plain",
+    "name": "brief.txt",
+    "path": "session-files/01J0000000000000000000000J/brief.txt",
+    "sessionKind": "attachment",
+    "size": 19,
+    "status": "ready",
+    "updatedAt": "2026-05-19T00:03:00.000Z",
+    "version": 1
+  }
+}
+```
+
+Error responses:
+
+- `400` `InvalidRequest`: The request shape or query value is invalid.
+- `401` `Unauthenticated`: A valid API token is required.
+- `403` `Forbidden`: This operation is not allowed for this Agent.
+- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
+- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
+- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
+- `500` `InternalError`: The request failed unexpectedly.
+
+### `POST /threads/{threadId}/files`
+
+Purpose: Claims a ready draft file handle into this Thread. Upload file bytes through the files data plane first, then pass the resulting fileId here.
+
+Path params:
+
+- `threadId` required, `string(ulid)`. Thread ID returned by create thread. v1 IDs are bare ULIDs.
+
+Request body:
+
+- `application/json`: `CreateThreadFileRequest`
+
+Example:
+
+```json
+{
+  "fileId": "01J0000000000000000000000J"
+}
+```
+
+Success responses:
+
+- `201`: Created Thread file. (`application/json` -> `ThreadFileResponse`)
+
+Example `201`:
+
+```json
+{
+  "file": {
+    "committed": true,
+    "createdAt": "2026-05-19T00:02:00.000Z",
+    "id": "01J0000000000000000000000J",
+    "kind": "attachment",
+    "mimeType": "text/plain",
+    "name": "brief.txt",
+    "size": 19
+  }
+}
+```
+
+Error responses:
+
+- `400` `InvalidRequest`: The request shape or query value is invalid.
+- `401` `Unauthenticated`: A valid API token is required.
+- `403` `Forbidden`: This operation is not allowed for this Agent.
+- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
+- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
+- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
+- `500` `InternalError`: The request failed unexpectedly.
+
+### `GET /threads/{threadId}/files`
+
+Purpose: Lists files attached to the Thread, including caller attachments and Agent artifacts.
+
+Path params:
+
+- `threadId` required, `string(ulid)`. Thread ID returned by create thread. v1 IDs are bare ULIDs.
+
+Success responses:
+
+- `200`: Thread file list. (`application/json` -> `ThreadFileListResponse`)
+
+Example `200`:
+
+```json
+{
+  "files": [
+    {
+      "committed": true,
+      "createdAt": "2026-05-19T00:02:00.000Z",
+      "id": "01J0000000000000000000000J",
+      "kind": "attachment",
+      "mimeType": "text/plain",
+      "name": "brief.txt",
+      "size": 19
+    }
+  ]
+}
+```
+
+Error responses:
+
+- `400` `InvalidRequest`: The request shape or query value is invalid.
+- `401` `Unauthenticated`: A valid API token is required.
+- `403` `Forbidden`: This operation is not allowed for this Agent.
+- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
+- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
+- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
+- `500` `InternalError`: The request failed unexpectedly.
+
+### `GET /files/{fileId}/content`
+
+Purpose: Downloads bytes for a ready Thread attachment or Agent artifact. The file must belong to a public Thread visible to the API token.
+
+Path params:
+
+- `fileId` required, `string(ulid)`. File ID returned by add or list Thread files. v1 IDs are bare ULIDs.
+
+Query params:
+
+- `disposition` optional, `"attachment" | "inline"`. Controls the Content-Disposition response header. Use attachment for downloads or inline for previewable content.
+
+Success responses:
+
+- `200`: Thread file content. (`application/octet-stream` -> `string(binary)`)
+
+Error responses:
+
+- `400` `InvalidRequest`: The request shape or query value is invalid.
+- `401` `Unauthenticated`: A valid API token is required.
+- `403` `Forbidden`: This operation is not allowed for this Agent.
+- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
+- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
+- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
+- `500` `InternalError`: The request failed unexpectedly.
+
 ### `DELETE /threads/{threadId}/files/{fileId}`
 
 Purpose: Detaches a file from the Thread.
@@ -945,6 +903,28 @@ Error responses:
 - `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
 - `500` `InternalError`: The request failed unexpectedly.
 
+### `POST /threads/{threadId}/archive`
+
+Purpose: Archives the Thread so it is hidden from default Thread lists.
+
+Path params:
+
+- `threadId` required, `string(ulid)`. Thread ID returned by create thread. v1 IDs are bare ULIDs.
+
+Success responses:
+
+- `200`: Archived. (`application/json` -> `object`)
+
+Error responses:
+
+- `400` `InvalidRequest`: The request shape or query value is invalid.
+- `401` `Unauthenticated`: A valid API token is required.
+- `403` `Forbidden`: This operation is not allowed for this Agent.
+- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
+- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
+- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
+- `500` `InternalError`: The request failed unexpectedly.
+
 ### `POST /threads/{threadId}/unarchive`
 
 Purpose: Restores a previously archived Thread to active Thread lists.
@@ -956,6 +936,28 @@ Path params:
 Success responses:
 
 - `200`: Unarchived. (`application/json` -> `object`)
+
+Error responses:
+
+- `400` `InvalidRequest`: The request shape or query value is invalid.
+- `401` `Unauthenticated`: A valid API token is required.
+- `403` `Forbidden`: This operation is not allowed for this Agent.
+- `404` `NotFound`: The resource was not found in the current Mosoo workspace.
+- `409` `Conflict`: The Agent/session state rejects this action, or an Idempotency-Key is already processing or was reused for a different request.
+- `429` `RateLimited`: The API token exceeded the public API request budget for the current window.
+- `500` `InternalError`: The request failed unexpectedly.
+
+### `DELETE /threads/{threadId}`
+
+Purpose: Permanently deletes the Thread and its backing AgentSession.
+
+Path params:
+
+- `threadId` required, `string(ulid)`. Thread ID returned by create thread. v1 IDs are bare ULIDs.
+
+Success responses:
+
+- `200`: Deleted. (`application/json` -> `object`)
 
 Error responses:
 

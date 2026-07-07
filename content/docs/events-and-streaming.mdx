@@ -1,0 +1,103 @@
+---
+title: "Events and streaming"
+description: "Read Thread output through event snapshots or Server-Sent Events."
+---
+
+Thread events are the stable read surface for Mosoo API integrations. They expose public state only. Raw runtime payloads, private transcripts, and internal diagnostics are not part of this API.
+
+## Read snapshots
+
+Use snapshots for polling, jobs, and backend state reconciliation:
+
+```http
+GET /api/v1/threads/{threadId}/events?limit=100
+```
+
+The response returns `events` oldest first within the requested window. `truncated` is true when older public events were omitted because the limit was reached. The default limit is 100 and the maximum is 1000.
+
+Each event has:
+
+| Field | Meaning |
+| --- | --- |
+| `id` | Stable event ID, bare ULID. |
+| `runId` | Run ID for run-scoped events, or `null`. |
+| `type` | Public event type such as `agent.message.delta` or `run.completed`. |
+| `status` | `available`, `error`, or `unsupported`. |
+| `content` | Public event content or a reference to the associated payload. |
+| `occurredAt` | RFC 3339 timestamp. |
+| `durationMs` | Duration when applicable. |
+| `tokens` | Token count when applicable. |
+
+## Stream updates
+
+Use SSE for long-running user experiences:
+
+```http
+GET /api/v1/threads/{threadId}/events/stream?limit=100
+```
+
+The stream starts with a comment heartbeat:
+
+```text
+: connected
+```
+
+Each public event is emitted as:
+
+```text
+event: thread.event
+id: 01J00000000000000000000010
+data: {"id":"01J00000000000000000000010","runId":"01J0000000000000000000000A","type":"run.started","status":"available","content":"01J0000000000000000000000A","occurredAt":"2026-05-19T00:00:01.000Z","durationMs":null,"tokens":null}
+```
+
+The stream suppresses duplicate event IDs observed during polling. Keepalive comments are sent while no new events are available. If the stream fails after it starts, Mosoo emits `event: thread.error` with the standard error envelope.
+
+## Submitted events
+
+Send caller input to a Thread with:
+
+```http
+POST /api/v1/threads/{threadId}/events
+```
+
+Supported submitted event variants:
+
+```json
+{
+  "events": [
+    {
+      "type": "user_message",
+      "clientRequestId": "ticket-182-message-1",
+      "attachmentIds": ["01J0000000000000000000000J"],
+      "text": "Summarize the attached file."
+    },
+    {
+      "type": "permission_decision",
+      "requestId": "tool-request-1",
+      "decision": "allow_once"
+    },
+    {
+      "type": "user_interrupt",
+      "runId": null
+    }
+  ]
+}
+```
+
+Use `Idempotency-Key` on submitted events so a network retry does not send the same user input twice.
+
+## Reconstruct output
+
+For current UI rendering, group public events by `runId`. Concatenate `agent.message.delta` events for the target Run in chronological order. After a Run is `completed`, prefer `run.finalOutput.text` from Thread or send-event responses when it is present.
+
+<Cards>
+  <Card title="List Thread events" href="/docs/api-reference/list-thread-events">
+    Snapshot endpoint reference.
+  </Card>
+  <Card title="Stream Thread events" href="/docs/api-reference/stream-thread-events">
+    SSE endpoint reference.
+  </Card>
+  <Card title="Send events" href="/docs/api-reference/send-user-messages-permission-decisions-or-interrupts-to-a-thread">
+    Submitted event schema.
+  </Card>
+</Cards>

@@ -1,69 +1,69 @@
 ---
 title: "认证和访问控制"
-description: "API token、Agent 访问权限和所有者配置如何配合。"
+description: "API token、Agent API Endpoint 和 Thread 可见性如何配合。"
 ---
 
-调用 Mosoo API 时，请求需要同时带上 `API token` 和 `agentId`。Mosoo 会先用 `API token` 识别调用方，再检查这个调用方是否有权限访问 `agentId` 指向的 Agent。
+每个 Mosoo API 请求都使用 Bearer API token：
 
-每个请求都使用 Bearer API token：
-
-```bash
+```http
 Authorization: Bearer mst_...
 ```
 
-通过 API token 有效性和 Agent 访问权限检查后，Mosoo 才会创建或修改 Thread。
+JSON 请求还需要：
+
+```http
+Content-Type: application/json
+```
+
+Mosoo 会用 API token 认证当前 Mosoo 账号，然后检查该账号是否可以使用选定的 Agent API Endpoint 和资源。
 
 ## API token
 
-API token 是调用 Mosoo API 的身份凭证。你可以在账号设置中创建它，并把它保存到应用后端、本地工具或自动化任务中。
+API token 是调用 Mosoo API 的身份凭证。你可以在 Mosoo 账号设置中创建它，并把它保存到应用后端、本地工具或自动化任务中。
 
 <Callout type="warn">
-  API token 不是渠道连接凭据。Slack、Lark、Discord、Telegram、WeChat 等渠道设置仍然在 Mosoo 中管理。
+  API token 不是模型服务商凭据，也不是渠道连接凭据。Slack、Lark、Discord、Telegram、WeChat、模型服务商设置、工具配置和渠道设置仍然在 Mosoo 中管理。
 </Callout>
 
-## 已发布 Agent 访问
+## Agent API Endpoint 访问
 
-只有 Agent 配置并发布后，API 接入才可用。一个有效请求必须通过这些检查：
+只有 Agent 已发布且存在 live API endpoint version 时，API 才可调用。一个有效请求必须通过这些检查：
 
-1. Agent 存在。
-2. Agent 已发布，并启用 API 接入。
-3. API token 有效且未被撤销。
-4. 调用方被允许使用这个 Agent。
-5. 被请求的 Thread 或文件对该调用方可见。
+1. API token 存在、有效且未被撤销。
+2. `agentId` 是 v1 裸 ULID，并且对应真实 Agent。
+3. Agent 已发布。
+4. Agent 有 live API endpoint version。
+5. API token 所有者拥有该 Agent 所属的 App。
+6. Agent owner 与 App owner 一致。
 
-## 调用方访问路径
+如果 token 有效但调用方不能使用该 Agent，Mosoo 返回 `403 forbidden`。如果 Agent 或资源对调用方不可见，Mosoo 返回 `404 not_found`。
 
-| 访问路径 | 谁可以调用 |
-| --- | --- |
-| 组织范围 | 拥有有效 API token 的活跃组织成员。 |
-| 仅限邀请 | Agent 所有者，以及拥有有效 API token 的被邀请协作者。 |
-
-有 API token 不代表一定能调用。如果调用方没有通过 Agent 访问检查，Mosoo 会返回 `403 Forbidden`。
+<Card title="Agent API Endpoints" href="/docs/zh-Hans/agent-api-endpoints">
+  了解已发布 Agent 状态、live endpoint version 和 `agentId` 如何配合。
+</Card>
 
 ## 调用方身份和执行
 
-Mosoo 会记录 API 调用方，用于访问检查、审计日志和 Thread 可见性。
+通过公开 API 创建的 Thread 会归属于 API token 所有者。当底层 Agent API Endpoint 仍可访问时，该所有者可以读取对应 Thread 和文件。
 
-运行时仍会使用已发布 Agent 所有者配置的能力边界。API 调用方不会变成 Agent 所有者，不会改变 Agent 的模型服务商，也不能在请求中提供新的模型服务商凭据。
+Run 使用已发布的 Agent 配置执行。API 调用方不会变成模型服务商，不能在请求里发送服务商凭据，也不能通过这个 API 覆盖工具、渠道、runtime settings 或 Agent 配置。
 
-使用 API token 调用时，调用方就是 API token 所有者。通过 API 创建的 Thread 和文件，会按照该调用方的 Agent 访问权限决定可见性。
+## Token 生命周期
 
-## API token 生命周期
-
-在 Mosoo 中创建和撤销 API token。撤销 API token 会阻止该 API token 发起新的 API 请求；它不会删除已经存在的 Threads。
+撤销 API token 会阻止该 token 发起新的 API 请求；它不会删除已经存在的 Threads。
 
 建议为不同系统使用不同 API token：
 
-- 本地开发使用一个 API token，
-- 每个服务端集成或自动化任务使用一个 API token，
-- 用清晰的 API token 标签支持审计和轮换。
+- 本地开发使用一个 API token。
+- 每个服务端集成或自动化任务使用一个 API token。
+- 使用清晰的 API token 标签支持审计和轮换。
 
 ## 安全重试
 
-创建 Thread 或发送事件时，如果请求失败后需要重试，可以带上同一个 `Idempotency-Key`。
+创建 Thread 或提交事件时，如果需要重试，请发送同一个 `Idempotency-Key`。
 
-```bash
--H "Idempotency-Key: support-ticket-182-create-thread"
+```http
+Idempotency-Key: support-ticket-182-create-thread
 ```
 
-同一个 key 搭配同一个请求会返回原始响应，避免重复创建或重复发送。如果原请求还在处理中，或同一个 key 被用于不同请求，会返回冲突响应。
+同一个 key 搭配同一个请求会返回原始响应。如果原请求还在处理中，或同一个 key 被用于不同请求 body，会返回 `409 idempotency_conflict`。

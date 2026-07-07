@@ -1,54 +1,47 @@
 ---
-title: "Mosoo API"
-description: "在你的应用中通过 API 集成并调用 Mosoo Agent。"
+title: "Mosoo Public Thread API"
+description: "通过 HTTPS API 从你的应用调用已发布的 Mosoo Agent。"
 ---
 
-## 可以用来做什么
-
-<Cards>
-  <Card title="聊天机器人和应用后端">
-    为聊天机器人、移动 App 或网页应用接入 Mosoo Agent，让你的后端调用 Agent。
-  </Card>
-
-  <Card title="定制应用能力">
-    给定制应用接入一个已经配置好的 Agent，让它处理用户请求、文件和上下文。
-  </Card>
-
-  <Card title="多 Agent 协作">
-    用代码协调多个 Agent，把它们组合成一个协作工作台或自动化流程。
-  </Card>
-
-  <Card title="持续触发的任务">
-    用定时任务、外部事件或自己的服务触发 Agent，让它持续处理某类工作。
-  </Card>
-</Cards>
+Mosoo Public Thread API 让你的后端把任务发送给已发布的 Mosoo Agent，并读取公开结果。Mosoo 负责 Agent runtime、sandbox、模型服务商配置、工具和执行生命周期；你的应用负责产品 UI、业务逻辑、用户映射、存储以及保存 `thread.id`。
 
 <Callout type="info">
-  API 只适用于已发布的 Agent。Agent 配置、模型服务商连接和渠道绑定都需要先在 Mosoo 中完成。
+  API 只适用于已发布并启用 API access 的 Agent。Agent 配置、模型服务商连接、工具配置和渠道绑定仍然在 Mosoo 中管理。
 </Callout>
 
-## 该怎么做？
+## 心智模型
 
 <Cards>
-  <Card title="发布 Agent">
-    在 Mosoo 中连接模型服务商，配置并发布 Agent 以获得 `agentId`。
+  <Card title="Agent API Endpoint" href="/docs/zh-Hans/agent-api-endpoints">
+    Agent API Access 面板中展示的已发布 Agent 入口。v1 的 `agentId` 路径参数是不带前缀的 ULID。
   </Card>
 
-  <Card title="创建 API token">
-    在用户头像的 Settings / API tokens 中，创建代表你身份的 `API token`。
+  <Card title="Thread" href="/docs/zh-Hans/threads-and-runs">
+    API 创建的对话容器。Thread 记录消息、文件、Run 状态和公开事件历史。
   </Card>
 
-  <Card title="创建 Thread" href="/docs/zh-Hans/api-reference/create-a-thread-for-an-agent-api-endpoint">
-    携带 `API token` 和 `agentId` 通过 API 创建 Thread，发送事件、文件并读取结果。
+  <Card title="Run" href="/docs/zh-Hans/threads-and-runs">
+    Agent 在一个 Thread 上的一次执行。用户消息可以排队启动新的 Run。
+  </Card>
+
+  <Card title="Event" href="/docs/zh-Hans/events-and-streaming">
+    用户输入、Agent 输出增量、工具更新、文件变化、Run 状态和用量的公开时间线。
   </Card>
 </Cards>
 
 ## 第一个请求
 
-把 `API token` 和 `agentId` 组合起来，就可以创建 Thread。
+设置 Mosoo API token 和 Mosoo 中的已发布 Agent ID：
 
 ```bash
-curl -X POST "https://mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
+export MOSOO_API_TOKEN="mst_..."
+export MOSOO_AGENT_ID="01J00000000000000000000001"
+```
+
+创建 Thread 并排队第一个 Run：
+
+```bash
+curl -X POST "https://try.mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: ticket-182-create-thread" \
@@ -66,27 +59,24 @@ curl -X POST "https://mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
   }'
 ```
 
-响应里会包含 `thread.id` 和第一个 `run`。后续发送消息、读取事件、附加文件和管理生命周期都使用这个 `thread.id`。
+响应会包含 `thread.id`，如果提供了 `input`，也会包含已排队的 `run`。后续发送事件、读取事件日志、流式读取更新、附加文件和管理生命周期都使用这个 `thread.id`。
 
-<Card title="查看完整快速开始" href="/docs/zh-Hans/quickstart">
-  设置环境变量，创建 Thread，发送下一条用户消息，并读取事件日志。
-</Card>
+## 继续阅读
 
-## 核心概念
+<Cards>
+  <Card title="Quickstart" href="/docs/zh-Hans/quickstart">
+    用 curl 跑通创建 Thread、发送后续消息、读取事件和附加文件的最小流程。
+  </Card>
 
-- **Agent**：你在 Mosoo 中配置的智能体，可以在 Agents 面板和 Agent 详情页获取它的 `agentId`。
-- **API token**：调用 Mosoo API 的身份凭证，用来证明调用者是谁，并决定其对 Agent 和 Thread 的可见性。
-- **Thread**：API 创建的对话容器。Thread 记录历史消息、文件、运行状态和 Agent 的生命周期状态。
-- **Event**：Thread 中的输入、输出、工具、文件、运行状态和用量这些公开可见变化，都是一种 Event。
+  <Card title="Events and streaming" href="/docs/zh-Hans/events-and-streaming">
+    用快照或 SSE stream 渲染 Agent 输出和状态。
+  </Card>
 
-## 访问模型
+  <Card title="Files" href="/docs/zh-Hans/files">
+    上传文件字节、完成上传，再把 ready file 附加到 Thread。
+  </Card>
 
-每个请求都会同时校验 Agent 和 API token：
-
-- Agent 必须存在，并启用 API 接入。
-- API token 必须有效且未被撤销。
-- 调用方仍需具备访问此 Agent 的权限。
-
-<Card title="理解 API token 和访问控制" href="/docs/zh-Hans/auth-and-access">
-  了解 API token、Agent 访问路径、调用方身份和所有者配置如何配合。
-</Card>
+  <Card title="API Reference" href="/docs/zh-Hans/api-reference">
+    从 Mosoo 主仓 OpenAPI 源生成的端点参考。
+  </Card>
+</Cards>

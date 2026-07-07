@@ -4,7 +4,12 @@
     "index",
     "quickstart",
     "auth-and-access",
+    "agent-api-endpoints",
+    "threads-and-runs",
+    "events-and-streaming",
+    "files",
     "api-reference",
+    "errors-and-limits",
     "coding-agents",
     "cli",
     "zh-Hans"
