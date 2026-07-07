@@ -27,7 +27,8 @@ const CODING_AGENTS_GENERATED_BEGIN = "{/* BEGIN GENERATED OPENAPI REFERENCE */}
 const CODING_AGENTS_GENERATED_END = "{/* END GENERATED OPENAPI REFERENCE */}";
 const LEGACY_CODING_AGENTS_GENERATED_BEGIN = "<!-- BEGIN GENERATED OPENAPI REFERENCE -->";
 const LEGACY_CODING_AGENTS_GENERATED_END = "<!-- END GENERATED OPENAPI REFERENCE -->";
-const DEFAULT_ORIGIN = "https://mosoo.ai/docs";
+const DEFAULT_API_ORIGIN = "https://try.mosoo.ai";
+const DEFAULT_DOCS_ORIGIN = "https://mosoo.ai/docs";
 const DEFAULT_MOSOO_REPO_REF = "main";
 const DEFAULT_MOSOO_REPO_URL = "https://github.com/langgenius/mosoo.git";
 const GIT_COMMAND_MAX_BUFFER = 64 * 1024 * 1024;
@@ -38,11 +39,6 @@ const MOSOO_OPENAPI_SOURCES = [
     exportName: "createPublicApiOpenApiDocument",
     importPath: "./apps/api/src/adapters/http/routes/public-api-openapi.ts",
     markerPath: "apps/api/src/adapters/http/routes/public-api-openapi.ts",
-  },
-  {
-    exportName: "createPublishedAgentOpenApiDocument",
-    importPath: "./apps/api/src/adapters/http/routes/published-agent-openapi.ts",
-    markerPath: "apps/api/src/adapters/http/routes/published-agent-openapi.ts",
   },
 ];
 
@@ -199,7 +195,7 @@ function resolveMosooOpenApiSource() {
 function generateSourceOpenApi(mosooRepo, source) {
   const evalSource = `
 import { ${source.exportName} as createOpenApiDocument } from ${JSON.stringify(source.importPath)};
-console.log(JSON.stringify(createOpenApiDocument(${JSON.stringify(DEFAULT_ORIGIN)}), null, 2));
+console.log(JSON.stringify(createOpenApiDocument(${JSON.stringify(DEFAULT_API_ORIGIN)}), null, 2));
 `;
   const result = spawnSync("bun", ["--eval", evalSource], {
     cwd: mosooRepo,
@@ -533,6 +529,46 @@ function operationEntries(document) {
   return entries;
 }
 
+const API_OPERATION_ORDER = [
+  ["post", "/agents/{agentId}/threads"],
+  ["get", "/agents/{agentId}/threads"],
+  ["get", "/threads/{threadId}"],
+  ["post", "/threads/{threadId}/events"],
+  ["get", "/threads/{threadId}/events"],
+  ["get", "/threads/{threadId}/events/stream"],
+  ["post", "/threads/{threadId}/files/uploads"],
+  ["put", "/files/{fileId}/content"],
+  ["post", "/files/{fileId}/complete"],
+  ["post", "/threads/{threadId}/files"],
+  ["get", "/threads/{threadId}/files"],
+  ["get", "/files/{fileId}/content"],
+  ["delete", "/threads/{threadId}/files/{fileId}"],
+  ["post", "/threads/{threadId}/archive"],
+  ["post", "/threads/{threadId}/unarchive"],
+  ["delete", "/threads/{threadId}"],
+];
+
+function operationOrderIndex(method, apiPath) {
+  const index = API_OPERATION_ORDER.findIndex(
+    ([orderedMethod, orderedPath]) => orderedMethod === method && orderedPath === apiPath,
+  );
+
+  return index === -1 ? API_OPERATION_ORDER.length : index;
+}
+
+function sortedOperationEntries(document) {
+  return operationEntries(document).sort((left, right) => {
+    const leftIndex = operationOrderIndex(left.method, left.apiPath);
+    const rightIndex = operationOrderIndex(right.method, right.apiPath);
+
+    if (leftIndex !== rightIndex) {
+      return leftIndex - rightIndex;
+    }
+
+    return `${left.method} ${left.apiPath}`.localeCompare(`${right.method} ${right.apiPath}`);
+  });
+}
+
 function renderParameterList(parameters, location, title) {
   const filtered = parameters.filter((parameter) => parameter.in === location);
   if (filtered.length === 0) {
@@ -719,7 +755,7 @@ function renderSchemaReference(document) {
 }
 
 function generateCodingAgentsOpenApiReference(document) {
-  const entries = operationEntries(document);
+  const entries = sortedOperationEntries(document);
   const lines = [
     "## API contract",
     "",
@@ -811,7 +847,7 @@ function buildCodingAgentsOutput(englishDocument) {
 
 function docsUrl(pathname) {
   const relativePath = pathname.replace(/^\/+/, "");
-  return new URL(relativePath, `${DEFAULT_ORIGIN}/`).toString();
+  return new URL(relativePath, `${DEFAULT_DOCS_ORIGIN}/`).toString();
 }
 
 function renderLlmsLink(label, pathname, description) {
@@ -819,7 +855,7 @@ function renderLlmsLink(label, pathname, description) {
 }
 
 function buildLlmsTxtOutput(englishDocument) {
-  const entries = operationEntries(englishDocument);
+  const entries = sortedOperationEntries(englishDocument);
   const lines = [
     "# Mosoo API",
     "",
@@ -841,6 +877,31 @@ function buildLlmsTxtOutput(englishDocument) {
       "Authentication and access",
       "/auth-and-access.md",
       "API token usage and access requirements for published Agents.",
+    ),
+    renderLlmsLink(
+      "Agent API Endpoints",
+      "/agent-api-endpoints.md",
+      "Published Agent readiness, live endpoint versions, and Agent ID rules.",
+    ),
+    renderLlmsLink(
+      "Threads and Runs",
+      "/threads-and-runs.md",
+      "Thread and Run lifecycle model for API integrations.",
+    ),
+    renderLlmsLink(
+      "Events and streaming",
+      "/events-and-streaming.md",
+      "Snapshot reads, SSE streams, submitted events, and output reconstruction.",
+    ),
+    renderLlmsLink(
+      "Files",
+      "/files.md",
+      "Upload sessions, binary content upload, completion, Thread attachment, and attachment IDs.",
+    ),
+    renderLlmsLink(
+      "Errors and limits",
+      "/errors-and-limits.md",
+      "Error envelope, retry behavior, idempotency, and public API limits.",
     ),
     "",
     "## API specifications",
@@ -876,7 +937,7 @@ function buildLlmsTxtOutput(englishDocument) {
     "## Notes for agents",
     "",
     "- Build app-side backend and product logic around the published Mosoo Agent running in Mosoo's sandbox; do not implement a replacement sandbox, Agent runtime, model loop, planner, tool runner, memory system, lifecycle manager, or provider integration.",
-    "- Treat Mosoo as a single-user integration surface unless the API contract says otherwise.",
+    "- Treat API token identity, Agent API Endpoint access, and Thread or file visibility as separate checks.",
     "- Do not invent API tokens, Agent IDs, Thread IDs, file IDs, or run IDs.",
     "- Prefer `coding-agents.md` for workflow and retry behavior.",
     "- Prefer OpenAPI JSON for generated clients and exact schema validation.",

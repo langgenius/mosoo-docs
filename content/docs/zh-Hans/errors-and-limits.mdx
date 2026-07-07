@@ -1,0 +1,70 @@
+---
+title: "Errors and limits"
+description: "处理 Mosoo API 错误、重试、幂等和公开 API 限制。"
+---
+
+所有非 2xx JSON 错误都使用同一个 envelope：
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "Request body must be an object."
+  }
+}
+```
+
+按 `error.code` 分支处理，不要按 `error.message`。`message` 面向开发者，不应直接展示给最终用户。
+
+## 错误码
+
+| HTTP | `error.code` | 调用方动作 |
+| --- | --- | --- |
+| 400 | `invalid_request` | 修正请求形状、字段值、body size 或 unsupported field。不要原样重试。 |
+| 400 | `invalid_json` | 修正序列化或 `Content-Type`。 |
+| 401 | `unauthenticated` | 检查 `Authorization`；轮换或重新创建 API token。 |
+| 403 | `forbidden` | 检查 API token 是否能访问该 Agent、Thread 或 file。 |
+| 404 | `not_found` | 检查 ID 是否存在且对该 API token 可见。 |
+| 409 | `agent_not_published` | 发布 Agent 并启用 API access。 |
+| 409 | `service_inactive` | 在 Mosoo 中重新发布或修复 Agent。 |
+| 409 | `readiness_blocked` | 修复 Mosoo 中的 Agent readiness 或配置。 |
+| 409 | `idempotency_conflict` | 如果原请求仍在处理，按 `Retry-After` 等待；如果 body 不同，使用新 key。 |
+| 429 | `rate_limited` | Back off，并在 `Retry-After` 后重试。 |
+| 500 | `internal_error` | 带 backoff 短暂重试；重复失败时记录故障详情。 |
+
+## 幂等
+
+`Idempotency-Key` 支持：
+
+- `POST /agents/{agentId}/threads`
+- `POST /threads/{threadId}/events`
+
+规则：
+
+- key 按 API token、method、route 和 request body 作用域隔离。
+- 同一个 key 搭配同一个请求会 replay 已存响应。
+- 同一个 key 搭配不同请求会返回 `409 idempotency_conflict`。
+- 第一个请求仍在处理时复用同一个 key 会返回 `409 idempotency_conflict`。
+- key 必须非空，且不超过 128 字符。
+- 冲突响应可能包含 `Retry-After`。
+
+## 公开限制
+
+| 限制 | 值 |
+| --- | --- |
+| Create Thread input text | 32000 字符 |
+| `client_external_ref` | 255 字符 |
+| File ID | 26 字符 |
+| File upload | 67108864 字节 |
+| Event list 默认值 | 100 events |
+| Event list 最大值 | 1000 events |
+| Thread list 最大值 | 100 Threads |
+
+<Cards>
+  <Card title="API Reference" href="/docs/zh-Hans/api-reference">
+    端点级请求和响应详情。
+  </Card>
+  <Card title="认证和访问控制" href="/docs/zh-Hans/auth-and-access">
+    API token 和 Agent access 检查。
+  </Card>
+</Cards>

@@ -1,0 +1,70 @@
+---
+title: "Errors and limits"
+description: "Handle Mosoo API errors, retries, idempotency, and public API limits."
+---
+
+All non-2xx JSON errors use the same envelope:
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "Request body must be an object."
+  }
+}
+```
+
+Branch on `error.code`, not `error.message`. The message is for developers and should not be shown directly to end users.
+
+## Error codes
+
+| HTTP | `error.code` | Caller action |
+| --- | --- | --- |
+| 400 | `invalid_request` | Fix request shape, field value, body size, or unsupported field. Do not retry unchanged. |
+| 400 | `invalid_json` | Fix serialization or `Content-Type`. |
+| 401 | `unauthenticated` | Check `Authorization`; rotate or recreate the API token. |
+| 403 | `forbidden` | Check that the API token can access this Agent, Thread, or file. |
+| 404 | `not_found` | Check that the ID exists and is visible to this API token. |
+| 409 | `agent_not_published` | Publish the Agent and enable API access. |
+| 409 | `service_inactive` | Republish or repair the Agent in Mosoo. |
+| 409 | `readiness_blocked` | Fix Agent readiness or configuration in Mosoo. |
+| 409 | `idempotency_conflict` | Wait for `Retry-After` if in-flight, or use a new key when the body differs. |
+| 429 | `rate_limited` | Back off and retry after `Retry-After`. |
+| 500 | `internal_error` | Retry briefly with backoff; persist failure details if it repeats. |
+
+## Idempotency
+
+`Idempotency-Key` is supported on:
+
+- `POST /agents/{agentId}/threads`
+- `POST /threads/{threadId}/events`
+
+Rules:
+
+- The key is scoped to the API token, method, route, and request body.
+- Reusing the same key with the same request replays the stored response.
+- Reusing the same key with a different request returns `409 idempotency_conflict`.
+- Reusing the key while the first request is still processing returns `409 idempotency_conflict`.
+- Keys must be non-empty and 128 characters or fewer.
+- Conflict responses can include `Retry-After`.
+
+## Public limits
+
+| Limit | Value |
+| --- | --- |
+| Create Thread input text | 32000 characters |
+| `client_external_ref` | 255 characters |
+| File ID | 26 characters |
+| File upload | 67108864 bytes |
+| Event list default | 100 events |
+| Event list maximum | 1000 events |
+| Thread list maximum | 100 Threads |
+
+<Cards>
+  <Card title="API Reference" href="/docs/api-reference">
+    Generated endpoint-level request and response details.
+  </Card>
+  <Card title="Authentication and access" href="/docs/auth-and-access">
+    API token and Agent access checks.
+  </Card>
+</Cards>

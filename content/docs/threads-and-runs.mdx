@@ -1,0 +1,82 @@
+---
+title: "Threads and Runs"
+description: "How Mosoo maps a published Agent call to Thread and Run lifecycle state."
+---
+
+Mosoo exposes a published Agent through Thread-based APIs. Your application creates or reuses a Thread, then sends user events that queue Runs. Mosoo executes each Run inside the published Agent configuration and writes public events back to the Thread.
+
+## Resource model
+
+| Concept | Meaning |
+| --- | --- |
+| Agent API Endpoint | The published Agent entry point from the Agent API Access panel. `agentId` is a bare ULID in v1. |
+| Thread | The conversation container created through the API. Store `thread.id` in your application. |
+| Run | One execution pass of the Agent on a Thread. A create-thread input or user message can queue a Run. |
+| Event | A public timeline entry for input, Agent output, tool state, files, usage, and Run lifecycle changes. |
+
+Resource IDs in v1 are bare ULIDs. Do not add prefixes such as `agent_`, `thread_`, `file_`, or `run_`.
+
+## Create and retrieve
+
+Create a Thread for a published Agent:
+
+```http
+POST /api/v1/agents/{agentId}/threads
+```
+
+If `input` is present, Mosoo queues the initial Run. If `input` is omitted, Mosoo creates an empty `IDLE` Thread with no Run.
+
+Retrieve current Thread state:
+
+```http
+GET /api/v1/threads/{threadId}
+```
+
+The response includes `thread`, the latest `run` when one exists, and convenience `links`.
+
+## Thread status
+
+| Status | Meaning |
+| --- | --- |
+| `IDLE` | No active Run. A user message can queue work. |
+| `RUNNING` | A Run is executing. |
+| `RESCHEDULING` | The Thread is between Runs. |
+| `TERMINATED` | The Thread has ended. |
+
+## Run status
+
+| Status | Meaning |
+| --- | --- |
+| `queued` | Run exists but has not started. |
+| `booting` | Runtime is preparing. |
+| `running` | Run is executing. |
+| `waiting_input` | Run is blocked on caller input, often a permission decision. |
+| `completed` | Terminal success. `finalOutput.text` is stable when present. |
+| `failed` | Terminal failure. Inspect `run.error`. |
+| `cancelled` | Terminal cancellation. |
+| `expired` | Terminal timeout or expiry. |
+
+## Lifecycle operations
+
+Use lifecycle endpoints to keep your app-side Thread list clean:
+
+| Operation | Endpoint |
+| --- | --- |
+| List Threads for an Agent | `GET /api/v1/agents/{agentId}/threads` |
+| Archive a Thread | `POST /api/v1/threads/{threadId}/archive` |
+| Unarchive a Thread | `POST /api/v1/threads/{threadId}/unarchive` |
+| Delete a Thread | `DELETE /api/v1/threads/{threadId}` |
+
+Archive hides a Thread from default active lists. Delete permanently deletes the Thread and its backing AgentSession.
+
+<Cards>
+  <Card title="Create a Thread" href="/docs/api-reference/create-a-thread-for-an-agent-api-endpoint">
+    Full request and response schema.
+  </Card>
+  <Card title="Send events" href="/docs/api-reference/send-user-messages-permission-decisions-or-interrupts-to-a-thread">
+    Queue a Run, answer a permission request, or interrupt execution.
+  </Card>
+  <Card title="List Thread events" href="/docs/api-reference/list-thread-events">
+    Read public events for rendering output and status.
+  </Card>
+</Cards>

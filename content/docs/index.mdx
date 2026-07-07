@@ -1,54 +1,47 @@
 ---
-title: "Mosoo API"
-description: "Integrate and call Mosoo Agents through the API in your application."
+title: "Mosoo Public Thread API"
+description: "Call published Mosoo Agents from your application with HTTPS APIs."
 ---
 
-## What you can build
-
-<Cards>
-  <Card title="Chatbots and app backends">
-    Connect Mosoo Agents to chatbots, mobile apps, or web apps, and let your backend call the Agent.
-  </Card>
-
-  <Card title="Custom app capabilities">
-    Add a configured Agent to a custom app so it can handle user requests, files, and context.
-  </Card>
-
-  <Card title="Multi-Agent collaboration">
-    Coordinate multiple Agents with code and combine them into a collaborative workspace or automation flow.
-  </Card>
-
-  <Card title="Continuously triggered tasks">
-    Trigger an Agent from schedules, external events, or your own service so it can keep handling a class of work.
-  </Card>
-</Cards>
+The Mosoo Public Thread API lets your backend send work to a published Mosoo Agent and read the public results. Mosoo owns the Agent runtime, sandbox, model provider setup, tools, and execution lifecycle. Your application owns its product UI, business logic, user mapping, storage, and the saved `thread.id`.
 
 <Callout type="info">
-  The API only works with published Agents. Agent setup, model provider connections, and channel bindings are managed in Mosoo before you call these endpoints.
+  The API only works with published Agents that have API access enabled. Agent setup, model provider connections, tool configuration, and channel bindings stay in Mosoo.
 </Callout>
 
-## How to use it
+## Mental model
 
 <Cards>
-  <Card title="Publish an Agent">
-    Configure the Agent in Mosoo, connect its model provider, and publish it so it receives an `agentId`.
+  <Card title="Agent API Endpoint" href="/docs/agent-api-endpoints">
+    The published Agent entry point shown in the Agent API Access panel. The `agentId` path parameter is a bare ULID in v1.
   </Card>
 
-  <Card title="Create an API token">
-    Create an `API token` from Settings / API tokens so your app can call on your behalf.
+  <Card title="Thread" href="/docs/threads-and-runs">
+    The API conversation container. A Thread records messages, files, run state, and public event history.
   </Card>
 
-  <Card title="Create a Thread" href="/docs/api-reference/create-a-thread-for-an-agent-api-endpoint">
-    Send `API token` and `agentId` through the API to create a Thread, send events and files, and read results.
+  <Card title="Run" href="/docs/threads-and-runs">
+    One execution pass of the Agent on a Thread. A user message can queue a Run, and the Run reaches a terminal status.
+  </Card>
+
+  <Card title="Event" href="/docs/events-and-streaming">
+    The public timeline for user input, Agent output deltas, tool updates, file changes, run status, and usage.
   </Card>
 </Cards>
 
 ## First request
 
-Combine `API token` and `agentId` to create a Thread.
+Set a Mosoo API token and a published Agent ID from Mosoo:
 
 ```bash
-curl -X POST "https://mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
+export MOSOO_API_TOKEN="mst_..."
+export MOSOO_AGENT_ID="01J00000000000000000000001"
+```
+
+Create a Thread and queue the first Run:
+
+```bash
+curl -X POST "https://try.mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: ticket-182-create-thread" \
@@ -66,27 +59,24 @@ curl -X POST "https://mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
   }'
 ```
 
-The response includes a `thread.id` and the first `run`. Use that `thread.id` for follow-up messages, event reads, file attachment, and lifecycle actions.
+The response includes `thread.id` and, when `input` is present, the queued `run`. Use `thread.id` to send follow-up events, read event logs, stream updates, attach files, and manage lifecycle.
 
-<Card title="Run the full quickstart" href="/docs/quickstart">
-  Set environment variables, create a Thread, send another user message, and read the event log.
-</Card>
+## Read next
 
-## Core concepts
+<Cards>
+  <Card title="Quickstart" href="/docs/quickstart">
+    Run the minimal curl flow: create a Thread, send a follow-up message, read events, and attach a file.
+  </Card>
 
-- **Agent**: The agent you configure in Mosoo. You can get its `agentId` from the Agents panel or the Agent details page.
-- **API token**: The credential for calling the Mosoo API. It proves who the caller is and determines visibility for Agents and Threads.
-- **Thread**: The conversation container created through the API. A Thread records message history, files, run status, and Agent lifecycle state.
-- **Event**: Inputs, outputs, tool updates, file changes, run status, and usage updates visible in a Thread are Events.
+  <Card title="Events and streaming" href="/docs/events-and-streaming">
+    Use snapshots or SSE streams to render Agent output and status.
+  </Card>
 
-## Access model
+  <Card title="Files" href="/docs/files">
+    Upload file bytes, complete the upload, then attach the ready file to a Thread.
+  </Card>
 
-Every request checks the Agent and API token together:
-
-- The Agent must exist and have API access enabled.
-- The API token must be valid and not revoked.
-- The caller must still have access to this Agent.
-
-<Card title="Understand API tokens and access" href="/docs/auth-and-access">
-  Read how API tokens, Agent access paths, caller identity, and owner settings fit together.
-</Card>
+  <Card title="API Reference" href="/docs/api-reference">
+    Generated endpoint reference from the Mosoo main repository OpenAPI source.
+  </Card>
+</Cards>

@@ -1,20 +1,20 @@
 {
   "pages": [
-    "complete-thread-file-upload",
-    "download-thread-file-content",
-    "upload-thread-file-content",
-    "list-threads-for-an-agent-api-endpoint",
     "create-a-thread-for-an-agent-api-endpoint",
+    "list-threads-for-an-agent-api-endpoint",
     "retrieve-thread-summary",
-    "delete-a-thread",
     "archive-a-thread",
-    "list-thread-events",
+    "unarchive-a-thread",
+    "delete-a-thread",
     "send-user-messages-permission-decisions-or-interrupts-to-a-thread",
+    "list-thread-events",
     "stream-thread-events",
-    "list-thread-files",
-    "add-a-thread-file",
     "create-a-thread-file-upload",
-    "remove-a-thread-file",
-    "unarchive-a-thread"
+    "upload-thread-file-content",
+    "complete-thread-file-upload",
+    "add-a-thread-file",
+    "list-thread-files",
+    "download-thread-file-content",
+    "remove-a-thread-file"
   ]
 }

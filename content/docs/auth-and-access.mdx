@@ -1,69 +1,69 @@
 ---
 title: "Authentication and access"
-description: "How API tokens, Agent access, and owner settings work together."
+description: "How API tokens, Agent API Endpoints, and Thread visibility work together."
 ---
 
-When calling the Mosoo API, pass both an `API token` and an `agentId`. Mosoo uses the `API token` to identify the caller, then checks whether that caller can access the Agent selected by `agentId`.
+Every Mosoo API request uses a Bearer API token:
 
-Every request uses a Bearer API token:
-
-```bash
+```http
 Authorization: Bearer mst_...
 ```
 
-Mosoo creates or changes a Thread only after the API token is valid and the caller passes the Agent access check.
+JSON requests also use:
+
+```http
+Content-Type: application/json
+```
+
+Mosoo authenticates the API token, resolves the current Mosoo account, then checks whether that account can use the selected Agent API Endpoint and resource.
 
 ## API tokens
 
-An API token is the credential your code uses to call the Mosoo API. Create it in account settings and store it in your app backend, local tools, or automation jobs.
+An API token is the credential your code uses to call the Mosoo API. Create it in Mosoo account settings and store it in your app backend, local tools, or automation jobs.
 
 <Callout type="warn">
-  API tokens are not channel connection credentials. Slack, Lark, Discord, Telegram, WeChat, and other channel setup stays in Mosoo.
+  API tokens are not model provider credentials or channel connection credentials. Slack, Lark, Discord, Telegram, WeChat, model provider setup, tool configuration, and channel setup stay in Mosoo.
 </Callout>
 
-## Published Agent access
+## Agent API Endpoint access
 
-API access is available only after an Agent is configured and published. A valid request must pass these checks:
+API access is available only after an Agent is published and has a live API endpoint version. A valid request must pass these checks:
 
-1. The Agent exists.
-2. The Agent is published and has API Access enabled.
-3. The API token is valid and not revoked.
-4. The caller is allowed to use the Agent.
-5. The requested Thread or file is visible to that caller.
+1. The API token is present, valid, and not revoked.
+2. The `agentId` is a v1 bare ULID for a real Agent.
+3. The Agent is published.
+4. The Agent has a live API endpoint version.
+5. The API token owner owns the App that owns the Agent.
+6. The Agent owner matches the App owner.
 
-## Caller access paths
+If the token is valid but the caller cannot consume the Agent, Mosoo returns `403 forbidden`. If the Agent or resource is not visible to the caller, Mosoo returns `404 not_found`.
 
-| Access path | Who can call |
-| --- | --- |
-| Organization-wide | Active Organization members with a valid API token. |
-| Invited-only | The Agent owner and explicitly invited collaborators with a valid API token. |
-
-Having an API token is not enough. If the caller does not pass the Agent access check, Mosoo returns `403 Forbidden`.
+<Card title="Agent API Endpoints" href="/docs/agent-api-endpoints">
+  Read how published Agent state, live endpoint versions, and `agentId` fit together.
+</Card>
 
 ## Caller identity and execution
 
-Mosoo records the API caller for access checks, audit logs, and Thread visibility.
+Threads created through the public API are attributed to the API token owner. Thread and file reads are visible to that owner when the underlying Agent API Endpoint is still accessible.
 
-Runs still use the capability boundary configured by the published Agent's owner. The API caller does not become the Agent owner, change the Agent's model provider, or supply provider credentials in the request.
+Runs execute with the published Agent configuration. The API caller does not become the model provider, cannot send provider credentials in the request, and cannot override tools, channels, runtime settings, or Agent configuration through this API.
 
-For API token calls, the caller is the API token owner. Threads and files created through the API are visible according to that caller's Agent access.
+## Token lifecycle
 
-## API token lifecycle
-
-Create and revoke API tokens in Mosoo. Revoking an API token blocks future API requests from that API token; it does not delete existing Threads.
+Revoking an API token blocks future API requests from that token. It does not delete existing Threads.
 
 Use separate API tokens for separate systems when possible:
 
-- Use one API token for local development.
-- Use one API token per server-side integration or automation.
-- Use clear API token labels for audit and rotation.
+- One API token for local development.
+- One API token per server-side integration or automation.
+- Clear API token labels for audit and rotation.
 
 ## Safe retries
 
-When retrying a failed Thread creation or event send request, send the same `Idempotency-Key`.
+When retrying Thread creation or event submission, send the same `Idempotency-Key`.
 
-```bash
--H "Idempotency-Key: support-ticket-182-create-thread"
+```http
+Idempotency-Key: support-ticket-182-create-thread
 ```
 
-The same key with the same request returns the original response, so you do not create or send the same thing twice. Reusing the key while the first request is still processing, or using it with a different request, returns a conflict.
+The same key with the same request returns the original response. Reusing the key while the first request is still processing, or using it with a different request body, returns `409 idempotency_conflict`.

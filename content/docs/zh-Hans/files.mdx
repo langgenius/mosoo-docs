@@ -1,0 +1,91 @@
+---
+title: "Files"
+description: "上传字节并把 ready file 附加到 Mosoo API Thread。"
+---
+
+通过公开 API 添加的文件是 Thread attachment。Agent 生成的文件是 artifact。只要 API token 调用方可见，它们都会出现在 Thread file list 中。
+
+## 上传流程
+
+公开上传目前是最大 67108864 字节的 single PUT upload。
+
+1. 创建 Thread-scoped upload session。
+2. 把字节上传到返回的 `fileId`。
+3. 完成上传。
+4. 把 ready file 附加到 Thread。
+5. 在后续用户消息中通过 `attachmentIds` 引用这个文件。
+
+## 创建 upload
+
+```bash
+curl -X POST "https://try.mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files/uploads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "file": {
+      "name": "brief.txt",
+      "contentType": "text/plain",
+      "size": 41
+    }
+  }'
+```
+
+响应是 `FileUploadSummary`。保存其中的 `fileId`。
+
+## 上传并完成字节
+
+```bash
+curl -X PUT "https://try.mosoo.ai/api/v1/files/$MOSOO_FILE_ID/content" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @brief.txt
+
+curl -X POST "https://try.mosoo.ai/api/v1/files/$MOSOO_FILE_ID/complete" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+## 附加到 Thread
+
+```bash
+curl -X POST "https://try.mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fileId": "01J0000000000000000000000J"
+  }'
+```
+
+`POST /threads/{threadId}/files` 会通过 `fileId` 附加一个已准备好的上传文件。它不接受 inline `contentBase64` payload。
+
+## 使用附件
+
+后续用户消息通过 `attachmentIds` 发送文件 ID：
+
+```json
+{
+  "events": [
+    {
+      "type": "user_message",
+      "attachmentIds": ["01J0000000000000000000000J"],
+      "text": "Summarize the attached file."
+    }
+  ]
+}
+```
+
+<Cards>
+  <Card title="创建 upload" href="/docs/zh-Hans/api-reference/create-a-thread-file-upload">
+    创建 Thread-scoped upload session。
+  </Card>
+  <Card title="上传内容" href="/docs/zh-Hans/api-reference/upload-thread-file-content">
+    为 pending upload PUT 原始字节。
+  </Card>
+  <Card title="完成上传" href="/docs/zh-Hans/api-reference/complete-thread-file-upload">
+    完成已上传字节。
+  </Card>
+  <Card title="添加 Thread file" href="/docs/zh-Hans/api-reference/add-a-thread-file">
+    把 ready file 附加到 Thread。
+  </Card>
+</Cards>

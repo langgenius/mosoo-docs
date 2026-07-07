@@ -1,0 +1,60 @@
+---
+title: "Agent API Endpoints"
+description: "已发布 Mosoo Agent 如何变成可通过公开 API 调用的入口。"
+---
+
+Agent API Endpoint 是已发布 Mosoo Agent 的公开 API 入口。你的应用使用 `agentId` 和 Mosoo API token 调用它。
+
+## 必须存在的条件
+
+一个有效的 Agent API Endpoint 需要：
+
+- 真实的 Agent ID。
+- Agent 状态为 `published`。
+- 存在 live API endpoint version。
+- API token 所有者拥有该 Agent 所属的 App。
+- Agent owner 与 App owner 一致。
+
+如果 Agent 未发布，Mosoo 返回 `409 agent_not_published`。如果 Agent 没有 live API endpoint version，Mosoo 返回 `409 service_inactive`。如果 token owner 不拥有该 Agent 所属的 App，Mosoo 返回 `403 forbidden`。
+
+## `agentId`
+
+从 Mosoo 的 Agent API Access 面板获取 `agentId`。v1 中，`agentId` 是不带前缀的 ULID：
+
+```text
+01J00000000000000000000001
+```
+
+不要添加 `agent_` 前缀。同样的裸 ULID 规则也适用于 `threadId`、`fileId` 和 `runId`。
+
+## Endpoint 负责什么
+
+Agent API Endpoint 负责 runtime 边界：
+
+| Mosoo 负责 | 你的应用负责 |
+| --- | --- |
+| 已发布 Agent 配置、模型服务商设置、工具执行、sandbox/runtime 行为、Agent memory/runtime state，以及公开事件生成。 | 产品 UI、后端 API、任务、应用侧用户、业务逻辑、存储、`thread.id` 持久化，以及客户端自有 correlation ID。 |
+
+请求不能覆盖模型服务商凭据、工具、渠道、runtime settings 或 Agent 配置。需要修改这些内容时，在 Mosoo 中修改并重新发布 Agent。
+
+## 第一个 API 调用
+
+在 Agent API Endpoint 上创建 Thread：
+
+```http
+POST /api/v1/agents/{agentId}/threads
+```
+
+带上 `input` 可以立即排队第一个 Run；省略 `input` 则会创建一个没有 Run 的空 `IDLE` Thread。
+
+<Cards>
+  <Card title="认证和访问控制" href="/docs/zh-Hans/auth-and-access">
+    API token 检查和资源可见性。
+  </Card>
+  <Card title="创建 Thread" href="/docs/zh-Hans/api-reference/create-a-thread-for-an-agent-api-endpoint">
+    完整端点参考。
+  </Card>
+  <Card title="Threads and Runs" href="/docs/zh-Hans/threads-and-runs">
+    Thread 和 Run 的生命周期状态。
+  </Card>
+</Cards>
