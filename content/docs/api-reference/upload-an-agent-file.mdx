@@ -1,5 +1,5 @@
 ---
-title: Create a Thread file upload
+title: Upload an Agent file
 full: true
 _openapi:
   preload:
@@ -11,10 +11,9 @@ _openapi:
     headings: []
     contents:
       - content: >-
-          Creates a files API upload session scoped to this Thread. The request
-          only supplies file metadata; Mosoo resolves the backing App and
-          Session from the Thread and creates a session attachment upload. MVP
-          public uploads must be 67108864 bytes or fewer and use single PUT.
+          Uploads a file into the Agent API Endpoint's App draft scope before a
+          Thread exists. Use the returned file ID in create-thread or
+          send-events resources.
 ---
 
 {/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
@@ -26,7 +25,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document="en" operations={[{"path":"/threads/{threadId}/files/uploads","method":"post"}]} showDescription />
+      <Comp document="en" operations={[{"path":"/agents/{agentId}/files","method":"post"}]} showDescription />
     </>
   );
 }

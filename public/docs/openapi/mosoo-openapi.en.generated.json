@@ -89,13 +89,10 @@
             "additionalProperties": false,
             "description": "Send a new user message into the Thread, optionally with file attachments.",
             "properties": {
-              "attachmentIds": {
-                "description": "File IDs (bare ULIDs) to attach to this message. Each file must already be uploaded and claimed into this Thread.",
+              "resources": {
+                "description": "Files to attach to this message. Each file must be a ready draft file uploaded through the Agent file endpoint by the same API token caller.",
                 "items": {
-                  "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                  "format": "ulid",
-                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-                  "type": "string"
+                  "$ref": "#/components/schemas/FileResource"
                 },
                 "type": "array"
               },
@@ -198,201 +195,38 @@
         ],
         "type": "object"
       },
-      "CreateThreadFileRequest": {
+      "FileResource": {
         "additionalProperties": false,
-        "description": "Request body for claiming a previously uploaded draft file handle into a Thread.",
+        "description": "A file resource to mount into a Thread or user message.",
         "properties": {
-          "fileId": {
+          "file_id": {
             "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
             "format": "ulid",
             "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
             "type": "string",
             "maxLength": 26,
             "minLength": 1,
-            "description": "ID of a ready draft file (bare ULID) previously uploaded through the files data plane by the same API token caller."
+            "description": "ID of a ready draft file uploaded through the Agent file endpoint."
+          },
+          "type": {
+            "const": "file",
+            "description": "Resource discriminator. Only `file` is supported today."
           }
         },
         "required": [
-          "fileId"
+          "type",
+          "file_id"
         ],
         "type": "object"
       },
-      "CreateThreadFileUploadRequest": {
+      "PublicFile": {
         "additionalProperties": false,
-        "description": "Request body for creating a files API upload session scoped to this Thread.",
-        "properties": {
-          "file": {
-            "additionalProperties": false,
-            "description": "Metadata for the file bytes that will be uploaded.",
-            "properties": {
-              "contentType": {
-                "description": "MIME type for the file bytes.",
-                "minLength": 1,
-                "type": "string"
-              },
-              "name": {
-                "description": "Original file name to record for this Thread attachment.",
-                "minLength": 1,
-                "type": "string"
-              },
-              "size": {
-                "description": "File size in bytes. Public Thread upload creation currently accepts single-put uploads only.",
-                "maximum": 67108864,
-                "minimum": 0,
-                "type": "integer"
-              }
-            },
-            "required": [
-              "name",
-              "contentType",
-              "size"
-            ],
-            "type": "object"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "type": "object"
-      },
-      "FileUploadSummary": {
-        "additionalProperties": false,
-        "description": "Files API upload session summary returned after creating an upload target.",
-        "properties": {
-          "contentType": {
-            "description": "Normalized MIME type the upload expects.",
-            "type": "string"
-          },
-          "expectedSize": {
-            "description": "Expected file size in bytes for integrity validation.",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "expiresAt": {
-            "description": "Timestamp (RFC 3339) when this upload session expires.",
-            "format": "date-time",
-            "type": "string"
-          },
-          "fileId": {
-            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-            "format": "ulid",
-            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "maxLength": 26,
-            "minLength": 1,
-            "description": "File ID (bare ULID) for this upload session."
-          },
-          "partSize": {
-            "description": "Multipart part size in bytes, or null when the upload uses single PUT.",
-            "minimum": 1,
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "path": {
-            "description": "Materialized file path exposed by the files API upload summary.",
-            "minLength": 1,
-            "type": "string"
-          },
-          "status": {
-            "description": "Current files API upload session status.",
-            "enum": [
-              "aborted",
-              "completed",
-              "completing",
-              "expired",
-              "failed",
-              "pending",
-              "uploading"
-            ]
-          },
-          "strategy": {
-            "description": "Files API upload transfer strategy selected for the file size.",
-            "enum": [
-              "multipart",
-              "single_put"
-            ]
-          }
-        },
-        "required": [
-          "contentType",
-          "expectedSize",
-          "expiresAt",
-          "fileId",
-          "partSize",
-          "path",
-          "status",
-          "strategy"
-        ],
-        "type": "object"
-      },
-      "CompleteFileUploadPart": {
-        "additionalProperties": false,
-        "description": "A completed multipart upload part. Public Thread MVP uploads use single PUT and do not send parts.",
-        "properties": {
-          "etag": {
-            "description": "ETag returned by the uploaded multipart part.",
-            "minLength": 1,
-            "type": "string"
-          },
-          "partNumber": {
-            "description": "One-based multipart part number for completion ordering.",
-            "minimum": 1,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "etag",
-          "partNumber"
-        ],
-        "type": "object"
-      },
-      "CompleteFileUploadRequest": {
-        "additionalProperties": false,
-        "description": "Request body for completing a files API upload session. Public Thread MVP single PUT uploads send an empty object.",
-        "properties": {
-          "parts": {
-            "description": "Multipart completion parts. Omit this field for public MVP single PUT uploads.",
-            "items": {
-              "$ref": "#/components/schemas/CompleteFileUploadPart"
-            },
-            "type": "array"
-          }
-        },
-        "required": [],
-        "type": "object"
-      },
-      "FileEntry": {
-        "additionalProperties": false,
-        "description": "Files API file entry returned after an upload completes.",
+        "description": "Public file metadata.",
         "properties": {
           "createdAt": {
             "description": "Timestamp (RFC 3339) at which the file record was created.",
             "format": "date-time",
             "type": "string"
-          },
-          "createdBy": {
-            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-            "format": "ulid",
-            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "description": "Account ID (bare ULID) that created the file record."
-          },
-          "etag": {
-            "description": "Storage ETag for the finalized object, or null when unavailable.",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "expiresAt": {
-            "description": "Expiration timestamp for temporary files, or null for durable Thread files.",
-            "format": "date-time",
-            "type": [
-              "string",
-              "null"
-            ]
           },
           "id": {
             "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
@@ -401,81 +235,41 @@
             "type": "string",
             "maxLength": 26,
             "minLength": 1,
-            "description": "File ID (bare ULID) for the finalized file."
+            "description": "File ID (bare ULID)."
           },
           "mimeType": {
-            "description": "Stored MIME type for the file bytes, or null when unknown.",
+            "description": "Detected MIME type of the file, or null when unknown.",
             "type": [
               "string",
               "null"
             ]
           },
           "name": {
-            "description": "Original file name recorded for this file.",
+            "description": "Original file name.",
             "type": "string"
-          },
-          "path": {
-            "description": "Files API record path for the finalized file.",
-            "minLength": 1,
-            "type": "string"
-          },
-          "sessionKind": {
-            "description": "Session file kind for Thread-scoped files, or null for non-session files.",
-            "enum": [
-              "artifact",
-              "attachment",
-              null
-            ]
           },
           "size": {
-            "description": "Finalized file size in bytes.",
+            "description": "File size in bytes.",
             "minimum": 0,
-            "type": "integer"
-          },
-          "status": {
-            "description": "Current files API file lifecycle status.",
-            "enum": [
-              "deleting",
-              "failed",
-              "pending",
-              "ready"
-            ]
-          },
-          "updatedAt": {
-            "description": "Timestamp (RFC 3339) at which the file record was last updated.",
-            "format": "date-time",
-            "type": "string"
-          },
-          "version": {
-            "description": "Monotonic file version number within its path.",
-            "minimum": 1,
             "type": "integer"
           }
         },
         "required": [
           "createdAt",
-          "createdBy",
-          "etag",
-          "expiresAt",
           "id",
           "mimeType",
           "name",
-          "path",
-          "sessionKind",
-          "size",
-          "status",
-          "updatedAt",
-          "version"
+          "size"
         ],
         "type": "object"
       },
-      "CompleteFileUploadResponse": {
+      "PublicFileResponse": {
         "additionalProperties": false,
-        "description": "Result of completing a files API upload session.",
+        "description": "A single public file.",
         "properties": {
           "file": {
-            "$ref": "#/components/schemas/FileEntry",
-            "description": "Completed files API file entry."
+            "$ref": "#/components/schemas/PublicFile",
+            "description": "Public file metadata."
           }
         },
         "required": [
@@ -714,26 +508,10 @@
             "maxLength": 255,
             "type": "string"
           },
-          "files": {
-            "description": "Draft file handles uploaded by the same API token caller.",
+          "resources": {
+            "description": "Files uploaded through the Agent file endpoint and mounted into the first Run.",
             "items": {
-              "additionalProperties": false,
-              "description": "Reference to a single uploaded draft file to attach to the Thread.",
-              "properties": {
-                "file_id": {
-                  "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                  "format": "ulid",
-                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-                  "type": "string",
-                  "maxLength": 26,
-                  "minLength": 1,
-                  "description": "ID (bare ULID) of a ready draft file uploaded by the same caller."
-                }
-              },
-              "required": [
-                "file_id"
-              ],
-              "type": "object"
+              "$ref": "#/components/schemas/FileResource"
             },
             "type": "array"
           },
@@ -1264,32 +1042,42 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/files/{fileId}/complete": {
+    "/agents/{agentId}/files": {
       "post": {
-        "description": "Completes a pending single PUT Thread file upload. The file must have been created through POST /threads/{threadId}/files/uploads, uploaded through PUT /files/{fileId}/content, and belong to a public Thread visible to the API token caller.",
+        "description": "Uploads a file into the Agent API Endpoint's App draft scope before a Thread exists. Use the returned file ID in create-thread or send-events resources.",
         "parameters": [
           {
-            "description": "File ID returned by add or list Thread files. v1 IDs are bare ULIDs.",
-            "example": "01J0000000000000000000000J",
+            "description": "Agent API Endpoint ID from the Agent's API Access panel. v1 IDs are bare ULIDs.",
+            "example": "01J00000000000000000000001",
             "in": "path",
-            "name": "fileId",
+            "name": "agentId",
             "required": true,
             "schema": {
-              "example": "01J0000000000000000000000J",
+              "example": "01J00000000000000000000001",
               "format": "ulid",
               "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
               "type": "string",
-              "x-default": "01J0000000000000000000000J"
+              "x-default": "01J00000000000000000000001"
             }
           }
         ],
         "requestBody": {
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CompleteFileUploadRequest"
-              },
-              "example": {}
+                "additionalProperties": false,
+                "properties": {
+                  "file": {
+                    "description": "File bytes to upload before attaching them to a Thread.",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
             }
           },
           "required": true
@@ -1299,34 +1087,26 @@
             "publicApiBearer": []
           }
         ],
-        "summary": "Complete Thread file upload",
+        "summary": "Upload an Agent file",
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
                 "example": {
                   "file": {
                     "createdAt": "2026-05-19T00:02:00.000Z",
-                    "createdBy": "01J00000000000000000000002",
-                    "etag": "etag-1",
-                    "expiresAt": null,
                     "id": "01J0000000000000000000000J",
                     "mimeType": "text/plain",
                     "name": "brief.txt",
-                    "path": "session-files/01J0000000000000000000000J/brief.txt",
-                    "sessionKind": "attachment",
-                    "size": 19,
-                    "status": "ready",
-                    "updatedAt": "2026-05-19T00:03:00.000Z",
-                    "version": 1
+                    "size": 19
                   }
                 },
                 "schema": {
-                  "$ref": "#/components/schemas/CompleteFileUploadResponse"
+                  "$ref": "#/components/schemas/PublicFileResponse"
                 }
               }
             },
-            "description": "Completed files API upload."
+            "description": "Uploaded file."
           },
           "400": {
             "$ref": "#/components/responses/InvalidRequest"
@@ -1452,9 +1232,11 @@
             "$ref": "#/components/responses/InternalError"
           }
         }
-      },
-      "put": {
-        "description": "Uploads raw bytes for a pending single PUT Thread file upload. The file must have been created through POST /threads/{threadId}/files/uploads and belong to a public Thread visible to the API token caller.",
+      }
+    },
+    "/files/{fileId}": {
+      "delete": {
+        "description": "Deletes a pre-Thread uploaded file or a file attached to a public Thread visible to the API token caller.",
         "parameters": [
           {
             "description": "File ID returned by add or list Thread files. v1 IDs are bare ULIDs.",
@@ -1471,24 +1253,12 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/octet-stream": {
-              "schema": {
-                "format": "binary",
-                "type": "string"
-              }
-            }
-          },
-          "description": "Raw file bytes for the upload session.",
-          "required": true
-        },
         "security": [
           {
             "publicApiBearer": []
           }
         ],
-        "summary": "Upload Thread file content",
+        "summary": "Delete a file",
         "responses": {
           "200": {
             "content": {
@@ -1506,7 +1276,74 @@
                 }
               }
             },
-            "description": "Uploaded."
+            "description": "Deleted."
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "description": "Returns public file metadata for a pre-Thread uploaded file or a file attached to a public Thread visible to the API token caller.",
+        "parameters": [
+          {
+            "description": "File ID returned by add or list Thread files. v1 IDs are bare ULIDs.",
+            "example": "01J0000000000000000000000J",
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "example": "01J0000000000000000000000J",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J0000000000000000000000J"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "Retrieve file metadata",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "file": {
+                    "createdAt": "2026-05-19T00:02:00.000Z",
+                    "id": "01J0000000000000000000000J",
+                    "mimeType": "text/plain",
+                    "name": "brief.txt",
+                    "size": 19
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/PublicFileResponse"
+                }
+              }
+            },
+            "description": "File metadata."
           },
           "400": {
             "$ref": "#/components/responses/InvalidRequest"
@@ -1653,11 +1490,6 @@
                   "summary": "API token with an uploaded file",
                   "value": {
                     "client_external_ref": "linear-ENG-123",
-                    "files": [
-                      {
-                        "file_id": "01J0000000000000000000000J"
-                      }
-                    ],
                     "input": {
                       "content": [
                         {
@@ -1666,7 +1498,13 @@
                         }
                       ],
                       "type": "user.message"
-                    }
+                    },
+                    "resources": [
+                      {
+                        "file_id": "01J0000000000000000000000J",
+                        "type": "file"
+                      }
+                    ]
                   }
                 },
                 "accessTokenBasic": {
@@ -2218,175 +2056,6 @@
               }
             },
             "description": "Thread file list."
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        }
-      },
-      "post": {
-        "description": "Claims a ready draft file handle into this Thread. Upload file bytes through the files data plane first, then pass the resulting fileId here.",
-        "parameters": [
-          {
-            "description": "Thread ID returned by create thread. v1 IDs are bare ULIDs.",
-            "example": "01J00000000000000000000009",
-            "in": "path",
-            "name": "threadId",
-            "required": true,
-            "schema": {
-              "example": "01J00000000000000000000009",
-              "format": "ulid",
-              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-              "type": "string",
-              "x-default": "01J00000000000000000000009"
-            }
-          }
-        ],
-        "security": [
-          {
-            "publicApiBearer": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateThreadFileRequest"
-              },
-              "example": {
-                "fileId": "01J0000000000000000000000J"
-              }
-            }
-          },
-          "required": true
-        },
-        "summary": "Add a Thread file",
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "file": {
-                    "committed": true,
-                    "createdAt": "2026-05-19T00:02:00.000Z",
-                    "id": "01J0000000000000000000000J",
-                    "kind": "attachment",
-                    "mimeType": "text/plain",
-                    "name": "brief.txt",
-                    "size": 19
-                  }
-                },
-                "schema": {
-                  "$ref": "#/components/schemas/ThreadFileResponse"
-                }
-              }
-            },
-            "description": "Created Thread file."
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        }
-      }
-    },
-    "/threads/{threadId}/files/uploads": {
-      "post": {
-        "description": "Creates a files API upload session scoped to this Thread. The request only supplies file metadata; Mosoo resolves the backing App and Session from the Thread and creates a session attachment upload. MVP public uploads must be 67108864 bytes or fewer and use single PUT.",
-        "parameters": [
-          {
-            "description": "Thread ID returned by create thread. v1 IDs are bare ULIDs.",
-            "example": "01J00000000000000000000009",
-            "in": "path",
-            "name": "threadId",
-            "required": true,
-            "schema": {
-              "example": "01J00000000000000000000009",
-              "format": "ulid",
-              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-              "type": "string",
-              "x-default": "01J00000000000000000000009"
-            }
-          }
-        ],
-        "security": [
-          {
-            "publicApiBearer": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateThreadFileUploadRequest"
-              },
-              "example": {
-                "file": {
-                  "contentType": "text/plain",
-                  "name": "brief.txt",
-                  "size": 19
-                }
-              }
-            }
-          },
-          "required": true
-        },
-        "summary": "Create a Thread file upload",
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "contentType": "text/plain",
-                  "expectedSize": 19,
-                  "expiresAt": "2026-05-20T00:02:00.000Z",
-                  "fileId": "01J0000000000000000000000J",
-                  "partSize": null,
-                  "path": "session-files/01J0000000000000000000000J/brief.txt",
-                  "status": "pending",
-                  "strategy": "single_put"
-                },
-                "schema": {
-                  "$ref": "#/components/schemas/FileUploadSummary"
-                }
-              }
-            },
-            "description": "Created files API upload session."
           },
           "400": {
             "$ref": "#/components/responses/InvalidRequest"

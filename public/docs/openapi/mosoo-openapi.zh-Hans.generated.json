@@ -89,13 +89,10 @@
             "additionalProperties": false,
             "description": "向 Thread 发送新的用户消息，可选择附带文件附件。",
             "properties": {
-              "attachmentIds": {
-                "description": "要附加到此消息的文件 ID（不带前缀的 ULID）。每个文件都必须已经上传，并已声明到这个 Thread 中。",
+              "resources": {
+                "description": "要附加到此消息的文件。每个文件都必须是同一 API token 调用方通过 Agent file endpoint 上传的 ready draft file。",
                 "items": {
-                  "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                  "format": "ulid",
-                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-                  "type": "string"
+                  "$ref": "#/components/schemas/FileResource"
                 },
                 "type": "array"
               },
@@ -198,201 +195,38 @@
         ],
         "type": "object"
       },
-      "CreateThreadFileRequest": {
+      "FileResource": {
         "additionalProperties": false,
-        "description": "把之前上传的草稿文件句柄声明到 Thread 中的请求体。",
+        "description": "要挂载到 Thread 或用户消息中的文件资源。",
         "properties": {
-          "fileId": {
+          "file_id": {
             "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
             "format": "ulid",
             "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
             "type": "string",
             "maxLength": 26,
             "minLength": 1,
-            "description": "同一个 API token 调用方之前通过文件数据平面上传、且已准备好的草稿文件 ID（不带前缀的 ULID）。"
+            "description": "通过 Agent file endpoint 上传的 ready draft file ID。"
+          },
+          "type": {
+            "const": "file",
+            "description": "资源判别字段。目前只支持 `file`。"
           }
         },
         "required": [
-          "fileId"
+          "type",
+          "file_id"
         ],
         "type": "object"
       },
-      "CreateThreadFileUploadRequest": {
+      "PublicFile": {
         "additionalProperties": false,
-        "description": "创建作用于此 Thread 的 Files API 上传会话时使用的请求体。",
-        "properties": {
-          "file": {
-            "additionalProperties": false,
-            "description": "即将上传的文件字节对应的元数据。",
-            "properties": {
-              "contentType": {
-                "description": "文件字节的 MIME type。",
-                "minLength": 1,
-                "type": "string"
-              },
-              "name": {
-                "description": "要记录到此 Thread 附件上的原始文件名。",
-                "minLength": 1,
-                "type": "string"
-              },
-              "size": {
-                "description": "文件大小，单位为字节。公开 Thread 上传创建当前仅接受单次 PUT 上传。",
-                "maximum": 67108864,
-                "minimum": 0,
-                "type": "integer"
-              }
-            },
-            "required": [
-              "name",
-              "contentType",
-              "size"
-            ],
-            "type": "object"
-          }
-        },
-        "required": [
-          "file"
-        ],
-        "type": "object"
-      },
-      "FileUploadSummary": {
-        "additionalProperties": false,
-        "description": "创建上传目标后返回的 Files API 上传会话摘要。",
-        "properties": {
-          "contentType": {
-            "description": "此次上传期望的标准化 MIME type。",
-            "type": "string"
-          },
-          "expectedSize": {
-            "description": "用于完整性校验的预期文件大小，单位为字节。",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "expiresAt": {
-            "description": "此上传会话过期的时间戳（RFC 3339）。",
-            "format": "date-time",
-            "type": "string"
-          },
-          "fileId": {
-            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-            "format": "ulid",
-            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "maxLength": 26,
-            "minLength": 1,
-            "description": "此上传会话对应的文件 ID（不带前缀的 ULID）。"
-          },
-          "partSize": {
-            "description": "分片上传的分片大小，单位为字节；使用单次 PUT 上传时为 null。",
-            "minimum": 1,
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "path": {
-            "description": "Files API 上传摘要中暴露的实体化文件路径。",
-            "minLength": 1,
-            "type": "string"
-          },
-          "status": {
-            "description": "当前 Files API 上传会话状态。",
-            "enum": [
-              "aborted",
-              "completed",
-              "completing",
-              "expired",
-              "failed",
-              "pending",
-              "uploading"
-            ]
-          },
-          "strategy": {
-            "description": "根据文件大小选择的 Files API 上传传输策略。",
-            "enum": [
-              "multipart",
-              "single_put"
-            ]
-          }
-        },
-        "required": [
-          "contentType",
-          "expectedSize",
-          "expiresAt",
-          "fileId",
-          "partSize",
-          "path",
-          "status",
-          "strategy"
-        ],
-        "type": "object"
-      },
-      "CompleteFileUploadPart": {
-        "additionalProperties": false,
-        "description": "已完成的分片上传 part。公开 Thread MVP 上传使用单次 PUT，不发送 parts。",
-        "properties": {
-          "etag": {
-            "description": "已上传分片返回的 ETag。",
-            "minLength": 1,
-            "type": "string"
-          },
-          "partNumber": {
-            "description": "从 1 开始计数的分片编号，用于完成上传时排序。",
-            "minimum": 1,
-            "type": "integer"
-          }
-        },
-        "required": [
-          "etag",
-          "partNumber"
-        ],
-        "type": "object"
-      },
-      "CompleteFileUploadRequest": {
-        "additionalProperties": false,
-        "description": "完成 Files API 上传会话时使用的请求体。公开 Thread MVP 的单次 PUT 上传发送空对象。",
-        "properties": {
-          "parts": {
-            "description": "用于完成分片上传的 parts。公开 MVP 单次 PUT 上传请省略此字段。",
-            "items": {
-              "$ref": "#/components/schemas/CompleteFileUploadPart"
-            },
-            "type": "array"
-          }
-        },
-        "required": [],
-        "type": "object"
-      },
-      "FileEntry": {
-        "additionalProperties": false,
-        "description": "上传完成后返回的 Files API 文件条目。",
+        "description": "公开文件 metadata。",
         "properties": {
           "createdAt": {
             "description": "文件记录创建时间戳（RFC 3339）。",
             "format": "date-time",
             "type": "string"
-          },
-          "createdBy": {
-            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-            "format": "ulid",
-            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "description": "创建该文件记录的账号 ID（不带前缀的 ULID）。"
-          },
-          "etag": {
-            "description": "已完成对象的存储 ETag；不可用时为 null。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "expiresAt": {
-            "description": "临时文件的过期时间戳；持久 Thread 文件为 null。",
-            "format": "date-time",
-            "type": [
-              "string",
-              "null"
-            ]
           },
           "id": {
             "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
@@ -401,81 +235,41 @@
             "type": "string",
             "maxLength": 26,
             "minLength": 1,
-            "description": "已完成文件的文件 ID（不带前缀的 ULID）。"
+            "description": "文件 ID（裸 ULID）。"
           },
           "mimeType": {
-            "description": "为文件字节存储的 MIME type；未知时为 null。",
+            "description": "检测到的文件 MIME type；未知时为 null。",
             "type": [
               "string",
               "null"
             ]
           },
           "name": {
-            "description": "为此文件记录的原始文件名。",
+            "description": "原始文件名。",
             "type": "string"
-          },
-          "path": {
-            "description": "已完成文件的 Files API 记录路径。",
-            "minLength": 1,
-            "type": "string"
-          },
-          "sessionKind": {
-            "description": "Thread 作用域文件的 Session 文件类型；非 Session 文件为 null。",
-            "enum": [
-              "artifact",
-              "attachment",
-              null
-            ]
           },
           "size": {
-            "description": "已完成文件的大小，单位为字节。",
+            "description": "文件大小，单位为字节。",
             "minimum": 0,
-            "type": "integer"
-          },
-          "status": {
-            "description": "当前 Files API 文件生命周期状态。",
-            "enum": [
-              "deleting",
-              "failed",
-              "pending",
-              "ready"
-            ]
-          },
-          "updatedAt": {
-            "description": "文件记录最后更新时间戳（RFC 3339）。",
-            "format": "date-time",
-            "type": "string"
-          },
-          "version": {
-            "description": "该路径内单调递增的文件版本号。",
-            "minimum": 1,
             "type": "integer"
           }
         },
         "required": [
           "createdAt",
-          "createdBy",
-          "etag",
-          "expiresAt",
           "id",
           "mimeType",
           "name",
-          "path",
-          "sessionKind",
-          "size",
-          "status",
-          "updatedAt",
-          "version"
+          "size"
         ],
         "type": "object"
       },
-      "CompleteFileUploadResponse": {
+      "PublicFileResponse": {
         "additionalProperties": false,
-        "description": "完成 Files API 上传会话后的结果。",
+        "description": "单个公开文件。",
         "properties": {
           "file": {
-            "$ref": "#/components/schemas/FileEntry",
-            "description": "已完成的 Files API 文件条目。"
+            "$ref": "#/components/schemas/PublicFile",
+            "description": "公开文件 metadata。"
           }
         },
         "required": [
@@ -714,26 +508,10 @@
             "maxLength": 255,
             "type": "string"
           },
-          "files": {
-            "description": "同一个 API token 调用方上传的草稿文件句柄。",
+          "resources": {
+            "description": "通过 Agent file endpoint 上传，并挂载到第一个 Run 的文件。",
             "items": {
-              "additionalProperties": false,
-              "description": "要附加到 Thread 的单个已上传草稿文件引用。",
-              "properties": {
-                "file_id": {
-                  "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-                  "format": "ulid",
-                  "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-                  "type": "string",
-                  "maxLength": 26,
-                  "minLength": 1,
-                  "description": "同一调用方上传、且已准备好的草稿文件 ID（不带前缀的 ULID）。"
-                }
-              },
-              "required": [
-                "file_id"
-              ],
-              "type": "object"
+              "$ref": "#/components/schemas/FileResource"
             },
             "type": "array"
           },
@@ -1264,32 +1042,42 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/files/{fileId}/complete": {
+    "/agents/{agentId}/files": {
       "post": {
-        "description": "完成待处理的单次 PUT Thread 文件上传。该文件必须已通过 POST /threads/{threadId}/files/uploads 创建、通过 PUT /files/{fileId}/content 上传，并且属于 API token 调用方可见的公开 Thread。",
+        "description": "在 Thread 存在之前，把文件上传到 Agent API Endpoint 的 App draft scope。返回的 file ID 可用于 create-thread 或 send-events 的 resources。",
         "parameters": [
           {
-            "description": "添加或列出 Thread 文件时返回的文件 ID。v1 ID 是不带前缀的 ULID。",
-            "example": "01J0000000000000000000000J",
+            "description": "来自 Agent API Access 面板的 Agent API Endpoint ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J00000000000000000000001",
             "in": "path",
-            "name": "fileId",
+            "name": "agentId",
             "required": true,
             "schema": {
-              "example": "01J0000000000000000000000J",
+              "example": "01J00000000000000000000001",
               "format": "ulid",
               "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
               "type": "string",
-              "x-default": "01J0000000000000000000000J"
+              "x-default": "01J00000000000000000000001"
             }
           }
         ],
         "requestBody": {
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/CompleteFileUploadRequest"
-              },
-              "example": {}
+                "additionalProperties": false,
+                "properties": {
+                  "file": {
+                    "description": "附加到 Thread 之前要上传的文件字节。",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
             }
           },
           "required": true
@@ -1299,34 +1087,26 @@
             "publicApiBearer": []
           }
         ],
-        "summary": "完成 Thread 文件上传",
+        "summary": "上传 Agent file",
         "responses": {
-          "200": {
+          "201": {
             "content": {
               "application/json": {
                 "example": {
                   "file": {
                     "createdAt": "2026-05-19T00:02:00.000Z",
-                    "createdBy": "01J00000000000000000000002",
-                    "etag": "etag-1",
-                    "expiresAt": null,
                     "id": "01J0000000000000000000000J",
                     "mimeType": "text/plain",
                     "name": "brief.txt",
-                    "path": "session-files/01J0000000000000000000000J/brief.txt",
-                    "sessionKind": "attachment",
-                    "size": 19,
-                    "status": "ready",
-                    "updatedAt": "2026-05-19T00:03:00.000Z",
-                    "version": 1
+                    "size": 19
                   }
                 },
                 "schema": {
-                  "$ref": "#/components/schemas/CompleteFileUploadResponse"
+                  "$ref": "#/components/schemas/PublicFileResponse"
                 }
               }
             },
-            "description": "已完成 Files API 上传。"
+            "description": "已上传文件。"
           },
           "400": {
             "$ref": "#/components/responses/InvalidRequest"
@@ -1452,9 +1232,11 @@
             "$ref": "#/components/responses/InternalError"
           }
         }
-      },
-      "put": {
-        "description": "为待处理的单次 PUT Thread 文件上传上传原始字节。该文件必须已通过 POST /threads/{threadId}/files/uploads 创建，并且属于 API token 调用方可见的公开 Thread。",
+      }
+    },
+    "/files/{fileId}": {
+      "delete": {
+        "description": "删除 pre-Thread 上传的文件，或删除 API token 调用方可见的公开 Thread 中的文件。",
         "parameters": [
           {
             "description": "添加或列出 Thread 文件时返回的文件 ID。v1 ID 是不带前缀的 ULID。",
@@ -1471,24 +1253,12 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "application/octet-stream": {
-              "schema": {
-                "format": "binary",
-                "type": "string"
-              }
-            }
-          },
-          "description": "此上传会话的原始文件字节。",
-          "required": true
-        },
         "security": [
           {
             "publicApiBearer": []
           }
         ],
-        "summary": "上传 Thread 文件内容",
+        "summary": "删除 file",
         "responses": {
           "200": {
             "content": {
@@ -1506,7 +1276,74 @@
                 }
               }
             },
-            "description": "已上传。"
+            "description": "已删除。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "description": "返回 pre-Thread 上传文件或 API token 调用方可见公开 Thread 文件的公开 metadata。",
+        "parameters": [
+          {
+            "description": "添加或列出 Thread 文件时返回的文件 ID。v1 ID 是不带前缀的 ULID。",
+            "example": "01J0000000000000000000000J",
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "example": "01J0000000000000000000000J",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J0000000000000000000000J"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "读取 file metadata",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "file": {
+                    "createdAt": "2026-05-19T00:02:00.000Z",
+                    "id": "01J0000000000000000000000J",
+                    "mimeType": "text/plain",
+                    "name": "brief.txt",
+                    "size": 19
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/PublicFileResponse"
+                }
+              }
+            },
+            "description": "文件 metadata。"
           },
           "400": {
             "$ref": "#/components/responses/InvalidRequest"
@@ -1653,11 +1490,6 @@
                   "summary": "带已上传文件的 API token",
                   "value": {
                     "client_external_ref": "linear-ENG-123",
-                    "files": [
-                      {
-                        "file_id": "01J0000000000000000000000J"
-                      }
-                    ],
                     "input": {
                       "content": [
                         {
@@ -1666,7 +1498,13 @@
                         }
                       ],
                       "type": "user.message"
-                    }
+                    },
+                    "resources": [
+                      {
+                        "file_id": "01J0000000000000000000000J",
+                        "type": "file"
+                      }
+                    ]
                   }
                 },
                 "accessTokenBasic": {
@@ -2218,175 +2056,6 @@
               }
             },
             "description": "Thread 文件列表。"
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        }
-      },
-      "post": {
-        "description": "把已准备好的草稿文件句柄声明到这个 Thread 中。请先通过文件数据平面上传文件字节，然后在这里传入得到的 fileId。",
-        "parameters": [
-          {
-            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
-            "example": "01J00000000000000000000009",
-            "in": "path",
-            "name": "threadId",
-            "required": true,
-            "schema": {
-              "example": "01J00000000000000000000009",
-              "format": "ulid",
-              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-              "type": "string",
-              "x-default": "01J00000000000000000000009"
-            }
-          }
-        ],
-        "security": [
-          {
-            "publicApiBearer": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateThreadFileRequest"
-              },
-              "example": {
-                "fileId": "01J0000000000000000000000J"
-              }
-            }
-          },
-          "required": true
-        },
-        "summary": "添加 Thread 文件",
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "file": {
-                    "committed": true,
-                    "createdAt": "2026-05-19T00:02:00.000Z",
-                    "id": "01J0000000000000000000000J",
-                    "kind": "attachment",
-                    "mimeType": "text/plain",
-                    "name": "brief.txt",
-                    "size": 19
-                  }
-                },
-                "schema": {
-                  "$ref": "#/components/schemas/ThreadFileResponse"
-                }
-              }
-            },
-            "description": "已创建 Thread 文件。"
-          },
-          "400": {
-            "$ref": "#/components/responses/InvalidRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthenticated"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/RateLimited"
-          },
-          "500": {
-            "$ref": "#/components/responses/InternalError"
-          }
-        }
-      }
-    },
-    "/threads/{threadId}/files/uploads": {
-      "post": {
-        "description": "创建作用于此 Thread 的 Files API 上传会话。请求只提供文件元数据；Mosoo 会从 Thread 解析对应的 App 和 Session，并创建 Session 附件上传。MVP 公开上传必须不超过 67108864 字节，并使用单次 PUT。",
-        "parameters": [
-          {
-            "description": "create thread 返回的 Thread ID。v1 ID 是不带前缀的 ULID。",
-            "example": "01J00000000000000000000009",
-            "in": "path",
-            "name": "threadId",
-            "required": true,
-            "schema": {
-              "example": "01J00000000000000000000009",
-              "format": "ulid",
-              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-              "type": "string",
-              "x-default": "01J00000000000000000000009"
-            }
-          }
-        ],
-        "security": [
-          {
-            "publicApiBearer": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateThreadFileUploadRequest"
-              },
-              "example": {
-                "file": {
-                  "contentType": "text/plain",
-                  "name": "brief.txt",
-                  "size": 19
-                }
-              }
-            }
-          },
-          "required": true
-        },
-        "summary": "创建 Thread 文件上传",
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "example": {
-                  "contentType": "text/plain",
-                  "expectedSize": 19,
-                  "expiresAt": "2026-05-20T00:02:00.000Z",
-                  "fileId": "01J0000000000000000000000J",
-                  "partSize": null,
-                  "path": "session-files/01J0000000000000000000000J/brief.txt",
-                  "status": "pending",
-                  "strategy": "single_put"
-                },
-                "schema": {
-                  "$ref": "#/components/schemas/FileUploadSummary"
-                }
-              }
-            },
-            "description": "已创建 Files API 上传会话。"
           },
           "400": {
             "$ref": "#/components/responses/InvalidRequest"

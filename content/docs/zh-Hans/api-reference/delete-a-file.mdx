@@ -1,16 +1,16 @@
 ---
-title: 添加 Thread 文件
+title: 删除 file
 full: true
 _openapi:
   preload:
     - zh-Hans
-  method: POST
+  method: DELETE
   webhook: false
   toc: []
   structuredData:
     headings: []
     contents:
-      - content: 把已准备好的草稿文件句柄声明到这个 Thread 中。请先通过文件数据平面上传文件字节，然后在这里传入得到的 fileId。
+      - content: 删除 pre-Thread 上传的文件，或删除 API token 调用方可见的公开 Thread 中的文件。
 ---
 
 {/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
@@ -22,7 +22,7 @@ export default function Layout(props) {
   return (
     <>
       {props.children}
-      <Comp document="zh-Hans" operations={[{"path":"/threads/{threadId}/files","method":"post"}]} showDescription />
+      <Comp document="zh-Hans" operations={[{"path":"/files/{fileId}","method":"delete"}]} showDescription />
     </>
   );
 }

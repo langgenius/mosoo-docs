@@ -9,12 +9,11 @@
     "send-user-messages-permission-decisions-or-interrupts-to-a-thread",
     "list-thread-events",
     "stream-thread-events",
-    "create-a-thread-file-upload",
-    "upload-thread-file-content",
-    "complete-thread-file-upload",
-    "add-a-thread-file",
+    "upload-an-agent-file",
+    "retrieve-file-metadata",
     "list-thread-files",
     "download-thread-file-content",
+    "delete-a-file",
     "remove-a-thread-file"
   ]
 }
