@@ -14,6 +14,7 @@ import { createRelativeLink } from 'fumadocs-ui/mdx';
 import { gitConfig } from '@/lib/shared';
 import { OpenAPIPage } from '@/components/api-page';
 import { openapi } from '@/lib/openapi';
+import { getAbsoluteUrl, getLanguageAlternates } from '@/lib/seo';
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
@@ -61,7 +62,12 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
   return {
     title: page.data.title,
     description: page.data.description,
+    alternates: {
+      canonical: getAbsoluteUrl(page.url),
+      languages: getLanguageAlternates(page.url),
+    },
     openGraph: {
+      url: getAbsoluteUrl(page.url),
       images: getPageImage(page).url,
     },
   };
