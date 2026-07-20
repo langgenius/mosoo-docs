@@ -26,8 +26,21 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mosoo.ai'),
+  title: {
+    default: 'Mosoo Docs',
+    template: '%s | Mosoo Docs',
+  },
+  description: 'Developer documentation for calling published Mosoo Agents through the API.',
   icons: {
     icon: '/docs/images/brand/favicon.svg',
+  },
+  openGraph: {
+    siteName: 'Mosoo Docs',
+    type: 'website',
+    url: '/docs/',
+  },
+  twitter: {
+    card: 'summary_large_image',
   },
 };
 
