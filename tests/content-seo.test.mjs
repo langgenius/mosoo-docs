@@ -24,6 +24,12 @@ function field(block, name) {
   return (match?.[1] ?? match?.[2] ?? match?.[3] ?? '').trim();
 }
 
+test('SEO regressions run as part of every production build', () => {
+  const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
+
+  assert.match(packageJson.scripts.build, /npm run openapi:pages && npm run test:seo && next build/);
+});
+
 test('every indexable docs page has a title and meta description', () => {
   const missing = [];
 

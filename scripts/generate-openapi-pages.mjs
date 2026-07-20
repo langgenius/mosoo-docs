@@ -4,6 +4,7 @@ import { readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { generateFiles } from 'fumadocs-openapi';
 import { createOpenAPI } from 'fumadocs-openapi/server';
+import { toSeoDescription } from './seo-description.mjs';
 
 const specs = [
   {
@@ -136,21 +137,6 @@ const orderedApiReferenceSlugs = apiReferenceOrder
 function titleFromGeneratedFile(file) {
   const match = /^title:\s*(?:"([^"]+)"|(.+))$/m.exec(file.content);
   return match?.[1] ?? match?.[2]?.trim() ?? path.basename(file.path, '.mdx');
-}
-
-function toSeoDescription(value) {
-  const normalized = value.replace(/\s+/g, ' ').trim();
-  if (normalized.length <= 160) return normalized;
-
-  const candidate = normalized.slice(0, 157);
-  const sentenceEnd = Math.max(
-    candidate.lastIndexOf('. '),
-    candidate.lastIndexOf('。'),
-    candidate.lastIndexOf('！'),
-    candidate.lastIndexOf('？'),
-  );
-  if (sentenceEnd >= 80) return candidate.slice(0, sentenceEnd + 1).trim();
-  return `${candidate.trimEnd()}…`;
 }
 
 function operationDescriptions(specDocument) {
