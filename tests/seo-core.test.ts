@@ -6,6 +6,7 @@ import {
   buildSitemapEntries,
   getDocumentLanguage,
   getLanguageAlternates,
+  getOpenGraphAlternateLocale,
   toCanonicalDocsUrl,
 } from '../src/lib/seo-core.ts';
 
@@ -36,6 +37,12 @@ test('pages without a translation do not emit incomplete hreflang clusters', () 
 test('document language follows the localized URL prefix', () => {
   assert.equal(getDocumentLanguage('/docs/quickstart'), 'en');
   assert.equal(getDocumentLanguage('/docs/zh-Hans/quickstart'), 'zh-Hans');
+});
+
+test('Open Graph only advertises a locale alternate for translated pages', () => {
+  assert.deepEqual(getOpenGraphAlternateLocale('en', true), ['zh_CN']);
+  assert.deepEqual(getOpenGraphAlternateLocale('zh-Hans', true), ['en_US']);
+  assert.equal(getOpenGraphAlternateLocale('en', false), undefined);
 });
 
 test('sitemap entries are canonical, sorted, and include language alternates', () => {
@@ -98,5 +105,7 @@ test('docs structured data identifies the page, language, and breadcrumb trail',
   assert.equal(data['@type'], 'TechArticle');
   assert.equal(data.inLanguage, 'zh-Hans');
   assert.equal(data.url, 'https://mosoo.ai/docs/zh-Hans/quickstart/');
+  assert.deepEqual(data.author, { '@id': 'https://mosoo.ai/#organization' });
+  assert.deepEqual(data.publisher, { '@id': 'https://mosoo.ai/#organization' });
   assert.equal(data.breadcrumb.itemListElement.at(-1)?.name, 'Quickstart');
 });

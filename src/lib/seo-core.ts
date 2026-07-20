@@ -43,6 +43,11 @@ export function getDocumentLanguage(pathname: string) {
     : 'en';
 }
 
+export function getOpenGraphAlternateLocale(language: string, hasTranslation: boolean) {
+  if (!hasTranslation) return undefined;
+  return language === zhPrefix ? ['en_US'] : ['zh_CN'];
+}
+
 export function getLanguageAlternates(pathname: string, pagePaths: ReadonlySet<string>) {
   const availablePaths = new Set([...pagePaths].map(normalizePathname));
   const enPath = toEnglishPath(pathname);
@@ -112,18 +117,8 @@ export function buildDocsStructuredData({ title, description, pathname }: Struct
       name: 'Mosoo Docs',
       url: 'https://mosoo.ai/docs/',
     },
-    author: {
-      '@type': 'Organization',
-      '@id': 'https://mosoo.ai/#organization',
-      name: 'Mosoo',
-      url: 'https://mosoo.ai/',
-    },
-    publisher: {
-      '@type': 'Organization',
-      '@id': 'https://mosoo.ai/#organization',
-      name: 'Mosoo',
-      url: 'https://mosoo.ai/',
-    },
+    author: { '@id': 'https://mosoo.ai/#organization' },
+    publisher: { '@id': 'https://mosoo.ai/#organization' },
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: breadcrumbItems,

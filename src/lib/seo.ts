@@ -8,6 +8,7 @@ import {
 export {
   buildDocsStructuredData,
   getDocumentLanguage,
+  getOpenGraphAlternateLocale,
   toCanonicalDocsUrl,
 } from './seo-core';
 

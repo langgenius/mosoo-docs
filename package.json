@@ -5,7 +5,7 @@
   "description": "Open-source Mosoo API documentation built with Fumadocs.",
   "private": true,
   "scripts": {
-    "build": "npm run openapi:pages && next build && node scripts/prepare-worker-assets.mjs",
+    "build": "npm run openapi:pages && npm run test:seo && next build && node scripts/prepare-worker-assets.mjs",
     "dev": "next dev",
     "start": "serve out",
     "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",

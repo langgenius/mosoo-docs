@@ -18,6 +18,7 @@ import {
   buildDocsStructuredData,
   getDocsLanguageAlternates,
   getDocumentLanguage,
+  getOpenGraphAlternateLocale,
   toCanonicalDocsUrl,
 } from '@/lib/seo';
 
@@ -96,7 +97,7 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
       description,
       url: canonical,
       locale: language === 'zh-Hans' ? 'zh_CN' : 'en_US',
-      alternateLocale: language === 'zh-Hans' ? ['en_US'] : ['zh_CN'],
+      alternateLocale: getOpenGraphAlternateLocale(language, Boolean(languages)),
       images: [{ url: image, alt: page.data.title }],
     },
     twitter: {
