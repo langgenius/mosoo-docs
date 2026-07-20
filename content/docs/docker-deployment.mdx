@@ -1,0 +1,290 @@
+---
+title: "Docker deployment"
+description: "Run a single-node Mosoo installation with Docker Compose, persistent local D1 state, and isolated agent runtimes."
+---
+
+This deployment runs Mosoo's local Cloudflare Worker stack on one Docker host. It is intended for
+self-hosted evaluation and single-node installations. The Cloudflare production deployment remains
+the recommended path for a managed, horizontally scalable installation.
+
+The published image supports `linux/amd64` and `linux/arm64`.
+
+## Architecture
+
+The Compose project starts two services:
+
+- `mosoo` serves the web console on port `8080`, runs the API Worker locally with Wrangler, persists
+  local D1 state, and creates runtime and sandbox containers through the host Docker daemon.
+- `runtime-gateway` publishes port `8787` only on the Docker bridge gateway. It accepts
+  `/api/driver/*` callbacks from runtime containers and rejects the rest of the Mosoo API.
+
+The browser uses the public web origin. Runtime containers use
+`http://host.docker.internal:8787` to reach the restricted callback gateway. Do not publish the API
+Worker's port `8787` directly.
+
+## Requirements
+
+- Docker Engine 24 or newer
+- Docker Compose v2.24 or newer
+- A Linux host for the documented bridge-gateway defaults
+- At least 4 GiB of free memory for Mosoo plus runtime and sandbox containers
+- An available Docker bridge gateway port `8787` and public web port `8080`
+
+The Mosoo container mounts `/var/run/docker.sock`. Access to this socket is effectively root access
+to the Docker host. Run this deployment only on a dedicated or otherwise trusted host.
+
+Run only one Mosoo stack per Docker daemon. Wrangler assigns daemon-global names to its helper
+containers; concurrent Mosoo stacks can reuse those helpers and send requests to the wrong Worker.
+Use a separate Docker daemon for each concurrent installation.
+
+## Quick Start
+
+Clone the repository, create a Docker environment file, and start the project:
+
+```bash
+git clone --recurse-submodules https://github.com/langgenius/mosoo.git
+cd mosoo
+cp docker/.env.example docker/.env
+docker compose --env-file docker/.env pull
+docker compose --env-file docker/.env up -d --wait
+```
+
+For an unpublished source revision, build locally instead:
+
+```bash
+docker compose --env-file docker/.env build --pull
+docker compose --env-file docker/.env up -d --wait
+```
+
+Check the public health endpoint:
+
+```bash
+curl --fail http://127.0.0.1:8080/api/health
+```
+
+Open [http://localhost:8080](http://localhost:8080). In local Docker mode, sign-in codes are written to the `mosoo`
+service logs as `email.dev_console.sent` events:
+
+```bash
+docker compose --env-file docker/.env logs mosoo
+```
+
+## Configuration
+
+Edit `docker/.env` before exposing Mosoo outside the host.
+
+### Public Origin
+
+`WEB_ORIGIN` must exactly match the browser-visible origin, including the scheme and non-default
+port. Examples:
+
+```dotenv
+WEB_ORIGIN=http://192.0.2.10:8080
+```
+
+```dotenv
+WEB_ORIGIN=https://mosoo.example.com
+```
+
+For a reverse-proxied deployment, bind the web port to loopback:
+
+```dotenv
+MOSOO_WEB_BIND_IP=127.0.0.1
+MOSOO_WEB_PORT=8080
+WEB_ORIGIN=https://mosoo.example.com
+```
+
+Your reverse proxy must preserve normal forwarding headers and support WebSocket upgrades. A Caddy
+example is:
+
+```text
+mosoo.example.com {
+  reverse_proxy 127.0.0.1:8080
+}
+```
+
+Terminate TLS at the reverse proxy. Do not expose an HTTP deployment carrying authentication
+cookies to an untrusted network.
+
+### Runtime Callback Gateway
+
+On Linux, determine the Docker default bridge gateway with:
+
+```bash
+docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}'
+```
+
+The common value is `172.17.0.1`. If your daemon reports another address, set it in
+`docker/.env`:
+
+```dotenv
+MOSOO_RUNTIME_BIND_IP=172.17.0.1
+MOSOO_RUNTIME_CONTROL_PORT=8787
+MOSOO_RUNTIME_CONTROL_ORIGIN=http://host.docker.internal:8787
+```
+
+`MOSOO_RUNTIME_BIND_IP` and `MOSOO_RUNTIME_CONTROL_PORT` control the host socket on which the
+restricted gateway is published. `MOSOO_RUNTIME_CONTROL_ORIGIN` is the URL injected into runtime
+containers. When changing the published port, update the origin to match. Keep this port blocked at
+the external firewall even though the default binding is not a public host interface.
+
+Verify the gateway from a throwaway container:
+
+```bash
+docker run --rm --add-host host.docker.internal:host-gateway \
+  curlimages/curl:8.16.0 --fail http://host.docker.internal:8787/healthz
+```
+
+Verify that a non-driver API route is not exposed:
+
+```bash
+docker run --rm --add-host host.docker.internal:host-gateway \
+  curlimages/curl:8.16.0 --output /dev/null --write-out '%{http_code}\n' \
+  http://host.docker.internal:8787/api/health
+```
+
+The second command must print `404`.
+
+### Secrets
+
+The first successful start generates these secrets in the persistent `mosoo_data` volume when they
+are empty:
+
+- `BETTER_AUTH_SECRET`
+- `RUNTIME_ACTION_TOKEN_SECRET`
+- `VAULT_ROOT_SECRET`
+
+You can provide fixed values in `docker/.env` instead. Each should contain at least 32 random bytes.
+Do not change `VAULT_ROOT_SECRET` after storing provider credentials; existing encrypted values
+would become unreadable. Changing `BETTER_AUTH_SECRET` invalidates active sessions.
+
+Optional OAuth, Cloudflare, R2, Skills.sh, Vercel, and WeChat iLink values are documented in
+`docker/.env.example`. Provider model credentials are configured in the Mosoo console and encrypted
+with `VAULT_ROOT_SECRET`.
+
+## Persistence and Backup
+
+The Compose project creates two volumes:
+
+- `mosoo_data` stores generated secrets and container-level runtime state.
+- `mosoo_wrangler` stores local D1 and Worker persistence managed by Wrangler.
+
+Create a consistent backup while the service is stopped:
+
+```bash
+docker compose --env-file docker/.env stop runtime-gateway mosoo
+docker compose --env-file docker/.env run --rm --no-deps --entrypoint tar mosoo \
+  czf - /data /app/apps/api/.wrangler > mosoo-backup.tar.gz
+docker compose --env-file docker/.env up -d --wait
+```
+
+Restore into the same image version before applying an upgrade:
+
+```bash
+docker compose --env-file docker/.env stop runtime-gateway mosoo
+docker compose --env-file docker/.env run --rm --no-deps --entrypoint tar -T mosoo \
+  xzf - -C / < mosoo-backup.tar.gz
+docker compose --env-file docker/.env up -d --wait
+```
+
+Protect backups as secrets: they contain authentication material, encrypted provider credentials,
+and application data.
+
+## Images and Release Tags
+
+The container workflow publishes to `ghcr.io/langgenius/mosoo`:
+
+- `edge` for the current `main` branch
+- `sha-<short-sha>` for every published revision
+- `vX.Y.Z`, `X.Y.Z`, and `X.Y` for semantic release tags
+- `latest` for the latest stable semantic release
+
+Use an immutable digest in production:
+
+```dotenv
+MOSOO_IMAGE=ghcr.io/langgenius/mosoo@sha256:<digest>
+```
+
+The image includes OCI source and revision metadata plus BuildKit provenance and an SBOM.
+
+## Upgrade and Rollback
+
+1. Back up both persistent volumes.
+2. Change `MOSOO_IMAGE` to a tested digest.
+3. Pull and recreate the services:
+
+   ```bash
+   docker compose --env-file docker/.env pull
+   docker compose --env-file docker/.env up -d --wait
+   ```
+
+4. Check `/api/health`, inspect the logs, and run a real Agent request.
+
+The entrypoint automatically applies pending local D1 migrations before accepting traffic. Database
+migrations are not guaranteed to be reversible. A rollback therefore means restoring the matching
+volume backup and previous image digest together, not only changing the image tag.
+
+## Troubleshooting
+
+### `address already in use` on port 8787
+
+Another process is using the callback gateway address. Confirm both the address and port, then stop
+the conflicting service or choose an unused bridge gateway configuration. The runtime control port
+inside the sandbox URL must remain consistent with the published gateway port.
+
+### Runtime or sandbox cannot call Mosoo
+
+1. Confirm both Compose services are healthy.
+2. Run the callback gateway check from the configuration section.
+3. Confirm `MOSOO_RUNTIME_BIND_IP` is the current Docker bridge gateway.
+4. Confirm host firewall rules allow Docker containers to reach that gateway address.
+5. Confirm `/api/health` returns `404` through port `8787`; a `200` indicates that the full API was
+   exposed instead of the restricted gateway.
+
+Do not work around callback failures by publishing the Worker API on `0.0.0.0:8787`.
+
+### Mosoo cannot access Docker
+
+Check that the daemon is running and the socket exists at `/var/run/docker.sock`. Rootless Docker or
+a non-default socket requires an explicit, host-specific Compose override. Never expose an
+unauthenticated Docker TCP socket to the Mosoo container.
+
+### Container remains unhealthy during first boot
+
+The image contains its runtime driver and dependencies. On first boot, Mosoo still applies all local
+D1 migrations and may build the sandbox image before the API becomes ready. Inspect logs with:
+
+```bash
+docker compose --env-file docker/.env logs --tail=200 mosoo
+```
+
+A slow initial boot is expected; repeated migration, sandbox-build, or Docker daemon errors are not.
+
+### Sign-in email does not arrive
+
+The Docker-local Worker has no Cloudflare Email binding. It records the full one-time sign-in code
+in the `mosoo` service logs. This is suitable only for a trusted single-node installation. Configure
+a supported production email path before offering the deployment to untrusted users.
+
+## Removing the Deployment
+
+Stop containers while preserving data:
+
+```bash
+docker compose --env-file docker/.env down
+```
+
+Delete containers and all Mosoo volumes only after taking a backup:
+
+```bash
+docker compose --env-file docker/.env down --volumes
+```
+
+<Cards>
+  <Card title="Quickstart" href="/docs/quickstart">
+    Call a published Agent after your Mosoo deployment is running.
+  </Card>
+  <Card title="Authentication and access" href="/docs/auth-and-access">
+    Configure API access and understand the authentication model.
+  </Card>
+</Cards>
