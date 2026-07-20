@@ -138,6 +138,48 @@ function titleFromGeneratedFile(file) {
   return match?.[1] ?? match?.[2]?.trim() ?? path.basename(file.path, '.mdx');
 }
 
+function toSeoDescription(value) {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (normalized.length <= 160) return normalized;
+
+  const candidate = normalized.slice(0, 157);
+  const sentenceEnd = Math.max(
+    candidate.lastIndexOf('. '),
+    candidate.lastIndexOf('。'),
+    candidate.lastIndexOf('！'),
+    candidate.lastIndexOf('？'),
+  );
+  if (sentenceEnd >= 80) return candidate.slice(0, sentenceEnd + 1).trim();
+  return `${candidate.trimEnd()}…`;
+}
+
+function operationDescriptions(specDocument) {
+  const descriptions = new Map();
+
+  for (const [operationPath, methods] of Object.entries(specDocument.paths ?? {})) {
+    for (const [method, operation] of Object.entries(methods ?? {})) {
+      if (!operation || typeof operation !== 'object') continue;
+
+      const key = `${method.toUpperCase()} ${operationPath}`;
+      const slug = englishOperationSlugs.get(key);
+      const source = operation.description ?? operation.summary;
+      if (slug && typeof source === 'string' && source.trim()) {
+        descriptions.set(slug, toSeoDescription(source));
+      }
+    }
+  }
+
+  return descriptions;
+}
+
+function addDescription(file, description) {
+  if (/^description:/m.test(file.content)) return;
+  file.content = file.content.replace(
+    /^title:.*$/m,
+    (title) => `${title}\ndescription: ${JSON.stringify(description)}`,
+  );
+}
+
 function groupedIndexContent(spec, files) {
   const title = JSON.stringify(spec.title);
   const description = JSON.stringify(spec.description);
@@ -173,6 +215,8 @@ function groupedIndexContent(spec, files) {
 }
 
 async function generateSpecPages(spec) {
+  const specDocument = JSON.parse(await readFile(spec.input, 'utf8'));
+  const descriptions = operationDescriptions(specDocument);
   await rm(spec.output, { force: true, recursive: true });
 
   const server = createOpenAPI({
@@ -207,6 +251,13 @@ async function generateSpecPages(spec) {
       return path.posix.join(operationSlug(output));
     },
     beforeWrite(files) {
+      for (const file of files) {
+        if (!file.path.endsWith('.mdx') || file.path === 'index.mdx') continue;
+        const slug = path.basename(file.path, '.mdx');
+        const description = descriptions.get(slug);
+        if (description) addDescription(file, description);
+      }
+
       const meta = files.find((file) => file.path === 'meta.json');
       if (meta) {
         const parsed = JSON.parse(meta.content);

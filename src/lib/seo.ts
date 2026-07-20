@@ -1,28 +1,26 @@
 import { source } from './source';
+import {
+  buildSitemapEntries,
+  getLanguageAlternates,
+  toCanonicalDocsUrl,
+} from './seo-core';
 
-const siteUrl = 'https://mosoo.ai';
-const zhPrefix = 'zh-Hans';
+export {
+  buildDocsStructuredData,
+  getDocumentLanguage,
+  toCanonicalDocsUrl,
+} from './seo-core';
 
 type Page = (typeof source)['$inferPage'];
 
-export function toCanonicalDocsUrl(pathname: string) {
-  const path = pathname.replace(/\/$/, '');
-  return new URL(`${path}/`, siteUrl).toString();
+function getPagePaths() {
+  return new Set(source.getPages().map((page) => page.url));
 }
 
 export function getDocsLanguageAlternates(page: Page) {
-  const isChinese = page.slugs[0] === zhPrefix;
-  const enPage = isChinese ? source.getPage(page.slugs.slice(1)) : page;
-  const zhPage = isChinese ? page : source.getPage([zhPrefix, ...page.slugs]);
+  return getLanguageAlternates(page.url, getPagePaths());
+}
 
-  if (!enPage || !zhPage) return undefined;
-
-  const en = toCanonicalDocsUrl(enPage.url);
-  const zh = toCanonicalDocsUrl(zhPage.url);
-
-  return {
-    en,
-    'zh-Hans': zh,
-    'x-default': en,
-  };
+export function getDocsSitemapEntries() {
+  return buildSitemapEntries(source.getPages());
 }
