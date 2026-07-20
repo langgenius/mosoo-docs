@@ -1,6 +1,7 @@
 {
   "name": "mosoo-docs",
   "version": "0.0.0",
+  "type": "module",
   "description": "Open-source Mosoo API documentation built with Fumadocs.",
   "private": true,
   "scripts": {
@@ -10,6 +11,7 @@
     "types:check": "fumadocs-mdx && next typegen && tsc --noEmit",
     "postinstall": "fumadocs-mdx",
     "lint": "eslint",
+    "test:seo": "node --test tests/*.test.mjs && tsx --test tests/*.test.ts",
     "openapi:check": "node scripts/sync-openapi-specs.mjs check",
     "openapi:pages": "node scripts/generate-openapi-pages.mjs",
     "openapi:sync": "node scripts/sync-openapi-specs.mjs write && npm run openapi:pages",
@@ -39,6 +41,7 @@
     "postcss": "^8.5.15",
     "serve": "^14.2.6",
     "tailwindcss": "^4.3.1",
+    "tsx": "^4.23.1",
     "typescript": "^6.0.3",
     "wrangler": "^4.106.0"
   }

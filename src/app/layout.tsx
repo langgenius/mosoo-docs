@@ -26,11 +26,15 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://mosoo.ai'),
+  applicationName: 'Mosoo Docs',
   title: {
     default: 'Mosoo Docs',
     template: '%s | Mosoo Docs',
   },
   description: 'Developer documentation for calling published Mosoo Agents through the API.',
+  authors: [{ name: 'Mosoo', url: 'https://mosoo.ai/' }],
+  creator: 'Mosoo',
+  publisher: 'Mosoo',
   icons: {
     icon: '/docs/images/brand/favicon.svg',
   },
@@ -38,9 +42,27 @@ export const metadata: Metadata = {
     siteName: 'Mosoo Docs',
     type: 'website',
     url: '/docs/',
+    title: 'Mosoo Docs',
+    description: 'Developer documentation for calling published Mosoo Agents through the API.',
+    images: [{ url: '/docs/og/docs/image.png', alt: 'Mosoo Docs' }],
   },
   twitter: {
     card: 'summary_large_image',
+    site: '@mosooagent',
+    title: 'Mosoo Docs',
+    description: 'Developer documentation for calling published Mosoo Agents through the API.',
+    images: ['/docs/og/docs/image.png'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
   },
 };
 
