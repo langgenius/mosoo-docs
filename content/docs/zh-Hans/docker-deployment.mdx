@@ -1,0 +1,257 @@
+---
+title: "Docker 部署"
+description: "使用 Docker Compose、持久化本地 D1 状态和隔离的 Agent runtime 运行单节点 Mosoo。"
+---
+
+此部署会在一台 Docker 主机上运行 Mosoo 的 Cloudflare Worker 本地技术栈，适用于自托管评估和单节点安装。对于托管式、可横向扩展的安装，仍建议使用 Cloudflare 生产部署。
+
+发布的镜像支持 `linux/amd64` 和 `linux/arm64`。
+
+## 架构
+
+Compose 项目会启动两个服务：
+
+- `mosoo` 在端口 `8080` 上提供 Web 控制台，通过 Wrangler 在本地运行 API Worker，持久化本地 D1 状态，并通过主机 Docker daemon 创建 runtime 和 sandbox 容器。
+- `runtime-gateway` 仅在 Docker 网桥网关上发布端口 `8787`。它接受 runtime 容器发往 `/api/driver/*` 的回调，并拒绝对 Mosoo API 其余部分的访问。
+
+浏览器使用公开 Web origin。Runtime 容器使用 `http://host.docker.internal:8787` 访问受限的回调网关。不要直接发布 API Worker 的端口 `8787`。
+
+## 要求
+
+- Docker Engine 24 或更高版本
+- Docker Compose v2.24 或更高版本
+- 一台 Linux 主机，以使用文档中的默认网桥网关配置
+- 至少 4 GiB 可用内存，供 Mosoo 以及 runtime 和 sandbox 容器使用
+- Docker 网桥网关端口 `8787` 和公开 Web 端口 `8080` 均可用
+
+Mosoo 容器会挂载 `/var/run/docker.sock`。访问此 socket 实际上等同于获得 Docker 主机的 root 权限。请仅在专用主机或其他受信任主机上运行此部署。
+
+每个 Docker daemon 只能运行一套 Mosoo。Wrangler 会为 helper 容器分配 daemon 全局名称；并行运行多套 Mosoo 可能会复用这些 helper，并把请求发送到错误的 Worker。每套并行安装应使用独立的 Docker daemon。
+
+## 快速开始
+
+克隆仓库，创建 Docker 环境文件，然后启动项目：
+
+```bash
+git clone --recurse-submodules https://github.com/langgenius/mosoo.git
+cd mosoo
+cp docker/.env.example docker/.env
+docker compose --env-file docker/.env pull
+docker compose --env-file docker/.env up -d --wait
+```
+
+如果使用尚未发布的源码 revision，请改为在本地构建：
+
+```bash
+docker compose --env-file docker/.env build --pull
+docker compose --env-file docker/.env up -d --wait
+```
+
+检查公开健康检查端点：
+
+```bash
+curl --fail http://127.0.0.1:8080/api/health
+```
+
+打开 [http://localhost:8080](http://localhost:8080)。在本地 Docker 模式下，登录验证码会以 `email.dev_console.sent` 事件的形式写入 `mosoo` 服务日志：
+
+```bash
+docker compose --env-file docker/.env logs mosoo
+```
+
+## 配置
+
+将 Mosoo 暴露到主机外部之前，请编辑 `docker/.env`。
+
+### 公开 Origin
+
+`WEB_ORIGIN` 必须与浏览器可见的 origin 完全一致，包括协议和非默认端口。例如：
+
+```dotenv
+WEB_ORIGIN=http://192.0.2.10:8080
+```
+
+```dotenv
+WEB_ORIGIN=https://mosoo.example.com
+```
+
+对于使用反向代理的部署，请将 Web 端口绑定到 loopback：
+
+```dotenv
+MOSOO_WEB_BIND_IP=127.0.0.1
+MOSOO_WEB_PORT=8080
+WEB_ORIGIN=https://mosoo.example.com
+```
+
+反向代理必须保留常规转发 header，并支持 WebSocket upgrade。以下是一个 Caddy 示例：
+
+```text
+mosoo.example.com {
+  reverse_proxy 127.0.0.1:8080
+}
+```
+
+请在反向代理处终止 TLS。不要将携带认证 cookie 的 HTTP 部署暴露到不受信任的网络。
+
+### Runtime 回调网关
+
+在 Linux 上，使用以下命令确定 Docker 默认网桥网关：
+
+```bash
+docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}'
+```
+
+常见值是 `172.17.0.1`。如果 daemon 返回其他地址，请在 `docker/.env` 中设置该地址：
+
+```dotenv
+MOSOO_RUNTIME_BIND_IP=172.17.0.1
+MOSOO_RUNTIME_CONTROL_PORT=8787
+MOSOO_RUNTIME_CONTROL_ORIGIN=http://host.docker.internal:8787
+```
+
+`MOSOO_RUNTIME_BIND_IP` 和 `MOSOO_RUNTIME_CONTROL_PORT` 控制受限网关发布到的主机 socket。`MOSOO_RUNTIME_CONTROL_ORIGIN` 是注入 runtime 容器的 URL。更改发布端口时，请同步更新 origin。即使默认绑定的并非主机的公开网络接口，也应在外部防火墙上阻止访问此端口。
+
+使用临时容器验证网关：
+
+```bash
+docker run --rm --add-host host.docker.internal:host-gateway \
+  curlimages/curl:8.16.0 --fail http://host.docker.internal:8787/healthz
+```
+
+验证非 driver API 路由未被暴露：
+
+```bash
+docker run --rm --add-host host.docker.internal:host-gateway \
+  curlimages/curl:8.16.0 --output /dev/null --write-out '%{http_code}\n' \
+  http://host.docker.internal:8787/api/health
+```
+
+第二条命令必须输出 `404`。
+
+### Secret
+
+首次成功启动时，如果以下 secret 为空，系统会在持久化 `mosoo_data` volume 中生成它们：
+
+- `BETTER_AUTH_SECRET`
+- `RUNTIME_ACTION_TOKEN_SECRET`
+- `VAULT_ROOT_SECRET`
+
+你也可以改为在 `docker/.env` 中提供固定值。每个值都应至少包含 32 个随机字节。存储服务商凭据后，请勿更改 `VAULT_ROOT_SECRET`，否则已有的加密值将无法读取。更改 `BETTER_AUTH_SECRET` 会使活跃 session 失效。
+
+可选的 OAuth、Cloudflare、R2、Skills.sh、Vercel 和 WeChat iLink 配置值记录在 `docker/.env.example` 中。模型服务商凭据在 Mosoo 控制台中配置，并使用 `VAULT_ROOT_SECRET` 加密。
+
+## 持久化和备份
+
+Compose 项目会创建两个 volume：
+
+- `mosoo_data` 存储生成的 secret 和容器级 runtime 状态。
+- `mosoo_wrangler` 存储由 Wrangler 管理的本地 D1 和 Worker 持久化数据。
+
+在服务停止期间创建一致性备份：
+
+```bash
+docker compose --env-file docker/.env stop runtime-gateway mosoo
+docker compose --env-file docker/.env run --rm --no-deps --entrypoint tar mosoo \
+  czf - /data /app/apps/api/.wrangler > mosoo-backup.tar.gz
+docker compose --env-file docker/.env up -d --wait
+```
+
+在执行升级之前，将备份恢复到相同的镜像版本：
+
+```bash
+docker compose --env-file docker/.env stop runtime-gateway mosoo
+docker compose --env-file docker/.env run --rm --no-deps --entrypoint tar -T mosoo \
+  xzf - -C / < mosoo-backup.tar.gz
+docker compose --env-file docker/.env up -d --wait
+```
+
+请像保护 secret 一样保护备份：其中包含认证材料、加密的服务商凭据和应用数据。
+
+## 镜像和 Release Tag
+
+容器工作流会发布到 `ghcr.io/langgenius/mosoo`：
+
+- `edge` 对应当前 `main` 分支
+- `sha-<short-sha>` 对应每个已发布的 revision
+- `vX.Y.Z`、`X.Y.Z` 和 `X.Y` 对应语义化 release tag
+- `latest` 对应最新的稳定语义化 release
+
+在生产环境中使用不可变 digest：
+
+```dotenv
+MOSOO_IMAGE=ghcr.io/langgenius/mosoo@sha256:<digest>
+```
+
+镜像包含 OCI source 和 revision 元数据，以及 BuildKit provenance 和 SBOM。
+
+## 升级和回滚
+
+1. 备份两个持久化 volume。
+2. 将 `MOSOO_IMAGE` 更改为经过测试的 digest。
+3. 拉取镜像并重新创建服务：
+
+   ```bash
+   docker compose --env-file docker/.env pull
+   docker compose --env-file docker/.env up -d --wait
+   ```
+
+4. 检查 `/api/health`，查看日志，并发起一次真实的 Agent 请求。
+
+Entrypoint 会在开始接受流量之前自动应用待处理的本地 D1 migration。数据库 migration 不保证可逆。因此，回滚意味着同时恢复匹配的 volume 备份和先前的镜像 digest，而不仅仅是更改镜像 tag。
+
+## 故障排查
+
+### 端口 8787 出现 `address already in use`
+
+另一个进程正在使用回调网关地址。请确认地址和端口，然后停止冲突的服务，或者选择未被占用的网桥网关配置。Sandbox URL 中的 runtime control port 必须与发布的网关端口保持一致。
+
+### Runtime 或 sandbox 无法调用 Mosoo
+
+1. 确认两个 Compose 服务都处于健康状态。
+2. 执行配置章节中的回调网关检查。
+3. 确认 `MOSOO_RUNTIME_BIND_IP` 是当前 Docker 网桥网关。
+4. 确认主机防火墙规则允许 Docker 容器访问该网关地址。
+5. 确认通过端口 `8787` 访问 `/api/health` 时返回 `404`；返回 `200` 表明暴露的是完整 API，而非受限网关。
+
+不要为了绕过回调失败而在 `0.0.0.0:8787` 上发布 Worker API。
+
+### Mosoo 无法访问 Docker
+
+检查 daemon 是否正在运行，以及 `/var/run/docker.sock` 中是否存在 socket。Rootless Docker 或非默认 socket 需要显式配置主机专用的 Compose override。切勿向 Mosoo 容器暴露未经认证的 Docker TCP socket。
+
+### 容器在首次启动期间一直处于 unhealthy 状态
+
+镜像已经包含 runtime driver 和依赖项。首次启动时，Mosoo 仍会在 API 就绪前应用所有本地 D1 migration，并可能构建 sandbox 镜像。使用以下命令检查日志：
+
+```bash
+docker compose --env-file docker/.env logs --tail=200 mosoo
+```
+
+首次启动较慢属于正常现象；重复出现 migration、sandbox 构建或 Docker daemon 错误则不正常。
+
+### 未收到登录邮件
+
+Docker 本地 Worker 没有 Cloudflare Email binding。它会在 `mosoo` 服务日志中记录完整的一次性登录验证码。此方式仅适用于受信任的单节点安装。在向不受信任的用户提供此部署之前，请配置受支持的生产邮件发送方式。
+
+## 移除部署
+
+停止容器但保留数据：
+
+```bash
+docker compose --env-file docker/.env down
+```
+
+仅在完成备份后，删除容器和所有 Mosoo volume：
+
+```bash
+docker compose --env-file docker/.env down --volumes
+```
+
+<Cards>
+  <Card title="Quickstart" href="/docs/zh-Hans/quickstart">
+    Mosoo 部署运行后，调用一个已发布的 Agent。
+  </Card>
+  <Card title="认证和访问控制" href="/docs/zh-Hans/auth-and-access">
+    配置 API 访问并了解认证模型。
+  </Card>
+</Cards>

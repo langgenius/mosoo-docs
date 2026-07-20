@@ -3,6 +3,7 @@
   "pages": [
     "index",
     "quickstart",
+    "docker-deployment",
     "auth-and-access",
     "agent-api-endpoints",
     "threads-and-runs",
