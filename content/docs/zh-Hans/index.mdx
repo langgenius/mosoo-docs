@@ -1,12 +1,12 @@
 ---
-title: "Mosoo Public Thread API"
-description: "通过 HTTPS API 从你的应用调用已发布的 Mosoo Agent。"
+title: "mosoo Public Thread API"
+description: "通过 HTTPS API 从你的应用调用已发布的 mosoo Agent。"
 ---
 
-Mosoo Public Thread API 让你的后端把任务发送给已发布的 Mosoo Agent，并读取公开结果。Mosoo 负责 Agent runtime、sandbox、模型服务商配置、工具和执行生命周期；你的应用负责产品 UI、业务逻辑、用户映射、存储以及保存 `thread.id`。
+mosoo Public Thread API 让你的后端把任务发送给已发布的 mosoo Agent，并读取公开结果。mosoo 负责 Agent runtime、sandbox、模型服务商配置、工具和执行生命周期；你的应用负责产品 UI、业务逻辑、用户映射、存储以及保存 `thread.id`。
 
 <Callout type="info">
-  API 只适用于已发布并启用 API access 的 Agent。Agent 配置、模型服务商连接、工具配置和渠道绑定仍然在 Mosoo 中管理。
+  API 只适用于已发布并启用 API access 的 Agent。Agent 配置、模型服务商连接、工具配置和渠道绑定仍然在 mosoo 中管理。
 </Callout>
 
 ## 心智模型
@@ -31,7 +31,7 @@ Mosoo Public Thread API 让你的后端把任务发送给已发布的 Mosoo Agen
 
 ## 第一个请求
 
-设置 Mosoo API token 和 Mosoo 中的已发布 Agent ID：
+设置 mosoo API token 和 mosoo 中的已发布 Agent ID：
 
 ```bash
 export MOSOO_API_TOKEN="mst_..."
@@ -77,6 +77,6 @@ curl -X POST "https://try.mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
   </Card>
 
   <Card title="API Reference" href="/docs/zh-Hans/api-reference">
-    从 Mosoo 主仓 OpenAPI 源生成的端点参考。
+    从 mosoo 主仓 OpenAPI 源生成的端点参考。
   </Card>
 </Cards>

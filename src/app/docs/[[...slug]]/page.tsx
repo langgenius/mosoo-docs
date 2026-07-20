@@ -29,7 +29,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
 
   const MDX = page.data.body;
   const markdownUrl = getPageMarkdownUrl(page).url;
-  const description = page.data.description ?? 'Mosoo API documentation.';
+  const description = page.data.description ?? 'mosoo API documentation.';
   const structuredData = buildDocsStructuredData({
     title: page.data.title,
     description,
@@ -78,21 +78,21 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
   if (!page) notFound();
   const canonical = toCanonicalDocsUrl(page.url);
   const languages = getDocsLanguageAlternates(page);
-  const description = page.data.description ?? 'Mosoo API documentation.';
+  const description = page.data.description ?? 'mosoo API documentation.';
   const language = getDocumentLanguage(page.url);
   const image = getPageImage(page).url;
 
   return {
     title: page.data.title,
     description,
-    authors: [{ name: 'Mosoo', url: 'https://mosoo.ai/' }],
+    authors: [{ name: 'mosoo', url: 'https://mosoo.ai/' }],
     alternates: {
       canonical,
       ...(languages ? { languages } : {}),
     },
     openGraph: {
       type: 'article',
-      siteName: 'Mosoo Docs',
+      siteName: 'mosoo Docs',
       title: page.data.title,
       description,
       url: canonical,

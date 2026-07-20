@@ -1,9 +1,9 @@
 ---
 title: "Agent API Endpoints"
-description: "How a published Mosoo Agent becomes callable from the public API."
+description: "How a published mosoo Agent becomes callable from the public API."
 ---
 
-An Agent API Endpoint is the public API entry point for a published Mosoo Agent. Your application calls it with `agentId` and a Mosoo API token.
+An Agent API Endpoint is the public API entry point for a published mosoo Agent. Your application calls it with `agentId` and a mosoo API token.
 
 ## What must exist
 
@@ -15,11 +15,11 @@ A valid Agent API Endpoint has:
 - An owning App owned by the API token owner.
 - Matching Agent owner and App owner.
 
-If the Agent is not published, Mosoo returns `409 agent_not_published`. If the Agent has no live API endpoint version, Mosoo returns `409 service_inactive`. If the token owner does not own the Agent's App, Mosoo returns `403 forbidden`.
+If the Agent is not published, mosoo returns `409 agent_not_published`. If the Agent has no live API endpoint version, mosoo returns `409 service_inactive`. If the token owner does not own the Agent's App, mosoo returns `403 forbidden`.
 
 ## `agentId`
 
-Get `agentId` from the Agent API Access panel in Mosoo. In v1, `agentId` is a bare ULID:
+Get `agentId` from the Agent API Access panel in mosoo. In v1, `agentId` is a bare ULID:
 
 ```text
 01J00000000000000000000001
@@ -31,11 +31,11 @@ Do not add an `agent_` prefix. The same bare-ULID rule applies to `threadId`, `f
 
 The Agent API Endpoint owns the runtime boundary:
 
-| Mosoo owns | Your application owns |
+| mosoo owns | Your application owns |
 | --- | --- |
 | Published Agent configuration, model provider setup, tool execution, sandbox/runtime behavior, Agent memory/runtime state, and public event generation. | Product UI, backend APIs, jobs, app-side users, business logic, storage, `thread.id` persistence, and client-owned correlation IDs. |
 
-Requests cannot override model provider credentials, tools, channels, runtime settings, or Agent configuration. Change those in Mosoo, then publish the Agent again.
+Requests cannot override model provider credentials, tools, channels, runtime settings, or Agent configuration. Change those in mosoo, then publish the Agent again.
 
 ## First API call
 

@@ -1,6 +1,6 @@
 ---
 title: "Errors and limits"
-description: "处理 Mosoo API 错误、重试、幂等和公开 API 限制。"
+description: "处理 mosoo API 错误、重试、幂等和公开 API 限制。"
 ---
 
 所有非 2xx JSON 错误都使用同一个 envelope：
@@ -26,8 +26,8 @@ description: "处理 Mosoo API 错误、重试、幂等和公开 API 限制。"
 | 403 | `forbidden` | 检查 API token 是否能访问该 Agent、Thread 或 file。 |
 | 404 | `not_found` | 检查 ID 是否存在且对该 API token 可见。 |
 | 409 | `agent_not_published` | 发布 Agent 并启用 API access。 |
-| 409 | `service_inactive` | 在 Mosoo 中重新发布或修复 Agent。 |
-| 409 | `readiness_blocked` | 修复 Mosoo 中的 Agent readiness 或配置。 |
+| 409 | `service_inactive` | 在 mosoo 中重新发布或修复 Agent。 |
+| 409 | `readiness_blocked` | 修复 mosoo 中的 Agent readiness 或配置。 |
 | 409 | `idempotency_conflict` | 如果原请求仍在处理，按 `Retry-After` 等待；如果 body 不同，使用新 key。 |
 | 429 | `rate_limited` | Back off，并在 `Retry-After` 后重试。 |
 | 500 | `internal_error` | 带 backoff 短暂重试；重复失败时记录故障详情。 |

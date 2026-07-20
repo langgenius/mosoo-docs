@@ -1,9 +1,9 @@
 ---
 title: "Threads and Runs"
-description: "How Mosoo maps a published Agent call to Thread and Run lifecycle state."
+description: "How mosoo maps a published Agent call to Thread and Run lifecycle state."
 ---
 
-Mosoo exposes a published Agent through Thread-based APIs. Your application creates or reuses a Thread, then sends user events that queue Runs. Mosoo executes each Run inside the published Agent configuration and writes public events back to the Thread.
+mosoo exposes a published Agent through Thread-based APIs. Your application creates or reuses a Thread, then sends user events that queue Runs. mosoo executes each Run inside the published Agent configuration and writes public events back to the Thread.
 
 ## Resource model
 
@@ -24,7 +24,7 @@ Create a Thread for a published Agent:
 POST /api/v1/agents/{agentId}/threads
 ```
 
-If `input` is present, Mosoo queues the initial Run. If `input` is omitted, Mosoo creates an empty `IDLE` Thread with no Run.
+If `input` is present, mosoo queues the initial Run. If `input` is omitted, mosoo creates an empty `IDLE` Thread with no Run.
 
 Retrieve current Thread state:
 

@@ -504,7 +504,7 @@
         "description": "Request body for creating a Thread. All fields are optional: omit `input` to create an empty IDLE Thread, or include it to queue the initial Run.",
         "properties": {
           "client_external_ref": {
-            "description": "Optional caller-owned reference (for example an external ticket key) stored on the Thread for correlation. Not unique and not validated by Mosoo.",
+            "description": "Optional caller-owned reference (for example an external ticket key) stored on the Thread for correlation. Not unique and not validated by mosoo.",
             "maxLength": 255,
             "type": "string"
           },
@@ -900,7 +900,7 @@
             ]
           },
           "finalOutput": {
-            "description": "Stable final answer for a completed Run. Mosoo builds this from that Run's public `agent.message.delta` events in chronological order. Null until the Run status is `completed`.",
+            "description": "Stable final answer for a completed Run. mosoo builds this from that Run's public `agent.message.delta` events in chronological order. Null until the Run status is `completed`.",
             "oneOf": [
               {
                 "$ref": "#/components/schemas/RunFinalOutput"
@@ -1028,7 +1028,7 @@
     },
     "securitySchemes": {
       "publicApiBearer": {
-        "bearerFormat": "Mosoo API token",
+        "bearerFormat": "mosoo API token",
         "description": "Use Authorization: Bearer mst_... . API tokens identify an account and do not carry scopes.",
         "scheme": "bearer",
         "type": "http"
@@ -1036,8 +1036,8 @@
     }
   },
   "info": {
-    "description": "Public HTTPS API for creating and retrieving Threads on Mosoo Agent API Endpoints. v1 resource identifiers are bare ULIDs, not prefixed IDs. API tokens identify the account caller. Runtime execution resolves the Agent API Endpoint owner's capabilities while the Thread is attributed to the API token owner.",
-    "title": "Mosoo Public Thread API",
+    "description": "Public HTTPS API for creating and retrieving Threads on mosoo Agent API Endpoints. v1 resource identifiers are bare ULIDs, not prefixed IDs. API tokens identify the account caller. Runtime execution resolves the Agent API Endpoint owner's capabilities while the Thread is attributed to the API token owner.",
+    "title": "mosoo Public Thread API",
     "version": "v1"
   },
   "openapi": "3.1.0",
@@ -1449,7 +1449,7 @@
         }
       },
       "post": {
-        "description": "Creates a Thread and the backing AgentSession. If input is present, Mosoo also queues the initial Run. If input is omitted, the Thread is immediately visible with IDLE status and no run. API token callers are attributed to the API token owner.",
+        "description": "Creates a Thread and the backing AgentSession. If input is present, mosoo also queues the initial Run. If input is omitted, the Thread is immediately visible with IDLE status and no run. API token callers are attributed to the API token owner.",
         "parameters": [
           {
             "description": "Agent API Endpoint ID from the Agent's API Access panel. v1 IDs are bare ULIDs.",
