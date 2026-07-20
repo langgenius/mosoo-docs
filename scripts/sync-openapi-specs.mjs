@@ -110,7 +110,7 @@ function createAuthenticatedGithubPrefix() {
 function installMosooDependencies(mosooRepo) {
   runCommand("bun", ["install"], {
     cwd: mosooRepo,
-    failureMessage: "Failed to install Mosoo dependencies.",
+    failureMessage: "Failed to install mosoo dependencies.",
   });
 }
 
@@ -123,7 +123,7 @@ function checkoutMosooRepoFromGit() {
 
   runCommand("git", ["init"], {
     cwd: checkoutDir,
-    failureMessage: "Failed to initialize Mosoo source checkout.",
+    failureMessage: "Failed to initialize mosoo source checkout.",
   });
 
   const authenticatedGithubPrefix = createAuthenticatedGithubPrefix();
@@ -140,24 +140,24 @@ function checkoutMosooRepoFromGit() {
 
   runCommand("git", ["remote", "add", "origin", repoUrl], {
     cwd: checkoutDir,
-    failureMessage: "Failed to configure Mosoo source remote.",
+    failureMessage: "Failed to configure mosoo source remote.",
   });
   runCommand("git", ["fetch", "--depth", "1", "origin", repoRef], {
     cwd: checkoutDir,
-    failureMessage: `Failed to fetch Mosoo source ref ${repoRef} from ${repoUrl}.`,
+    failureMessage: `Failed to fetch mosoo source ref ${repoRef} from ${repoUrl}.`,
   });
   runCommand("git", ["checkout", "--detach", "FETCH_HEAD"], {
     cwd: checkoutDir,
-    failureMessage: "Failed to checkout Mosoo source ref.",
+    failureMessage: "Failed to checkout mosoo source ref.",
   });
   runCommand("git", ["submodule", "update", "--init", "--recursive"], {
     cwd: checkoutDir,
-    failureMessage: "Failed to initialize Mosoo source submodules.",
+    failureMessage: "Failed to initialize mosoo source submodules.",
   });
 
   const revision = runCommand("git", ["rev-parse", "HEAD"], {
     cwd: checkoutDir,
-    failureMessage: "Failed to read Mosoo source revision.",
+    failureMessage: "Failed to read mosoo source revision.",
   }).stdout.trim();
   console.log(`checked out ${repoUrl} ${repoRef} (${revision.slice(0, 12)})`);
 
@@ -177,7 +177,7 @@ function findOpenApiSourceInRepo(mosooRepo) {
 
   throw new Error(
     [
-      `Could not find the Mosoo OpenAPI source in ${mosooRepo}.`,
+      `Could not find the mosoo OpenAPI source in ${mosooRepo}.`,
       "Checked for:",
       ...MOSOO_OPENAPI_SOURCES.map((source) => `- ${source.markerPath}`),
     ].join("\n"),
@@ -206,7 +206,7 @@ console.log(JSON.stringify(createOpenApiDocument(${JSON.stringify(DEFAULT_API_OR
   if (result.status !== 0) {
     throw new Error(
       [
-        "Failed to generate OpenAPI from Mosoo source.",
+        "Failed to generate OpenAPI from mosoo source.",
         result.stdout.trim(),
         result.stderr.trim(),
       ]
@@ -222,8 +222,8 @@ function normalizePublicTerminology(text) {
   return text
     .replace(/\bthe token owner\b/g, "the API token owner")
     .replace(/\bcaller token\b/g, "API token")
-    .replace(/\bMosoo Access Tokens\b/g, "Mosoo API tokens")
-    .replace(/\bMosoo Access Token\b/g, "Mosoo API token")
+    .replace(/\bmosoo Access Tokens\b/g, "mosoo API tokens")
+    .replace(/\bmosoo Access Token\b/g, "mosoo API token")
     .replace(/\bAccess Tokens\b/g, "API tokens")
     .replace(/\bAccess Token\b/g, "API token")
     .replace(/\baccess tokens\b/g, "API tokens")
@@ -409,8 +409,8 @@ function formatJson(value) {
 
 function normalizeCodingAgentTerminology(text) {
   return normalizePublicTerminology(text)
-    .replace(/\bthe API token owner\b/g, "the current Mosoo user")
-    .replace(/\bAPI token owner\b/g, "current Mosoo user")
+    .replace(/\bthe API token owner\b/g, "the current mosoo user")
+    .replace(/\bAPI token owner\b/g, "current mosoo user")
     .replace(/\bthe authenticated API token caller\b/g, "the authenticated API token")
     .replace(/\bAPI token callers are attributed to\b/g, "API token requests are attributed to")
     .replace(/\bAPI token callers\b/g, "API token requests")
@@ -420,10 +420,10 @@ function normalizeCodingAgentTerminology(text) {
     .replace(/\bThe caller cannot consume this Agent\./g, "This operation is not allowed for this Agent.")
     .replace(
       /\bThe resource was not found for this caller\./g,
-      "The resource was not found in the current Mosoo workspace.",
+      "The resource was not found in the current mosoo workspace.",
     )
-    .replace(/\bthe owner account\b/g, "the Mosoo account")
-    .replace(/\bowner account\b/g, "Mosoo account")
+    .replace(/\bthe owner account\b/g, "the mosoo account")
+    .replace(/\bowner account\b/g, "mosoo account")
     .replace(/\bAgent API Endpoint owner's capabilities\b/g, "published Agent configuration");
 }
 
@@ -856,9 +856,9 @@ function renderLlmsLink(label, pathname, description) {
 function buildLlmsTxtOutput(englishDocument) {
   const entries = sortedOperationEntries(englishDocument);
   const lines = [
-    "# Mosoo API",
+    "# mosoo API",
     "",
-    "> Developer documentation for calling published Mosoo Agents. Coding agents should start with the machine-oriented guide, then use the raw OpenAPI JSON for strict schema validation.",
+    "> Developer documentation for calling published mosoo Agents. Coding agents should start with the machine-oriented guide, then use the raw OpenAPI JSON for strict schema validation.",
     "",
     "## Start here",
     "",
@@ -935,7 +935,7 @@ function buildLlmsTxtOutput(englishDocument) {
     "",
     "## Notes for agents",
     "",
-    "- Build app-side backend and product logic around the published Mosoo Agent running in Mosoo's sandbox; do not implement a replacement sandbox, Agent runtime, model loop, planner, tool runner, memory system, lifecycle manager, or provider integration.",
+    "- Build app-side backend and product logic around the published mosoo Agent running in mosoo's sandbox; do not implement a replacement sandbox, Agent runtime, model loop, planner, tool runner, memory system, lifecycle manager, or provider integration.",
     "- Treat API token identity, Agent API Endpoint access, and Thread or file visibility as separate checks.",
     "- Do not invent API tokens, Agent IDs, Thread IDs, file IDs, or run IDs.",
     "- Prefer `coding-agents.md` for workflow and retry behavior.",

@@ -1,12 +1,12 @@
 ---
-title: "Mosoo Public Thread API"
-description: "Call published Mosoo Agents from your application with HTTPS APIs."
+title: "mosoo Public Thread API"
+description: "Call published mosoo Agents from your application with HTTPS APIs."
 ---
 
-The Mosoo Public Thread API lets your backend send work to a published Mosoo Agent and read the public results. Mosoo owns the Agent runtime, sandbox, model provider setup, tools, and execution lifecycle. Your application owns its product UI, business logic, user mapping, storage, and the saved `thread.id`.
+The mosoo Public Thread API lets your backend send work to a published mosoo Agent and read the public results. mosoo owns the Agent runtime, sandbox, model provider setup, tools, and execution lifecycle. Your application owns its product UI, business logic, user mapping, storage, and the saved `thread.id`.
 
 <Callout type="info">
-  The API only works with published Agents that have API access enabled. Agent setup, model provider connections, tool configuration, and channel bindings stay in Mosoo.
+  The API only works with published Agents that have API access enabled. Agent setup, model provider connections, tool configuration, and channel bindings stay in mosoo.
 </Callout>
 
 ## Mental model
@@ -31,7 +31,7 @@ The Mosoo Public Thread API lets your backend send work to a published Mosoo Age
 
 ## First request
 
-Set a Mosoo API token and a published Agent ID from Mosoo:
+Set a mosoo API token and a published Agent ID from mosoo:
 
 ```bash
 export MOSOO_API_TOKEN="mst_..."
@@ -77,6 +77,6 @@ The response includes `thread.id` and, when `input` is present, the queued `run`
   </Card>
 
   <Card title="API Reference" href="/docs/api-reference">
-    Generated endpoint reference from the Mosoo main repository OpenAPI source.
+    Generated endpoint reference from the mosoo main repository OpenAPI source.
   </Card>
 </Cards>
