@@ -24,6 +24,19 @@ const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    if (url.hostname === 'docs.mosoo.ai') {
+      url.hostname = 'mosoo.ai';
+      if (url.pathname === '/') {
+        url.pathname = '/docs/';
+      } else if (!url.pathname.startsWith('/docs/')) {
+        url.pathname = `/docs${url.pathname}`;
+      }
+
+      const lastSegment = url.pathname.split('/').at(-1) ?? '';
+      if (!url.pathname.endsWith('/') && !lastSegment.includes('.')) url.pathname += '/';
+      return Response.redirect(url.toString(), 308);
+    }
+
     if (url.pathname === '/docs') {
       url.pathname = '/docs/';
       return Response.redirect(url.toString(), 308);
@@ -35,6 +48,7 @@ const worker = {
     const language = getDocumentLanguage(url.pathname);
     const headers = new Headers(response.headers);
     headers.set('content-language', language);
+    headers.append('link', '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"');
     const localizedResponse = new Response(response.body, {
       status: response.status,
       statusText: response.statusText,

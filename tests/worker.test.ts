@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import worker from '../src/worker.ts';
@@ -58,6 +59,33 @@ function assets(response: Response) {
   return { fetch: async (_request: Request) => response };
 }
 
+test('wrangler routes the legacy docs host to this worker', () => {
+  const wrangler = JSON.parse(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
+  const patterns = wrangler.routes.map((route: { pattern: string }) => route.pattern);
+
+  assert.deepEqual(
+    ['docs.mosoo.ai', 'docs.mosoo.ai/*'].filter((pattern) => patterns.includes(pattern)),
+    ['docs.mosoo.ai', 'docs.mosoo.ai/*'],
+  );
+});
+
+test('worker redirects the legacy docs host to canonical docs URLs', async () => {
+  const cases = [
+    ['https://docs.mosoo.ai/', 'https://mosoo.ai/docs/'],
+    ['https://docs.mosoo.ai/quickstart?source=test', 'https://mosoo.ai/docs/quickstart/?source=test'],
+    ['https://docs.mosoo.ai/llms.txt', 'https://mosoo.ai/docs/llms.txt'],
+  ] as const;
+
+  for (const [from, to] of cases) {
+    const response = await worker.fetch(new Request(from), {
+      ASSETS: assets(new Response('unused')),
+    });
+
+    assert.equal(response.status, 308);
+    assert.equal(response.headers.get('location'), to);
+  }
+});
+
 test('worker redirects the bare docs root permanently', async () => {
   const response = await worker.fetch(
     new Request('https://mosoo.ai/docs?source=test'),
@@ -108,6 +136,10 @@ for (const [pathname, language] of localizedCases) {
     assert.equal(response.statusText, 'Created');
     assert.equal(response.headers.get('x-upstream'), 'kept');
     assert.equal(response.headers.get('content-language'), language);
+    assert.equal(
+      response.headers.get('link'),
+      '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"',
+    );
     assert.match(await response.text(), new RegExp(`<html lang="${language}">`));
   });
 }
