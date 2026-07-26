@@ -68,6 +68,19 @@ test('worker redirects the bare docs root permanently', async () => {
   assert.equal(response.headers.get('location'), 'https://mosoo.ai/docs/?source=test');
 });
 
+test('worker redirects legacy docs host to canonical docs URLs', async () => {
+  const response = await worker.fetch(
+    new Request('https://docs.mosoo.ai/api-reference/stream-thread-events?utm=test'),
+    { ASSETS: assets(new Response('unused')) },
+  );
+
+  assert.equal(response.status, 308);
+  assert.equal(
+    response.headers.get('location'),
+    'https://mosoo.ai/docs/api-reference/stream-thread-events?utm=test',
+  );
+});
+
 test('worker leaves non-HTML assets untouched', async () => {
   const upstream = new Response('{"ok":true}', {
     status: 202,

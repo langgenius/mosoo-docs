@@ -12,6 +12,10 @@
     {
       "pattern": "mosoo.ai/docs/*",
       "zone_name": "mosoo.ai"
+    },
+    {
+      "pattern": "docs.mosoo.ai/*",
+      "zone_name": "mosoo.ai"
     }
   ],
   "assets": {

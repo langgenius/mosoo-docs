@@ -24,6 +24,16 @@ const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    if (url.hostname === 'docs.mosoo.ai') {
+      if (url.pathname === '/' || url.pathname === '/docs') {
+        url.pathname = '/docs/';
+      } else if (!url.pathname.startsWith('/docs/')) {
+        url.pathname = `/docs${url.pathname}`;
+      }
+      url.hostname = 'mosoo.ai';
+      return Response.redirect(url.toString(), 308);
+    }
+
     if (url.pathname === '/docs') {
       url.pathname = '/docs/';
       return Response.redirect(url.toString(), 308);
