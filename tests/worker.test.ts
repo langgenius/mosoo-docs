@@ -59,10 +59,11 @@ function assets(response: Response) {
   return { fetch: async (_request: Request) => response };
 }
 
-test('wrangler routes the legacy docs host to this worker', () => {
+test('wrangler runs the worker before serving docs assets', () => {
   const wrangler = JSON.parse(readFileSync(new URL('../wrangler.jsonc', import.meta.url), 'utf8'));
   const patterns = wrangler.routes.map((route: { pattern: string }) => route.pattern);
 
+  assert.equal(wrangler.assets.run_worker_first, true);
   assert.deepEqual(
     ['docs.mosoo.ai', 'docs.mosoo.ai/*'].filter((pattern) => patterns.includes(pattern)),
     ['docs.mosoo.ai', 'docs.mosoo.ai/*'],
