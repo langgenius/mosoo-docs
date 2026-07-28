@@ -13,7 +13,7 @@ const specs = [
     output: './content/docs/api-reference',
     baseUrl: '/docs/api-reference',
     title: 'API Reference',
-    description: 'Generated reference for the Mosoo Public Thread API.',
+    description: 'Generated reference for the mosoo Public Thread API.',
   },
   {
     id: 'zh-Hans',
@@ -21,7 +21,7 @@ const specs = [
     output: './content/docs/zh-Hans/api-reference',
     baseUrl: '/docs/zh-Hans/api-reference',
     title: 'API Reference',
-    description: 'Mosoo 公开 Thread API 的生成参考。',
+    description: 'mosoo 公开 Thread API 的生成参考。',
   },
 ];
 
@@ -175,7 +175,7 @@ function groupedIndexContent(spec, files) {
     `description: ${description}`,
     '---',
     '',
-    '{/* This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}',
+    '{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}',
   ];
 
   for (const group of apiReferenceGroups) {
@@ -217,7 +217,7 @@ async function generateSpecPages(spec) {
     per: 'operation',
     includeDescription: true,
     addGeneratedComment:
-      'This file is generated from the Mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec.',
+      'This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec.',
     meta: {
       folderStyle: 'separator',
     },

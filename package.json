@@ -2,7 +2,7 @@
   "name": "mosoo-docs",
   "version": "0.0.0",
   "type": "module",
-  "description": "Open-source Mosoo API documentation built with Fumadocs.",
+  "description": "Open-source mosoo API documentation built with Fumadocs.",
   "private": true,
   "scripts": {
     "build": "npm run openapi:pages && npm run test:seo && next build && node scripts/prepare-worker-assets.mjs",

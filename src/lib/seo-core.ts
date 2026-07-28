@@ -86,7 +86,7 @@ export function buildDocsStructuredData({ title, description, pathname }: Struct
     {
       '@type': 'ListItem',
       position: 1,
-      name: language === zhPrefix ? 'Mosoo 中文文档' : 'Mosoo Docs',
+      name: language === zhPrefix ? 'mosoo 中文文档' : 'mosoo Docs',
       item: rootUrl,
     },
   ];
@@ -114,7 +114,7 @@ export function buildDocsStructuredData({ title, description, pathname }: Struct
     isPartOf: {
       '@type': 'WebSite',
       '@id': 'https://mosoo.ai/docs/#website',
-      name: 'Mosoo Docs',
+      name: 'mosoo Docs',
       url: 'https://mosoo.ai/docs/',
     },
     author: { '@id': 'https://mosoo.ai/#organization' },

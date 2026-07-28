@@ -3,7 +3,7 @@ title: "Events and streaming"
 description: "Read Thread output through event snapshots or Server-Sent Events."
 ---
 
-Thread events are the stable read surface for Mosoo API integrations. They expose public state only. Raw runtime payloads, private transcripts, and internal diagnostics are not part of this API.
+Thread events are the stable read surface for mosoo API integrations. They expose public state only. Raw runtime payloads, private transcripts, and internal diagnostics are not part of this API.
 
 ## Read snapshots
 
@@ -50,7 +50,7 @@ id: 01J00000000000000000000010
 data: {"id":"01J00000000000000000000010","runId":"01J0000000000000000000000A","type":"run.started","status":"available","content":"01J0000000000000000000000A","occurredAt":"2026-05-19T00:00:01.000Z","durationMs":null,"tokens":null}
 ```
 
-The stream suppresses duplicate event IDs observed during polling. Keepalive comments are sent while no new events are available. If the stream fails after it starts, Mosoo emits `event: thread.error` with the standard error envelope.
+The stream suppresses duplicate event IDs observed during polling. Keepalive comments are sent while no new events are available. If the stream fails after it starts, mosoo emits `event: thread.error` with the standard error envelope.
 
 ## Submitted events
 

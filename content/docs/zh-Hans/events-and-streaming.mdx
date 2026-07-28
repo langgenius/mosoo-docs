@@ -3,7 +3,7 @@ title: "Events and streaming"
 description: "通过事件快照或 Server-Sent Events 读取 Thread 输出。"
 ---
 
-Thread events 是 Mosoo API 集成的稳定读取面。它只暴露公开状态。原始 runtime payload、私有 transcript 和内部诊断不属于这个 API。
+Thread events 是 mosoo API 集成的稳定读取面。它只暴露公开状态。原始 runtime payload、私有 transcript 和内部诊断不属于这个 API。
 
 ## 读取快照
 
@@ -50,7 +50,7 @@ id: 01J00000000000000000000010
 data: {"id":"01J00000000000000000000010","runId":"01J0000000000000000000000A","type":"run.started","status":"available","content":"01J0000000000000000000000A","occurredAt":"2026-05-19T00:00:01.000Z","durationMs":null,"tokens":null}
 ```
 
-Stream 会抑制已通过轮询观察到的重复 event ID。没有新事件时会发送 keepalive 注释。如果 stream 启动后失败，Mosoo 会发送 `event: thread.error`，其中包含标准错误 envelope。
+Stream 会抑制已通过轮询观察到的重复 event ID。没有新事件时会发送 keepalive 注释。如果 stream 启动后失败，mosoo 会发送 `event: thread.error`，其中包含标准错误 envelope。
 
 ## 提交事件
 

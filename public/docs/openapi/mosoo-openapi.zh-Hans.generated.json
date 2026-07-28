@@ -504,7 +504,7 @@
         "description": "创建 Thread 的请求体。所有字段都是可选的：省略 `input` 会创建一个空的 IDLE Thread；提供 `input` 会排队启动初始 Run。",
         "properties": {
           "client_external_ref": {
-            "description": "调用方自定义的可选引用，例如外部工单 key。该值会存储在 Thread 上用于关联；不要求唯一，也不会由 Mosoo 校验。",
+            "description": "调用方自定义的可选引用，例如外部工单 key。该值会存储在 Thread 上用于关联；不要求唯一，也不会由 mosoo 校验。",
             "maxLength": 255,
             "type": "string"
           },
@@ -900,7 +900,7 @@
             ]
           },
           "finalOutput": {
-            "description": "已完成 Run 的稳定最终答案。Mosoo 会按时间顺序从该 Run 的公开 `agent.message.delta` 事件构建此内容。Run 状态变为 `completed` 前为 null。",
+            "description": "已完成 Run 的稳定最终答案。mosoo 会按时间顺序从该 Run 的公开 `agent.message.delta` 事件构建此内容。Run 状态变为 `completed` 前为 null。",
             "oneOf": [
               {
                 "$ref": "#/components/schemas/RunFinalOutput"
@@ -1028,7 +1028,7 @@
     },
     "securitySchemes": {
       "publicApiBearer": {
-        "bearerFormat": "Mosoo API token",
+        "bearerFormat": "mosoo API token",
         "description": "使用 Authorization: Bearer mst_...。API token 用于识别账号，不携带 scope。",
         "scheme": "bearer",
         "type": "http"
@@ -1036,8 +1036,8 @@
     }
   },
   "info": {
-    "description": "用于在 Mosoo Agent API Endpoint 上创建和读取 Thread 的公开 HTTPS API。v1 资源标识符是不带前缀的 ULID。API token 用于识别发起调用的账号。运行时执行会解析 Agent API Endpoint 所有者的能力，同时 Thread 归属于 API token 所有者。",
-    "title": "Mosoo 公开 Thread API",
+    "description": "用于在 mosoo Agent API Endpoint 上创建和读取 Thread 的公开 HTTPS API。v1 资源标识符是不带前缀的 ULID。API token 用于识别发起调用的账号。运行时执行会解析 Agent API Endpoint 所有者的能力，同时 Thread 归属于 API token 所有者。",
+    "title": "mosoo 公开 Thread API",
     "version": "v1"
   },
   "openapi": "3.1.0",
@@ -1449,7 +1449,7 @@
         }
       },
       "post": {
-        "description": "创建 Thread 及其底层 AgentSession。如果提供 input，Mosoo 也会排队启动初始 Run。如果省略 input，Thread 会立即以 IDLE 状态可见，且没有 Run。API token 调用方会归属于 API token 所有者。",
+        "description": "创建 Thread 及其底层 AgentSession。如果提供 input，mosoo 也会排队启动初始 Run。如果省略 input，Thread 会立即以 IDLE 状态可见，且没有 Run。API token 调用方会归属于 API token 所有者。",
         "parameters": [
           {
             "description": "来自 Agent API Access 面板的 Agent API Endpoint ID。v1 ID 是不带前缀的 ULID。",

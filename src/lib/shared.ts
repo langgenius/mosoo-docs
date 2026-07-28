@@ -1,4 +1,4 @@
-export const appName = 'Mosoo Docs';
+export const appName = 'mosoo Docs';
 export const docsRoute = '/docs';
 export const docsImageRoute = '/docs/og/docs';
 export const docsContentRoute = '/docs/llms.mdx/docs';

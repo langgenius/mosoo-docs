@@ -1,9 +1,9 @@
 ---
 title: "Threads and Runs"
-description: "Mosoo 如何把已发布 Agent 调用映射为 Thread 和 Run 生命周期状态。"
+description: "mosoo 如何把已发布 Agent 调用映射为 Thread 和 Run 生命周期状态。"
 ---
 
-Mosoo 通过 Thread API 暴露已发布 Agent。你的应用创建或复用 Thread，然后发送用户事件排队 Run。Mosoo 在已发布 Agent 配置内执行每个 Run，并把公开事件写回 Thread。
+mosoo 通过 Thread API 暴露已发布 Agent。你的应用创建或复用 Thread，然后发送用户事件排队 Run。mosoo 在已发布 Agent 配置内执行每个 Run，并把公开事件写回 Thread。
 
 ## 资源模型
 
@@ -24,7 +24,7 @@ v1 资源 ID 是裸 ULID。不要添加 `agent_`、`thread_`、`file_` 或 `run_
 POST /api/v1/agents/{agentId}/threads
 ```
 
-如果提供 `input`，Mosoo 会排队初始 Run。如果省略 `input`，Mosoo 会创建一个没有 Run 的空 `IDLE` Thread。
+如果提供 `input`，mosoo 会排队初始 Run。如果省略 `input`，mosoo 会创建一个没有 Run 的空 `IDLE` Thread。
 
 读取当前 Thread 状态：
 

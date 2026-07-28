@@ -1,6 +1,6 @@
 ---
 title: "Errors and limits"
-description: "Handle Mosoo API errors, retries, idempotency, and public API limits."
+description: "Handle mosoo API errors, retries, idempotency, and public API limits."
 ---
 
 All non-2xx JSON errors use the same envelope:
@@ -26,8 +26,8 @@ Branch on `error.code`, not `error.message`. The message is for developers and s
 | 403 | `forbidden` | Check that the API token can access this Agent, Thread, or file. |
 | 404 | `not_found` | Check that the ID exists and is visible to this API token. |
 | 409 | `agent_not_published` | Publish the Agent and enable API access. |
-| 409 | `service_inactive` | Republish or repair the Agent in Mosoo. |
-| 409 | `readiness_blocked` | Fix Agent readiness or configuration in Mosoo. |
+| 409 | `service_inactive` | Republish or repair the Agent in mosoo. |
+| 409 | `readiness_blocked` | Fix Agent readiness or configuration in mosoo. |
 | 409 | `idempotency_conflict` | Wait for `Retry-After` if in-flight, or use a new key when the body differs. |
 | 429 | `rate_limited` | Back off and retry after `Retry-After`. |
 | 500 | `internal_error` | Retry briefly with backoff; persist failure details if it repeats. |
