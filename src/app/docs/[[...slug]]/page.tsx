@@ -32,7 +32,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const MDX = page.data.body;
   const pageUrl = getPageUrl(page);
   const markdownUrl = getPageMarkdownUrl(page).url;
-  const description = page.data.description ?? 'mosoo API documentation.';
+  const description = page.data.description ?? 'mosoo product and API documentation.';
   const structuredData = buildDocsStructuredData({
     title: page.data.title,
     description,
@@ -85,7 +85,7 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
   const pageUrl = getPageUrl(page);
   const canonical = toCanonicalDocsUrl(pageUrl);
   const languages = getDocsLanguageAlternates(page);
-  const description = page.data.description ?? 'mosoo API documentation.';
+  const description = page.data.description ?? 'mosoo product and API documentation.';
   const documentLanguage = getDocumentLanguage(pageUrl);
   const image = getPageImage(page).url;
 

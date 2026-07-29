@@ -1,0 +1,38 @@
+---
+title: "Environments"
+description: "为 Agent session 创建可复用 runtime template。"
+---
+
+Environment 让 Agent session 以一致的 package、setup script 和 variable 启动。
+
+![Environment editor 用于配置 packages、setup、variables 和网络意图。](/docs/images/product/create-environment.png)
+
+## 创建 Environment
+
+打开 **Config → Environments → Create environment**，然后配置：
+
+- **Name 与 description**：标识可复用 template。
+- **Packages**：来自公共 npm 或 PyPI，必须指定精确版本。
+- **Setup script**：prepared packages 恢复后执行。
+- **Environment variables**：保存后 value 会加密。
+- **Networking intent**：当前 Sandbox runtime 会显示并保存，但尚不执行限制。
+
+也可以根据项目依赖文件从终端创建：
+
+```bash
+mosoo console environments create-environment
+```
+
+## 分配与修订
+
+可以设为 App default，也可以为特定 Agent 单独选择。新 session 会捕获当时的 Environment revision。后续修改只影响后来创建的 session，in-flight session 不会改变。
+
+## Package 行为
+
+npm CLI 通过 `PATH` 暴露，CommonJS package 通过 `NODE_PATH`，PyPI module 通过 `PYTHONPATH`。Node ESM bare import 仍需在项目内安装依赖。OS package、Cargo、RubyGems 和 Go module 不是 Environment package 选项。
+
+<Callout type="warning">
+  Networking control 当前只保存意图，不会限制实际流量，不能视为安全边界。
+</Callout>
+
+App default 或仍被 Agent 使用的 Environment 会受到删除保护。

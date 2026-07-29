@@ -1,82 +1,37 @@
 ---
-title: "mosoo Public Thread API"
-description: "Call published mosoo Agents from your application with HTTPS APIs."
+title: "mosoo documentation"
+description: "Build, run, publish, and integrate managed AI Agents with mosoo."
 ---
 
-The mosoo Public Thread API lets your backend send work to a published mosoo Agent and read the public results. mosoo owns the Agent runtime, sandbox, model provider setup, tools, and execution lifecycle. Your application owns its product UI, business logic, user mapping, storage, and the saved `thread.id`.
-
-<Callout type="info">
-  The API only works with published Agents that have API access enabled. Agent setup, model provider connections, tool configuration, and channel bindings stay in mosoo.
-</Callout>
-
-## Mental model
+mosoo gives you one workspace to configure AI Agents, test them against real tasks, publish stable versions, operate their Runs and files, and integrate them through a Public Thread API.
 
 <Cards>
-  <Card title="Agent API Endpoint" href="/docs/agent-api-endpoints">
-    The published Agent entry point shown in the Agent API Access panel. The `agentId` path parameter is a bare ULID in v1.
-  </Card>
-
-  <Card title="Thread" href="/docs/threads-and-runs">
-    The API conversation container. A Thread records messages, files, run state, and public event history.
-  </Card>
-
-  <Card title="Run" href="/docs/threads-and-runs">
-    One execution pass of the Agent on a Thread. A user message can queue a Run, and the Run reaches a terminal status.
-  </Card>
-
-  <Card title="Event" href="/docs/events-and-streaming">
-    The public timeline for user input, Agent output deltas, tool updates, file changes, run status, and usage.
-  </Card>
+  <Card title="Create your first Agent" href="/docs/first-agent">Configure a Provider, build an Agent, test it, and publish.</Card>
+  <Card title="Product tour" href="/docs/product-tour">Understand Apps, Agents, Threads, Runs, and delivery surfaces.</Card>
+  <Card title="CLI setup" href="/docs/cli/overview">Install the CLI, sign in, and inspect cloud readiness.</Card>
+  <Card title="API quickstart" href="/docs/quickstart">Call a published Agent from your backend with curl.</Card>
 </Cards>
 
-## First request
+## Build
 
-Set a mosoo API token and a published Agent ID from mosoo:
+- Choose an [App boundary and Agent type](/docs/concepts).
+- Add [Provider credentials and models](/docs/providers-and-models).
+- Configure the Agent's [identity, runtime, instructions, Skills, MCP, and Environment](/docs/agent-configuration).
+- [Preview and debug](/docs/test-and-debug) before publishing.
 
-```bash
-export MOSOO_API_TOKEN="mst_..."
-export MOSOO_AGENT_ID="01J00000000000000000000001"
-```
+## Publish and operate
 
-Create a Thread and queue the first Run:
+- [Publish the Agent and enable API access](/docs/publish-and-api-access).
+- [Deploy a supported public App](/docs/deploy-app).
+- Track [Runs, files, and usage](/docs/operations).
+- Reuse setup through [import, export, fork, and version history](/docs/import-export-versions).
 
-```bash
-curl -X POST "https://try.mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: ticket-182-create-thread" \
-  -d '{
-    "client_external_ref": "ticket-182",
-    "input": {
-      "type": "user.message",
-      "content": [
-        {
-          "type": "text",
-          "text": "Triage this customer escalation and suggest next steps."
-        }
-      ]
-    }
-  }'
-```
+## Integrate
 
-The response includes `thread.id` and, when `input` is present, the queued `run`. Use `thread.id` to send follow-up events, read event logs, stream updates, attach files, and manage lifecycle.
-
-## Read next
+The Public Thread API is for interacting with an already published Agent. It creates and resumes Threads, reads or streams events, and transfers files. Agent creation and configuration remain console or CLI operations.
 
 <Cards>
-  <Card title="Quickstart" href="/docs/quickstart">
-    Run the minimal curl flow: create a Thread, send a follow-up message, read events, and attach a file.
-  </Card>
-
-  <Card title="Events and streaming" href="/docs/events-and-streaming">
-    Use snapshots or SSE streams to render Agent output and status.
-  </Card>
-
-  <Card title="Files" href="/docs/files">
-    Upload file bytes, complete the upload, then attach the ready file to a Thread.
-  </Card>
-
-  <Card title="API Reference" href="/docs/api-reference">
-    Generated endpoint reference from the mosoo main repository OpenAPI source.
-  </Card>
+  <Card title="Core API concepts" href="/docs/threads-and-runs">Understand Thread and Run lifecycle.</Card>
+  <Card title="API reference" href="/docs/api-reference">Browse generated request and response schemas.</Card>
+  <Card title="Errors and limits" href="/docs/errors-and-limits">Build safe retries and handle failure states.</Card>
 </Cards>

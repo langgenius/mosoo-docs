@@ -1,0 +1,33 @@
+---
+title: "Deploy an App"
+description: "Publish a supported public GitHub repository from mosoo."
+---
+
+App Deployment is a secondary Alpha surface for publishing one supported public repository to a mosoo-managed URL alongside your Agents.
+
+## Deploy from Overview
+
+1. Open the App **Overview**.
+2. Enter a public GitHub repository URL.
+3. Select **Deploy**.
+4. Follow the deployment as **Deploying**, **Successful**, or **Failed**.
+5. After success, open the live site or inspect earlier attempts.
+
+mosoo pulls the default branch HEAD and auto-detects a supported static or request-handling web App. A `.mosoo.toml` file can override supported detection settings.
+
+## Deploy with the CLI
+
+```bash
+mosoo console apps deploy-app \
+  --input-app-id <app-id> \
+  --input-repo-url https://github.com/owner/repository \
+  --wait
+```
+
+## Operate the deployment
+
+From Overview, you can publish the latest default branch again, change the source repository, or delete the deployment. A failed later attempt does not hide the last successful URL. Deleting a deployment removes its hosted site and bound Agent access, but never changes the GitHub repository.
+
+<Callout type="warning">
+  App Deployment currently supports a public repository and one deployed site per App. It does not provide private repositories, custom domains, branch previews, automatic deployment, rollback, App-user authentication, schedules, or durable backend state.
+</Callout>

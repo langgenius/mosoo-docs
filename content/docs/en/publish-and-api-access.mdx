@@ -1,0 +1,36 @@
+---
+title: "Publish and API access"
+description: "Publish an Agent and choose Thread, API, or coding-agent delivery."
+---
+
+Publishing snapshots the draft configuration and makes delivery surfaces available.
+
+![The Publish menu exposes Thread, API Access, and coding-agent instructions.](/docs/images/product/publish-agent.png)
+
+## Publish a draft
+
+1. Finish Preview tests.
+2. Open **Publish** and publish the draft.
+3. Review the live-version badge and version summary.
+
+The first publish locks the Agent type. New sessions use the current live version; sessions already in progress keep their original version.
+
+## Start a Thread
+
+Choose **Thread** or open **Runs → New thread**, select the Agent, enter the task, and dispatch it. Reply later to resume the same Thread asynchronously.
+
+![A new Thread assigns one Agent and one initial task.](/docs/images/product/new-thread.png)
+
+## Enable API access
+
+Choose **API Access** from the Publish menu. Copy the bare ULID Agent ID, then create an account API token under **Settings → API tokens**.
+
+![API tokens authorize calls to published Agent endpoints.](/docs/images/product/api-tokens.png)
+
+Use the token only in an `Authorization: Bearer` header. API access creates and resumes Threads; it does not create, edit, or publish Agents.
+
+<Cards>
+  <Card title="API quickstart" href="/docs/quickstart">Create a Thread with curl.</Card>
+  <Card title="Authentication and access" href="/docs/auth-and-access">Understand tokens and Agent access.</Card>
+  <Card title="API reference" href="/docs/api-reference">Browse every Public Thread API operation.</Card>
+</Cards>

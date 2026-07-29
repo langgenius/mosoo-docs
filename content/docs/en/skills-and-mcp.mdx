@@ -1,0 +1,35 @@
+---
+title: "Skills and MCP servers"
+description: "Give Agents reusable instructions and authorized external tools."
+---
+
+Skills and MCP servers are App-owned resources that can be attached to selected Agents.
+
+## Skills
+
+A Skill packages trusted instructions and supporting files so you do not have to copy them into every prompt.
+
+1. Open **Config → Skills → Add skill**.
+2. Upload a `.md`, `.zip`, or `.skill` file, upload a folder whose root contains `SKILL.md`, or import from GitHub or skills.sh.
+3. Review the detected name, description, and author.
+4. Open an Agent and choose **Add skill**.
+
+![Skills can be uploaded from a file or folder, or imported from a URL.](/docs/images/product/add-skill.png)
+
+The current console can download, fork, and uninstall a Skill, but it has no in-app editor or update action. Forks are independent copies. Uninstalling can leave existing Agent attachments marked **Missing**.
+
+## MCP servers
+
+1. Open **Config → MCP servers → Add MCP**.
+2. Enter a name and Remote HTTPS URL.
+3. Choose OAuth or bearer-token authorization and save.
+4. Finish authorization, then attach the connection in the Agent editor.
+5. Test it by asking the Agent to use the tool in Preview or a new Thread.
+
+![An MCP connection uses OAuth or a bearer token with a Remote HTTPS server.](/docs/images/product/add-mcp.png)
+
+<Callout type="warning">
+  **Connected** means mosoo has a stored credential; it does not prove the remote server or every tool works. Failures currently surface when an Agent uses the server.
+</Callout>
+
+MCP credentials are encrypted and never shown again after entry. Local-process MCP, cross-App sharing, a connector marketplace, and per-tool selection are not available.

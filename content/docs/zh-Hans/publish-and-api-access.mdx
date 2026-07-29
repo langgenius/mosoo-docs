@@ -1,0 +1,36 @@
+---
+title: "发布与 API access"
+description: "发布 Agent，并选择 Thread、API 或 coding-agent 交付方式。"
+---
+
+发布会快照 draft 配置，并开放对应交付入口。
+
+![Publish 菜单提供 Thread、API Access 和 coding-agent instructions。](/docs/images/product/publish-agent.png)
+
+## 发布 draft
+
+1. 完成 Preview 测试。
+2. 打开 **Publish** 并发布 draft。
+3. 检查 live-version badge 与版本摘要。
+
+首次发布会锁定 Agent type。新 session 使用当前 live version，已经运行的 session 保持原版本。
+
+## 创建 Thread
+
+选择 **Thread**，或打开 **Runs → New thread**，选择 Agent，填写任务并 dispatch。之后可通过回复恢复同一 Thread 的异步工作。
+
+![New Thread 会分配一个 Agent 和一条初始任务。](/docs/images/product/new-thread.png)
+
+## 启用 API access
+
+从 Publish 菜单选择 **API Access**，复制不带前缀的 ULID Agent ID，然后在 **Settings → API tokens** 创建账号 API token。
+
+![API token 用于授权访问已发布 Agent endpoint。](/docs/images/product/api-tokens.png)
+
+Token 只应放在 `Authorization: Bearer` header 中。API access 用于创建和恢复 Thread，不负责创建、编辑或发布 Agent。
+
+<Cards>
+  <Card title="API Quickstart" href="/docs/zh-Hans/quickstart">用 curl 创建 Thread。</Card>
+  <Card title="认证与访问" href="/docs/zh-Hans/auth-and-access">理解 token 与 Agent access。</Card>
+  <Card title="API Reference" href="/docs/zh-Hans/api-reference">查看全部 Public Thread API operation。</Card>
+</Cards>

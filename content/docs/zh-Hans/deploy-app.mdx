@@ -1,0 +1,33 @@
+---
+title: "部署 App"
+description: "通过 mosoo 发布受支持的公共 GitHub repository。"
+---
+
+App Deployment 是一项次要 Alpha 能力，用于在 Agents 之外将一个受支持的 public repository 发布到 mosoo-managed URL。
+
+## 从 Overview 部署
+
+1. 打开 App **Overview**。
+2. 输入公共 GitHub repository URL。
+3. 选择 **Deploy**。
+4. 查看状态：**Deploying**、**Successful** 或 **Failed**。
+5. 成功后打开 live site 或查看之前的 attempts。
+
+mosoo 拉取 default branch HEAD，并自动识别受支持的 static 或 request-handling web App。可用 `.mosoo.toml` 覆盖受支持的检测设置。
+
+## 使用 CLI 部署
+
+```bash
+mosoo console apps deploy-app \
+  --input-app-id <app-id> \
+  --input-repo-url https://github.com/owner/repository \
+  --wait
+```
+
+## 运营 deployment
+
+在 Overview 中可以重新发布最新 default branch、更换 source repository 或删除 deployment。后续部署失败不会隐藏上一次成功 URL。删除 deployment 会移除 hosted site 与绑定的 Agent access，但不会修改 GitHub repository。
+
+<Callout type="warning">
+  当前每个 App 只支持一个 public repository 和一个 deployed site；不提供 private repository、custom domain、branch preview、automatic deployment、rollback、App-user authentication、schedule 或 durable backend state。
+</Callout>

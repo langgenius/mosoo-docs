@@ -7,6 +7,9 @@ const config = {
   output: 'export',
   assetPrefix: '/docs',
   trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
   reactStrictMode: true,
 };
 

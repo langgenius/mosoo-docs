@@ -1,82 +1,37 @@
 ---
-title: "mosoo Public Thread API"
-description: "通过 HTTPS API 从你的应用调用已发布的 mosoo Agent。"
+title: "mosoo 文档"
+description: "使用 mosoo 构建、运行、发布并集成托管 AI Agent。"
 ---
 
-mosoo Public Thread API 让你的后端把任务发送给已发布的 mosoo Agent，并读取公开结果。mosoo 负责 Agent runtime、sandbox、模型服务商配置、工具和执行生命周期；你的应用负责产品 UI、业务逻辑、用户映射、存储以及保存 `thread.id`。
-
-<Callout type="info">
-  API 只适用于已发布并启用 API access 的 Agent。Agent 配置、模型服务商连接、工具配置和渠道绑定仍然在 mosoo 中管理。
-</Callout>
-
-## 心智模型
+mosoo 提供一个统一工作区，用于配置 AI Agent、用真实任务测试、发布稳定版本、运营 Runs 与文件，并通过 Public Thread API 集成到其他产品。
 
 <Cards>
-  <Card title="Agent API Endpoint" href="/docs/zh-Hans/agent-api-endpoints">
-    Agent API Access 面板中展示的已发布 Agent 入口。v1 的 `agentId` 路径参数是不带前缀的 ULID。
-  </Card>
-
-  <Card title="Thread" href="/docs/zh-Hans/threads-and-runs">
-    API 创建的对话容器。Thread 记录消息、文件、Run 状态和公开事件历史。
-  </Card>
-
-  <Card title="Run" href="/docs/zh-Hans/threads-and-runs">
-    Agent 在一个 Thread 上的一次执行。用户消息可以排队启动新的 Run。
-  </Card>
-
-  <Card title="Event" href="/docs/zh-Hans/events-and-streaming">
-    用户输入、Agent 输出增量、工具更新、文件变化、Run 状态和用量的公开时间线。
-  </Card>
+  <Card title="创建第一个 Agent" href="/docs/zh-Hans/first-agent">配置 Provider，创建、测试并发布 Agent。</Card>
+  <Card title="产品导览" href="/docs/zh-Hans/product-tour">理解 Apps、Agents、Threads、Runs 和交付方式。</Card>
+  <Card title="CLI 设置" href="/docs/zh-Hans/cli/overview">安装 CLI、登录并检查 cloud readiness。</Card>
+  <Card title="API Quickstart" href="/docs/zh-Hans/quickstart">通过 curl 从 backend 调用已发布 Agent。</Card>
 </Cards>
 
-## 第一个请求
+## 构建
 
-设置 mosoo API token 和 mosoo 中的已发布 Agent ID：
+- 选择 [App boundary 与 Agent type](/docs/zh-Hans/concepts)。
+- 添加 [Provider credential 和模型](/docs/zh-Hans/providers-and-models)。
+- 配置 Agent 的[身份、runtime、指令、Skills、MCP 与 Environment](/docs/zh-Hans/agent-configuration)。
+- 发布前完成 [Preview 与调试](/docs/zh-Hans/test-and-debug)。
 
-```bash
-export MOSOO_API_TOKEN="mst_..."
-export MOSOO_AGENT_ID="01J00000000000000000000001"
-```
+## 发布与运营
 
-创建 Thread 并排队第一个 Run：
+- [发布 Agent 并启用 API access](/docs/zh-Hans/publish-and-api-access)。
+- [部署受支持的公共 App](/docs/zh-Hans/deploy-app)。
+- 查看 [Runs、文件与用量](/docs/zh-Hans/operations)。
+- 通过[导入、导出、fork 与 version history](/docs/zh-Hans/import-export-versions)复用配置。
 
-```bash
-curl -X POST "https://try.mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: ticket-182-create-thread" \
-  -d '{
-    "client_external_ref": "ticket-182",
-    "input": {
-      "type": "user.message",
-      "content": [
-        {
-          "type": "text",
-          "text": "Triage this customer escalation and suggest next steps."
-        }
-      ]
-    }
-  }'
-```
+## 集成
 
-响应会包含 `thread.id`，如果提供了 `input`，也会包含已排队的 `run`。后续发送事件、读取事件日志、流式读取更新、附加文件和管理生命周期都使用这个 `thread.id`。
-
-## 继续阅读
+Public Thread API 用于与已经发布的 Agent 交互，包括创建和恢复 Thread、读取或 stream events，以及传输文件。Agent 的创建和配置仍通过 console 或 CLI 完成。
 
 <Cards>
-  <Card title="Quickstart" href="/docs/zh-Hans/quickstart">
-    用 curl 跑通创建 Thread、发送后续消息、读取事件和附加文件的最小流程。
-  </Card>
-
-  <Card title="Events and streaming" href="/docs/zh-Hans/events-and-streaming">
-    用快照或 SSE stream 渲染 Agent 输出和状态。
-  </Card>
-
-  <Card title="Files" href="/docs/zh-Hans/files">
-    上传文件字节、完成上传，再把 ready file 附加到 Thread。
-  </Card>
-
-  <Card title="API Reference" href="/docs/zh-Hans/api-reference">
-    从 mosoo 主仓 OpenAPI 源生成的端点参考。
-  </Card>
+  <Card title="API 核心概念" href="/docs/zh-Hans/threads-and-runs">理解 Thread 和 Run 生命周期。</Card>
+  <Card title="API Reference" href="/docs/zh-Hans/api-reference">查看自动生成的 request 与 response schema。</Card>
+  <Card title="错误与限制" href="/docs/zh-Hans/errors-and-limits">安全重试并处理失败状态。</Card>
 </Cards>

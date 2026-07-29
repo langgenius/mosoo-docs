@@ -1,0 +1,40 @@
+---
+title: "Configure an Agent"
+description: "Set Agent identity, type, runtime, model, instructions, tools, and Environment."
+---
+
+Open an Agent to configure it alongside the live Preview pane.
+
+![The Agent editor keeps testing and configuration in one workspace.](/docs/images/product/configure-agent.png)
+
+## Identity and type
+
+- **Name and description** identify the Agent in lists, Threads, and delivery surfaces.
+- **Assistant Agent** keeps a working environment across sessions.
+- **Task Agent** starts each Run in a clean environment.
+
+You can change type only before the first publish.
+
+## Runtime and model
+
+Choose a runtime first, then select a model available through its resolved Provider key. If the model list is empty or a runtime shows **Needs key**, configure the matching Provider in the active App.
+
+## System prompt
+
+Describe the Agent's role, boundaries, answer style, and when it should ask for clarification. Prefer explicit operating rules over vague personality prose. Test both normal and failure cases before publishing.
+
+## Skills
+
+Attach reusable instruction packages from the active App. Skills are loaded for new sessions and read by the Agent when the task calls for them. A missing Skill attachment is reported rather than borrowed from another App.
+
+## MCP servers
+
+Attach authorized Remote HTTPS MCP connections from the active App. A connection can be attached before authorization, but its tools are usable only when the connection is enabled and authorized.
+
+## Environment
+
+Choose the reusable runtime template for packages, setup script, variables, and network-policy intent. If the Agent has no explicit Environment, the App default applies. A new session freezes the selected Environment revision.
+
+## Save and publish behavior
+
+Draft edits affect Preview. Publishing creates a new live version for future sessions. Existing sessions do not silently switch configuration.
