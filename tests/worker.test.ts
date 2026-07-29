@@ -74,6 +74,7 @@ test('worker redirects the legacy docs host to canonical docs URLs', async () =>
   const cases = [
     ['https://docs.mosoo.ai/', 'https://mosoo.ai/docs/'],
     ['https://docs.mosoo.ai/quickstart?source=test', 'https://mosoo.ai/docs/quickstart/?source=test'],
+    ['http://docs.mosoo.ai/quickstart?source=test', 'https://mosoo.ai/docs/quickstart/?source=test'],
     ['https://docs.mosoo.ai/llms.txt', 'https://mosoo.ai/docs/llms.txt'],
   ] as const;
 
@@ -124,6 +125,16 @@ test('worker does not treat docs route handlers as slash-normalized pages', asyn
   );
 
   assert.equal(response, upstream);
+});
+
+test('worker permanently redirects HTTP docs routes to HTTPS', async () => {
+  const response = await worker.fetch(
+    new Request('http://mosoo.ai/docs/quickstart/?source=test'),
+    { ASSETS: assets(new Response('unused')) },
+  );
+
+  assert.equal(response.status, 308);
+  assert.equal(response.headers.get('location'), 'https://mosoo.ai/docs/quickstart/?source=test');
 });
 
 test('worker leaves non-HTML assets untouched', async () => {

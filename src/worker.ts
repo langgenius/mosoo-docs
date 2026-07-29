@@ -23,6 +23,9 @@ declare const HTMLRewriter: {
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    const forceHttps = url.protocol === 'http:';
+
+    if (forceHttps) url.protocol = 'https:';
 
     if (url.hostname === 'docs.mosoo.ai') {
       url.hostname = 'mosoo.ai';
@@ -46,6 +49,8 @@ const worker = {
       url.pathname += '/';
       return Response.redirect(url.toString(), 308);
     }
+
+    if (forceHttps) return Response.redirect(url.toString(), 308);
 
     const response = await env.ASSETS.fetch(request);
     if (!response.headers.get('content-type')?.includes('text/html')) return response;
