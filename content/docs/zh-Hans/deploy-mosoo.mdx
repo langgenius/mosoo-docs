@@ -1,9 +1,9 @@
 ---
-title: "在 Cloudflare 上部署 Mosoo"
-description: "通过 GitHub Actions 云端部署，或在本地使用 Wrangler 工具链部署 Mosoo。"
+title: "在 Cloudflare 上部署 mosoo"
+description: "通过 GitHub Actions 云端部署，或在本地使用 Wrangler 工具链部署 mosoo。"
 ---
 
-Mosoo 由两个 Cloudflare Workers 组成：API Worker 使用 D1、R2、Queues、Durable Objects 和 Containers；Web Worker 提供控制台，并通过服务绑定连接 API。Mosoo 不是一个可以单独部署的 Cloudflare Pages 静态站点。
+mosoo 由两个 Cloudflare Workers 组成：API Worker 使用 D1、R2、Queues、Durable Objects 和 Containers；Web Worker 提供控制台，并通过服务绑定连接 API。mosoo 不是一个可以单独部署的 Cloudflare Pages 静态站点。
 
 本指南介绍参考部署所采用的两种发布方式：
 
@@ -17,7 +17,15 @@ Mosoo 由两个 Cloudflare Workers 组成：API Worker 使用 D1、R2、Queues�
 - Cloudflare 账号已开通 Workers、D1、R2、Queues、Durable Objects 和 Containers。
 - 一个由 Cloudflare DNS 托管的域名，例如 `console.example.com`；如需启用 App 部署，还需准备 `apps.example.com` 这类部署子域名。
 - 已安装 Git、Docker、[Bun](https://bun.sh/)、[just](https://just.systems/)，并能拉取仓库子模块。
-- 一个具备上述账号资源和域名区域部署权限的 Cloudflare API 令牌。令牌和密钥不得提交到 Git。
+- 一个具备上述账号资源和域名区域部署权限的 Cloudflare API 令牌。令牌和密钥不得提交到 Git，并应按以下操作范围配置最小权限。
+
+| 范围 | 必需操作 |
+| --- | --- |
+| 账号 | Workers 脚本、版本、部署、自定义域名与 Containers；D1 迁移；R2；Queues；启用 App 部署时还包括 Pages 项目与域名 |
+| `CLOUDFLARE_ZONE_ID` 指定的域名区域 | 修改 App 部署域名的 Workers Routes |
+| R2 S3 凭据 | 读写已部署应用使用的 sandbox-state 存储桶 |
+
+`CLOUDFLARE_ZONE_ID` 必须对应 `MOSOO_APP_DEPLOYMENT_DOMAIN` 所在的域名区域。Cloudflare 控制台中的权限名称可能调整，应核对令牌是否允许这些具体 API 操作，而不是直接授予账号管理员权限。
 
 克隆你的 fork，并安装仓库锁定的依赖：
 
@@ -86,10 +94,10 @@ done
 ```text
 https://console.example.com/*      -> Web Worker
 https://console.example.com/api/*  -> API Worker
-https://*.apps.example.com/*       -> Mosoo 发布的应用（启用时）
+https://*.apps.example.com/*       -> mosoo 发布的应用（启用时）
 ```
 
-Worker 名称、资源名称和域名在你的 Cloudflare 账号内必须唯一。不要复制其他部署的数据库 ID、账号 ID、区域 ID 或域名。
+请分别按照 Cloudflare 各类资源的命名空间选择尚未使用的名称；Workers、D1 数据库、Queues、R2 存储桶和域名的命名与唯一性规则并不相同。不要复制其他部署的数据库 ID、账号 ID、区域 ID 或域名。
 
 ## 3. 保存生产密钥
 
@@ -106,7 +114,7 @@ Worker 名称、资源名称和域名在你的 Cloudflare 账号内必须唯一�
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
 
-前三项应分别生成独立的随机值。在 Cloudflare 控制台创建 R2 S3 凭据和 Cloudflare API 令牌；为 Google OAuth 客户端配置公开的 Mosoo 来源地址与回调地址。
+前三项应分别生成独立的随机值。在 Cloudflare 控制台创建 R2 S3 凭据和 Cloudflare API 令牌；为 Google OAuth 客户端配置公开的 mosoo 来源地址，并将回调地址精确设置为 `https://console.example.com/api/auth/callback/google`，其中示例域名应替换为 `WEB_ORIGIN`。
 
 通过 Wrangler 保存每一项，不要把密钥写入 `wrangler.toml` 或提交到仓库的 `.env` 文件：
 
@@ -120,7 +128,7 @@ cd apps/api
 
 ## 4A. 通过 GitHub Actions 云端部署
 
-参考实现使用 `.github/workflows/deploy-try.yml`。工作流会检查仓库、验证 D1 迁移链和远程资源、试运行两个 Worker、依次部署 API 与 Web Worker，最后探测公开地址。
+参考实现使用 `.github/workflows/deploy-try.yml`。工作流会检查仓库、在本地执行 D1 迁移链、读取远程 D1 迁移账本与 Queue 列表、试运行两个 Worker、依次部署 API 与 Web Worker，最后探测公开地址；它不会逐项预检所有 R2、Container 或绑定资源。
 
 在 fork 中部署时：
 
@@ -147,12 +155,69 @@ git push origin origin/main:deploy/try
 
 请在干净且经过评审的代码仓库中使用同一套已提交配置。Wrangler 可以通过 `wrangler login` 登录；导出 API 令牌则能让本地命令更接近 CI 环境。
 
+<Callout type="warning">
+  不要把 `just check` 当成完整部署预检。API 部署脚本的第一个远程操作就是应用待执行的 D1 迁移，早于构建和产物校验。运行 `just deploy` 前，必须在同一个发布提交上完成下面全部非破坏性检查。
+</Callout>
+
+先导出生产凭据，并确认仓库、子模块与构建输入目录均无本地改动：
+
 ```bash
 export CLOUDFLARE_ACCOUNT_ID="<你的账号 ID>"
 export CLOUDFLARE_API_TOKEN="<你的 API 令牌>"
 
 git status --short --branch
+test -z "$(git status --porcelain=v1 --untracked-files=all)"
+git submodule foreach --recursive \
+  'test -z "$(git status --porcelain=v1 --untracked-files=all)"'
+test -z "$(git ls-files -v | grep -E '^[a-zS]')"
+test -z "$(git ls-files --others --ignored --exclude-standard -- apps/web/src apps/web/public)"
+
 just check
+```
+
+在隔离的本地 D1 数据库上执行完整迁移链，再以只读方式检查生产迁移账本和 Queue 列表：
+
+```bash
+(
+  cd apps/api
+  persist_dir="$(mktemp -d)"
+  trap 'rm -rf "$persist_dir"' EXIT
+  ../../node_modules/.bin/vp exec wrangler d1 migrations apply DB \
+    --local --env prod --persist-to "$persist_dir"
+)
+
+(
+  cd apps/api
+  ../../node_modules/.bin/vp exec wrangler d1 migrations list DB --remote --env prod
+  ../../node_modules/.bin/vp exec wrangler queues list
+)
+```
+
+本地迁移链失败时必须停止。如果远程账本显示有待执行迁移，应先检查确切 SQL，只有迁移是增量操作或已经得到明确生产批准时才能继续；同时确认第 1 步创建的五个 Queue 均存在。
+
+构建 Driver 和 Web 产物，并试运行两个 Worker 的上传。以下命令只验证配置与产物，不会发布 Worker，也不会应用远程迁移：
+
+```bash
+./node_modules/.bin/vp run --filter agent-driver build
+
+(
+  cd apps/api
+  ../../node_modules/.bin/vp exec wrangler deploy --env prod --minify --dry-run
+)
+
+./node_modules/.bin/vp run --filter @mosoo/web build
+
+(
+  cd apps/web
+  ../../node_modules/.bin/vp exec wrangler deploy --env prod --dry-run
+)
+
+git status --short
+```
+
+只有以上检查在同一个干净提交上全部通过后，才能执行真实发布：
+
+```bash
 just deploy
 ```
 
@@ -165,7 +230,7 @@ just deploy-api
 just deploy-web
 ```
 
-这两个局部命令会直接发布，不会运行完整检查。请先执行 `just check`，也不要修改已经应用到生产环境的 D1 迁移；每次生产数据库结构变更都应新增迁移文件。
+这两个局部命令会直接发布，不会运行完整检查。必须保留同一个干净的发布提交，并重新执行上面对应的构建与 dry-run 步骤。不要修改已经应用到生产环境的 D1 迁移；每次生产数据库结构变更都应新增迁移文件。
 
 ## 5. 验证部署
 
@@ -179,6 +244,6 @@ curl --fail --silent --show-error https://console.example.com/api/graphql \
   --data '{"query":"query { __typename }"}'
 ```
 
-控制台应通过 HTTPS 正常加载，`/api/health` 应返回 Mosoo 服务正常状态，GraphQL 应返回 `Query`。在对外开放前，还应检查两个 Worker 的日志，并确认 D1 迁移和 Queue 消费者均正常。
+控制台应通过 HTTPS 正常加载，`/api/health` 应返回 mosoo 服务正常状态，GraphQL 应返回 `Query`。在对外开放前，还应检查两个 Worker 的日志，并确认 D1 迁移和 Queue 消费者均正常。
 
-完整的非破坏性预检与发布验收步骤见 Mosoo 源码仓库中的 `docs/production-deploy-verification.md`。
+权威的停止条件、故障恢复和发布验收步骤见 mosoo 源码仓库中的 [`docs/production-deploy-verification.md`](https://github.com/langgenius/mosoo/blob/main/docs/production-deploy-verification.md)。
