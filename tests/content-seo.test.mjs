@@ -42,3 +42,30 @@ test('every indexable docs page has a title and meta description', () => {
 
   assert.deepEqual(missing, []);
 });
+
+test('Chinese docs display titles contain Chinese text', () => {
+  const missingChinese = [];
+  const chineseRoot = join(root, 'zh-Hans');
+
+  for (const path of walk(chineseRoot)) {
+    const content = readFileSync(path, 'utf8');
+    const page = relative(root, path);
+    const displayTitles = [
+      ['title', field(frontmatter(content), 'title')],
+      ...[...content.matchAll(/^##+\s+(.+)$/gm)].map((match) => ['heading', match[1]]),
+      ...[...content.matchAll(/<Card\b[^>]*\btitle="([^"]+)"/g)].map((match) => [
+        'card',
+        match[1],
+      ]),
+    ];
+
+    for (const [kind, title] of displayTitles) {
+      const isCodeIdentifier = kind === 'heading' && /^`[^`]+`$/.test(title);
+      if (!isCodeIdentifier && !/\p{Script=Han}/u.test(title)) {
+        missingChinese.push(`${page}: ${kind}: ${title}`);
+      }
+    }
+  }
+
+  assert.deepEqual(missingChinese, []);
+});

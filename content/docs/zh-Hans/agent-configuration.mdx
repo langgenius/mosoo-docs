@@ -15,23 +15,23 @@ description: "设置 Agent 身份、类型、runtime、模型、指令、工具�
 
 Agent type 只能在首次发布前修改。
 
-## Runtime 与模型
+## 运行时与模型
 
 先选择 runtime，再选择其 Provider key 可用的模型。如果模型列表为空或 runtime 显示 **Needs key**，请在当前 App 中配置对应 Provider。
 
-## System prompt
+## 系统提示词
 
 明确描述 Agent 的角色、边界、回答风格，以及何时应该追问。相比模糊的人设文案，应优先写清可执行规则。发布前同时测试正常与失败路径。
 
-## Skills
+## 技能
 
 从当前 App 绑定可复用的指令包。新 session 会获得这些 Skills，Agent 在任务需要时读取。若 Skill 缺失，mosoo 会报告问题，而不会从其他 App 借用。
 
-## MCP servers
+## MCP 服务器
 
 绑定当前 App 中已授权的 Remote HTTPS MCP 连接。未授权时也可以先绑定，但只有启用且授权完成的连接才能在 Run 中提供工具。
 
-## Environment
+## 环境
 
 选择用于 packages、setup script、variables 和网络策略意图的 runtime template。Agent 未显式选择时使用 App default。新 session 会冻结启动时选中的 Environment revision。
 

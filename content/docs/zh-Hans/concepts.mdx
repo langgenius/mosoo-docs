@@ -1,5 +1,5 @@
 ---
-title: "App、Agent 与 runtime"
+title: "App、Agent 与运行时"
 description: "选择 mosoo 的所有权、连续性和执行边界。"
 ---
 
@@ -7,7 +7,7 @@ description: "选择 mosoo 的所有权、连续性和执行边界。"
 
 App 将自己的 Agents、文件、配置资源、部署和用量保持独立。切换 App 会改变控制台中可见的资源。当前 Alpha 是单所有者模式，暂不提供组织团队角色、邀请或所有权转移。
 
-## Agent type 决定连续性
+## Agent 类型决定连续性
 
 | 类型 | Runtime state | 适合场景 |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ App 将自己的 Agents、文件、配置资源、部署和用量保持独立。
 
 新 Agent 默认为 Assistant Agent。在 draft 阶段可以切换类型；首次发布后类型锁定。之后如需改类型，请 fork 出新的 Agent，原 Agent 不受影响。
 
-## Runtime 是 Agent driver
+## 运行时是 Agent 驱动
 
 Runtime 决定 Agent 如何执行，以及解析哪一种 Provider credential。它与 Agent type 是两个独立维度：
 
@@ -24,7 +24,7 @@ Runtime 决定 Agent 如何执行，以及解析哪一种 Provider credential。
 - **OpenAI Runtime** 使用 OpenAI 或兼容 Responses API 的 endpoint。
 - **OpenCode** 使用自身 runtime 和兼容的 Provider 配置。
 
-## Threads 与 Runs
+## 对话与运行
 
 Thread 是一个 Agent 的持久交互记录。新的任务或恢复回复都可能启动一个 Run。Thread 保存历史并可异步重新打开；Run 是单次执行，具有状态、事件、文件、日志和用量。
 

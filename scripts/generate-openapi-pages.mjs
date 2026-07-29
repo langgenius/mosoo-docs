@@ -20,7 +20,7 @@ const specs = [
     input: './public/docs/openapi/mosoo-openapi.zh-Hans.generated.json',
     output: './content/docs/zh-Hans/api-reference',
     baseUrl: '/docs/zh-Hans/api-reference',
-    title: 'API Reference',
+    title: 'API 参考',
     description: 'mosoo 公开 Thread API 的生成参考。',
   },
 ];
@@ -47,7 +47,7 @@ for (const [operationPath, methods] of Object.entries(englishSpec.paths ?? {})) 
 const apiReferenceGroups = [
   {
     enTitle: 'Threads',
-    zhHansTitle: 'Threads',
+    zhHansTitle: '对话',
     keys: [
       'POST /agents/{agentId}/threads',
       'GET /agents/{agentId}/threads',
@@ -59,7 +59,7 @@ const apiReferenceGroups = [
   },
   {
     enTitle: 'Events',
-    zhHansTitle: 'Events',
+    zhHansTitle: '事件',
     keys: [
       'POST /threads/{threadId}/events',
       'GET /threads/{threadId}/events',
@@ -68,7 +68,7 @@ const apiReferenceGroups = [
   },
   {
     enTitle: 'Files',
-    zhHansTitle: 'Files',
+    zhHansTitle: '文件',
     keys: [
       'POST /agents/{agentId}/files',
       'GET /files/{fileId}',
