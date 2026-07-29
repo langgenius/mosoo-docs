@@ -1,13 +1,16 @@
 {
-  "title": "简体中文",
+  "title": "mosoo API",
   "pages": [
     "index",
+    "---入门---",
     "quickstart",
     "auth-and-access",
+    "---核心概念---",
     "agent-api-endpoints",
     "threads-and-runs",
     "events-and-streaming",
     "files",
+    "---参考---",
     "api-reference",
     "errors-and-limits",
     "cli"

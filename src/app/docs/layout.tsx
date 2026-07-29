@@ -1,11 +1,15 @@
 import { source } from '@/lib/source';
-import { DocsLayout } from 'fumadocs-ui/layouts/docs';
-import { baseOptions } from '@/lib/layout.shared';
+import { LocalizedDocsLayout } from '@/components/localized-docs-layout';
 
 export default function Layout({ children }: LayoutProps<'/docs'>) {
   return (
-    <DocsLayout tree={source.getPageTree()} {...baseOptions()}>
+    <LocalizedDocsLayout
+      trees={{
+        en: source.getPageTree('en'),
+        'zh-Hans': source.getPageTree('zh-Hans'),
+      }}
+    >
       {children}
-    </DocsLayout>
+    </LocalizedDocsLayout>
   );
 }

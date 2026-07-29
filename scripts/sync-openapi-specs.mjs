@@ -18,7 +18,7 @@ const REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
 const TRANSLATION_FILE = path.join(SCRIPT_DIR, "openapi.zh-Hans.translations.json");
 const VISIBLE_TEXT_KEYS = new Set(["bearerFormat", "description", "summary", "title"]);
 const GENERATED_FILES = {
-  codingAgents: "content/docs/coding-agents.mdx",
+  codingAgents: "content/docs/en/coding-agents.mdx",
   en: "public/docs/openapi/mosoo-openapi.en.generated.json",
   legacy: "public/docs/openapi/mosoo-openapi.generated.json",
   zhHans: "public/docs/openapi/mosoo-openapi.zh-Hans.generated.json",

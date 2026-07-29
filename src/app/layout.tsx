@@ -1,5 +1,6 @@
 import { DM_Sans, Hanken_Grotesk, JetBrains_Mono } from 'next/font/google';
 import { Provider } from '@/components/provider';
+import { getPageUrl, source } from '@/lib/source';
 import type { Metadata } from 'next';
 import './global.css';
 
@@ -74,7 +75,7 @@ export default function Layout({ children }: LayoutProps<'/'>) {
       suppressHydrationWarning
     >
       <body className="flex flex-col min-h-screen">
-        <Provider>{children}</Provider>
+        <Provider docsPaths={source.getPages().map(getPageUrl)}>{children}</Provider>
       </body>
     </html>
   );

@@ -1,16 +1,33 @@
 import { docs } from 'collections/server';
 import { loader } from 'fumadocs-core/source';
 import { docsContentRoute, docsImageRoute, docsRoute } from './shared';
+import { i18n } from './i18n';
 
 // See https://fumadocs.dev/docs/headless/source-api for more info
 export const source = loader({
   baseUrl: docsRoute,
   source: docs.toFumadocsSource(),
+  i18n,
+  url(slugs, locale) {
+    const language = locale === 'zh-Hans' ? '/zh-Hans' : '';
+    const pathname = slugs.length > 0 ? `/${slugs.join('/')}` : '';
+    return `${docsRoute}${language}${pathname}`;
+  },
   plugins: [],
 });
 
+export function getPageUrl(page: (typeof source)['$inferPage']) {
+  const locale = page.locale === 'zh-Hans' ? '/zh-Hans' : '';
+  const pathname = page.slugs.length > 0 ? `/${page.slugs.join('/')}` : '';
+  return `${docsRoute}${locale}${pathname}`;
+}
+
 export function getPageImage(page: (typeof source)['$inferPage']) {
-  const segments = [...page.slugs, 'image.png'];
+  const segments = [
+    ...(page.locale === 'zh-Hans' ? ['zh-Hans'] : []),
+    ...page.slugs,
+    'image.png',
+  ];
 
   return {
     segments,
@@ -19,7 +36,11 @@ export function getPageImage(page: (typeof source)['$inferPage']) {
 }
 
 export function getPageMarkdownUrl(page: (typeof source)['$inferPage']) {
-  const segments = [...page.slugs, 'content.md'];
+  const segments = [
+    ...(page.locale === 'zh-Hans' ? ['zh-Hans'] : []),
+    ...page.slugs,
+    'content.md',
+  ];
 
   return {
     segments,
@@ -30,7 +51,7 @@ export function getPageMarkdownUrl(page: (typeof source)['$inferPage']) {
 export async function getLLMText(page: (typeof source)['$inferPage']) {
   const processed = await page.data.getText('processed');
 
-  return `# ${page.data.title} (${page.url})
+  return `# ${page.data.title} (${getPageUrl(page)})
 
 ${processed}`;
 }

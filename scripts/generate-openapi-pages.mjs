@@ -10,7 +10,7 @@ const specs = [
   {
     id: 'en',
     input: './public/docs/openapi/mosoo-openapi.en.generated.json',
-    output: './content/docs/api-reference',
+    output: './content/docs/en/api-reference',
     baseUrl: '/docs/api-reference',
     title: 'API Reference',
     description: 'Generated reference for the mosoo Public Thread API.',
