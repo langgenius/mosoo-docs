@@ -36,6 +36,21 @@ A `source.config.ts` config file has been included, you can customise different 
 
 Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
 
+## Deployment
+
+Pushes to `main` are linted, type-checked, built, and deployed to the
+`mosoo-docs` Cloudflare Worker by GitHub Actions. The GitHub `production`
+environment requires a `CLOUDFLARE_ACCOUNT_ID` variable and a scoped
+`CLOUDFLARE_API_TOKEN` secret. Create the token from Cloudflare's **Edit
+Cloudflare Workers** template, restricted to the production account and
+`mosoo.ai` zone.
+
+For a manual deployment:
+
+```bash
+npm run deploy
+```
+
 ## Learn More
 
 To learn more about Next.js and Fumadocs, take a look at the following
