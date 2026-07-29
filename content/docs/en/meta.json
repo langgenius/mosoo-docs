@@ -2,16 +2,18 @@
   "title": "mosoo API",
   "pages": [
     "index",
+    "---Getting started---",
     "quickstart",
     "auth-and-access",
+    "---Core concepts---",
     "agent-api-endpoints",
     "threads-and-runs",
     "events-and-streaming",
     "files",
+    "---Reference---",
     "api-reference",
     "errors-and-limits",
     "coding-agents",
-    "cli",
-    "zh-Hans"
+    "cli"
   ]
 }

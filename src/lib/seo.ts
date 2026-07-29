@@ -1,4 +1,4 @@
-import { source } from './source';
+import { getPageUrl, source } from './source';
 import {
   buildSitemapEntries,
   getLanguageAlternates,
@@ -15,13 +15,13 @@ export {
 type Page = (typeof source)['$inferPage'];
 
 function getPagePaths() {
-  return new Set(source.getPages().map((page) => page.url));
+  return new Set(source.getPages().map(getPageUrl));
 }
 
 export function getDocsLanguageAlternates(page: Page) {
-  return getLanguageAlternates(page.url, getPagePaths());
+  return getLanguageAlternates(getPageUrl(page), getPagePaths());
 }
 
 export function getDocsSitemapEntries() {
-  return buildSitemapEntries(source.getPages());
+  return buildSitemapEntries(source.getPages().map((page) => ({ url: getPageUrl(page) })));
 }

@@ -1,4 +1,4 @@
-import { getPageImage, getPageMarkdownUrl, source } from '@/lib/source';
+import { getPageImage, getPageMarkdownUrl, getPageUrl, source } from '@/lib/source';
 import {
   DocsBody,
   DocsDescription,
@@ -21,19 +21,22 @@ import {
   getOpenGraphAlternateLocale,
   toCanonicalDocsUrl,
 } from '@/lib/seo';
+import { getDocsLanguage, getLocalizedSlugs } from '@/lib/i18n';
 
 export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const params = await props.params;
-  const page = source.getPage(params.slug);
+  const language = getDocsLanguage(params.slug);
+  const page = source.getPage(getLocalizedSlugs(params.slug), language);
   if (!page) notFound();
 
   const MDX = page.data.body;
+  const pageUrl = getPageUrl(page);
   const markdownUrl = getPageMarkdownUrl(page).url;
   const description = page.data.description ?? 'mosoo API documentation.';
   const structuredData = buildDocsStructuredData({
     title: page.data.title,
     description,
-    pathname: page.url,
+    pathname: pageUrl,
   });
 
   return (
@@ -69,17 +72,21 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
 }
 
 export async function generateStaticParams() {
-  return source.generateParams();
+  return source.getPages().map((page) => ({
+    slug: page.locale === 'zh-Hans' ? ['zh-Hans', ...page.slugs] : page.slugs,
+  }));
 }
 
 export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): Promise<Metadata> {
   const params = await props.params;
-  const page = source.getPage(params.slug);
+  const language = getDocsLanguage(params.slug);
+  const page = source.getPage(getLocalizedSlugs(params.slug), language);
   if (!page) notFound();
-  const canonical = toCanonicalDocsUrl(page.url);
+  const pageUrl = getPageUrl(page);
+  const canonical = toCanonicalDocsUrl(pageUrl);
   const languages = getDocsLanguageAlternates(page);
   const description = page.data.description ?? 'mosoo API documentation.';
-  const language = getDocumentLanguage(page.url);
+  const documentLanguage = getDocumentLanguage(pageUrl);
   const image = getPageImage(page).url;
 
   return {
@@ -96,8 +103,8 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
       title: page.data.title,
       description,
       url: canonical,
-      locale: language === 'zh-Hans' ? 'zh_CN' : 'en_US',
-      alternateLocale: getOpenGraphAlternateLocale(language, Boolean(languages)),
+      locale: documentLanguage === 'zh-Hans' ? 'zh_CN' : 'en_US',
+      alternateLocale: getOpenGraphAlternateLocale(documentLanguage, Boolean(languages)),
       images: [{ url: image, alt: page.data.title }],
     },
     twitter: {
