@@ -1,5 +1,5 @@
 ---
-title: "Environments"
+title: "环境"
 description: "为 Agent session 创建可复用 runtime template。"
 ---
 
@@ -27,7 +27,7 @@ mosoo console environments create-environment
 
 可以设为 App default，也可以为特定 Agent 单独选择。新 session 会捕获当时的 Environment revision。后续修改只影响后来创建的 session，in-flight session 不会改变。
 
-## Package 行为
+## 软件包行为
 
 npm CLI 通过 `PATH` 暴露，CommonJS package 通过 `NODE_PATH`，PyPI module 通过 `PYTHONPATH`。Node ESM bare import 仍需在项目内安装依赖。OS package、Cargo、RubyGems 和 Go module 不是 Environment package 选项。
 

@@ -1,5 +1,5 @@
 ---
-title: "Threads and Runs"
+title: "对话与运行"
 description: "mosoo 如何把已发布 Agent 调用映射为 Thread 和 Run 生命周期状态。"
 ---
 
@@ -34,7 +34,7 @@ GET /api/v1/threads/{threadId}
 
 响应会包含 `thread`、存在时的最新 `run`，以及便捷 `links`。
 
-## Thread status
+## 对话状态
 
 | Status | 含义 |
 | --- | --- |
@@ -43,7 +43,7 @@ GET /api/v1/threads/{threadId}
 | `RESCHEDULING` | Thread 处于两个 Run 之间。 |
 | `TERMINATED` | Thread 已结束。 |
 
-## Run status
+## 运行状态
 
 | Status | 含义 |
 | --- | --- |

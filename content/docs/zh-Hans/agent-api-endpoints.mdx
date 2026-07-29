@@ -1,5 +1,5 @@
 ---
-title: "Agent API Endpoints"
+title: "Agent API 端点"
 description: "已发布 mosoo Agent 如何变成可通过公开 API 调用的入口。"
 ---
 
@@ -27,7 +27,7 @@ Agent API Endpoint 是已发布 mosoo Agent 的公开 API 入口。你的应用�
 
 不要添加 `agent_` 前缀。同样的裸 ULID 规则也适用于 `threadId`、`fileId` 和 `runId`。
 
-## Endpoint 负责什么
+## API 端点负责什么
 
 Agent API Endpoint 负责 runtime 边界：
 
@@ -54,7 +54,7 @@ POST /api/v1/agents/{agentId}/threads
   <Card title="创建 Thread" href="/docs/zh-Hans/api-reference/create-a-thread-for-an-agent-api-endpoint">
     完整端点参考。
   </Card>
-  <Card title="Threads and Runs" href="/docs/zh-Hans/threads-and-runs">
+  <Card title="对话与运行" href="/docs/zh-Hans/threads-and-runs">
     Thread 和 Run 的生命周期状态。
   </Card>
 </Cards>

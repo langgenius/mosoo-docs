@@ -17,7 +17,7 @@ Content-Type: application/json
 
 mosoo 会用 API token 认证当前 mosoo 账号，然后检查该账号是否可以使用选定的 Agent API Endpoint 和资源。
 
-## API token
+## API 令牌
 
 API token 是调用 mosoo API 的身份凭证。你可以在 mosoo 账号设置中创建它，并把它保存到应用后端、本地工具或自动化任务中。
 
@@ -25,7 +25,7 @@ API token 是调用 mosoo API 的身份凭证。你可以在 mosoo 账号设置�
   API token 不是模型服务商凭据，也不是渠道连接凭据。Slack、Lark、Discord、Telegram、WeChat、模型服务商设置、工具配置和渠道设置仍然在 mosoo 中管理。
 </Callout>
 
-## Agent API Endpoint 访问
+## Agent API 端点访问
 
 只有 Agent 已发布且存在 live API endpoint version 时，API 才可调用。一个有效请求必须通过这些检查：
 
@@ -38,7 +38,7 @@ API token 是调用 mosoo API 的身份凭证。你可以在 mosoo 账号设置�
 
 如果 token 有效但调用方不能使用该 Agent，mosoo 返回 `403 forbidden`。如果 Agent 或资源对调用方不可见，mosoo 返回 `404 not_found`。
 
-<Card title="Agent API Endpoints" href="/docs/zh-Hans/agent-api-endpoints">
+<Card title="Agent API 端点" href="/docs/zh-Hans/agent-api-endpoints">
   了解已发布 Agent 状态、live endpoint version 和 `agentId` 如何配合。
 </Card>
 
@@ -48,7 +48,7 @@ API token 是调用 mosoo API 的身份凭证。你可以在 mosoo 账号设置�
 
 Run 使用已发布的 Agent 配置执行。API 调用方不会变成模型服务商，不能在请求里发送服务商凭据，也不能通过这个 API 覆盖工具、渠道、runtime settings 或 Agent 配置。
 
-## Token 生命周期
+## 令牌生命周期
 
 撤销 API token 会阻止该 token 发起新的 API 请求；它不会删除已经存在的 Threads。
 

@@ -1,11 +1,11 @@
 ---
-title: "Preview 与调试"
+title: "预览与调试"
 description: "测试 Agent，并检查 Logs、Cost、Terminal 和工作状态。"
 ---
 
 使用 Agent workspace 在发布前测试 draft 配置。
 
-## Preview
+## 预览
 
 在左侧输入具有代表性的任务，至少测试：
 
@@ -17,15 +17,15 @@ description: "测试 Agent，并检查 Logs、Cost、Terminal 和工作状态。
 
 Draft 变更会立即作用于 Preview。绿色 **Ready** 表示 editor 可以接收任务，并不代表所有外部依赖都工作正常。
 
-## Logs
+## 日志
 
 打开 **Logs** 检查 session 与执行历史，用于关联 runtime startup、tool use 和 failure。日志不应包含 secret；如果用户输入中带有 raw credential，请在分享 diagnostics 前移除。
 
-## Cost
+## 成本
 
 打开 **Cost** 查看 Agent 级用量估算、model mix 和最近 usage event。Production 与 Debug 可分开过滤。Cost 是模型调用估算，不是 Provider invoice。
 
-## Terminal 与 reset
+## 终端与重置
 
 Assistant Agent 因为可跨 session 保留环境，所以提供 Terminal 和工作状态控制。只有在确实需要干净状态时才 reset；它可能移除本地 workspace 状态、cache 或 sign-in。Task Agent 每次 Run 都从干净环境开始，不提供相同的持久控制。
 
