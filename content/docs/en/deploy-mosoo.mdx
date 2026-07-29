@@ -1,9 +1,9 @@
 ---
-title: "Deploy Mosoo on Cloudflare"
-description: "Deploy Mosoo with Cloudflare Workers from GitHub Actions or a local Wrangler toolchain."
+title: "Deploy mosoo on Cloudflare"
+description: "Deploy mosoo with Cloudflare Workers from GitHub Actions or a local Wrangler toolchain."
 ---
 
-Mosoo runs as two Cloudflare Workers: an API Worker backed by D1, R2, Queues, Durable Objects, and Containers, plus a Web Worker that serves the console and binds to the API service. It is not a standalone Cloudflare Pages site.
+mosoo runs as two Cloudflare Workers: an API Worker backed by D1, R2, Queues, Durable Objects, and Containers, plus a Web Worker that serves the console and binds to the API service. It is not a standalone Cloudflare Pages site.
 
 This guide covers the two deployment paths used by the reference deployment:
 
@@ -17,7 +17,15 @@ Both paths use `apps/api/wrangler.toml`, `apps/web/wrangler.toml`, and the repos
 - A Cloudflare account with Workers, D1, R2, Queues, Durable Objects, and Containers available.
 - A domain in Cloudflare DNS, such as `console.example.com`, plus a deployment subdomain such as `apps.example.com` if you enable App Deployment.
 - Git, Docker, [Bun](https://bun.sh/), [just](https://just.systems/), and the repository submodules.
-- A Cloudflare API token with the account and zone permissions required to deploy the resources above. Keep tokens and secret values outside Git.
+- A Cloudflare API token with the account and zone permissions required to deploy the resources above. Keep tokens and secret values outside Git. Use the least privilege that covers the operations below.
+
+| Scope | Required operations |
+| --- | --- |
+| Account | Workers scripts, versions, deployments, custom domains, and Containers; D1 migrations; R2; Queues; and, when App Deployment is enabled, Pages projects and domains |
+| Zone selected by `CLOUDFLARE_ZONE_ID` | Workers Routes changes for the App Deployment domain |
+| R2 S3 credentials | Read and write the sandbox-state bucket used by deployed apps |
+
+`CLOUDFLARE_ZONE_ID` must identify the zone that owns `MOSOO_APP_DEPLOYMENT_DOMAIN`. Cloudflare's token labels can change; verify that the token permits these exact API operations rather than granting account-wide administrator access.
 
 Clone your fork and install the pinned dependencies:
 
@@ -86,10 +94,10 @@ For example, the routing shape is:
 ```text
 https://console.example.com/*      -> Web Worker
 https://console.example.com/api/*  -> API Worker
-https://*.apps.example.com/*       -> Apps published by Mosoo, when enabled
+https://*.apps.example.com/*       -> Apps published by mosoo, when enabled
 ```
 
-Worker names, resource names, and domains must be unique within your Cloudflare account. Do not copy database IDs, account IDs, zone IDs, or hostnames from another deployment.
+Choose names that are unused in each resource's Cloudflare namespace. Workers, D1 databases, Queues, R2 buckets, and hostnames have different naming and uniqueness rules. Do not copy database IDs, account IDs, zone IDs, or hostnames from another deployment.
 
 ## 3. Store production secrets
 
@@ -106,7 +114,7 @@ The current production configuration requires these API Worker secrets:
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
 
-Generate independent random values for the first three secrets. Create R2 S3 credentials and the Cloudflare API token in the Cloudflare dashboard. Configure the Google OAuth client with the public Mosoo origin and callback URL.
+Generate independent random values for the first three secrets. Create R2 S3 credentials and the Cloudflare API token in the Cloudflare dashboard. Configure the Google OAuth client with the public mosoo origin and the exact callback URL `https://console.example.com/api/auth/callback/google`, replacing the example domain with `WEB_ORIGIN`.
 
 Store each value with Wrangler; do not add it to `wrangler.toml` or a committed `.env` file:
 
@@ -120,7 +128,7 @@ If you use email login, configure Cloudflare Email Routing and authorize the sen
 
 ## 4A. Cloud deployment with GitHub Actions
 
-The reference cloud path is `.github/workflows/deploy-try.yml`. It verifies the repository, checks the D1 migration chain and remote resources, dry-runs both Workers, deploys the API and Web Workers, and then probes the public endpoints.
+The reference cloud path is `.github/workflows/deploy-try.yml`. It verifies the repository, exercises the D1 migration chain locally, reads the remote D1 migration ledger and Queue list, dry-runs both Workers, deploys the API and Web Workers, and then probes the public endpoints. It does not separately preflight every R2, Container, or binding resource.
 
 For a fork:
 
@@ -147,12 +155,69 @@ Watch the GitHub Actions run until the repository checks, dry runs, deployment, 
 
 Use the same committed configuration from a clean, reviewed checkout. Wrangler can authenticate through `wrangler login`; exporting an API token instead makes the local command match CI more closely.
 
+<Callout type="warning">
+  Do not treat `just check` as the whole deployment preflight. The API deploy script applies pending remote D1 migrations as its first remote operation, before build and bundle validation. Complete every non-mutating check below on the exact release commit before running `just deploy`.
+</Callout>
+
+First export production credentials and confirm that the repository, submodules, and build-input directories are clean:
+
 ```bash
 export CLOUDFLARE_ACCOUNT_ID="<your-account-id>"
 export CLOUDFLARE_API_TOKEN="<your-api-token>"
 
 git status --short --branch
+test -z "$(git status --porcelain=v1 --untracked-files=all)"
+git submodule foreach --recursive \
+  'test -z "$(git status --porcelain=v1 --untracked-files=all)"'
+test -z "$(git ls-files -v | grep -E '^[a-zS]')"
+test -z "$(git ls-files --others --ignored --exclude-standard -- apps/web/src apps/web/public)"
+
 just check
+```
+
+Exercise the complete migration chain against an isolated local D1 database, then inspect the production migration ledger and Queue list without changing them:
+
+```bash
+(
+  cd apps/api
+  persist_dir="$(mktemp -d)"
+  trap 'rm -rf "$persist_dir"' EXIT
+  ../../node_modules/.bin/vp exec wrangler d1 migrations apply DB \
+    --local --env prod --persist-to "$persist_dir"
+)
+
+(
+  cd apps/api
+  ../../node_modules/.bin/vp exec wrangler d1 migrations list DB --remote --env prod
+  ../../node_modules/.bin/vp exec wrangler queues list
+)
+```
+
+Stop if the local migration chain fails. If the remote ledger reports pending migrations, inspect the exact SQL and proceed only when the migration is additive or explicitly approved. Confirm that all five Queues created in step 1 are present.
+
+Build the Driver and Web assets and dry-run both Worker uploads. These commands validate configuration and bundles without publishing a Worker or applying a remote migration:
+
+```bash
+./node_modules/.bin/vp run --filter agent-driver build
+
+(
+  cd apps/api
+  ../../node_modules/.bin/vp exec wrangler deploy --env prod --minify --dry-run
+)
+
+./node_modules/.bin/vp run --filter @mosoo/web build
+
+(
+  cd apps/web
+  ../../node_modules/.bin/vp exec wrangler deploy --env prod --dry-run
+)
+
+git status --short
+```
+
+Only after every check above passes on the same clean commit should you publish:
+
+```bash
 just deploy
 ```
 
@@ -165,7 +230,7 @@ just deploy-api
 just deploy-web
 ```
 
-These partial commands publish directly and do not run the full gate. Run `just check` first, and never rewrite an already-applied D1 migration. Add a new migration for every production schema change.
+These partial commands publish directly and do not run the full gate. Keep the same clean release commit, rerun the relevant build and dry-run steps above, and never rewrite an already-applied D1 migration. Add a new migration for every production schema change.
 
 ## 5. Verify the deployment
 
@@ -179,6 +244,6 @@ curl --fail --silent --show-error https://console.example.com/api/graphql \
   --data '{"query":"query { __typename }"}'
 ```
 
-The console must load over HTTPS, `/api/health` must report an OK Mosoo service, and GraphQL must return `Query`. Also inspect both Workers' logs and confirm that D1 migrations and Queue consumers are healthy before sending users to the deployment.
+The console must load over HTTPS, `/api/health` must report an OK mosoo service, and GraphQL must return `Query`. Also inspect both Workers' logs and confirm that D1 migrations and Queue consumers are healthy before sending users to the deployment.
 
-For the repository's full non-mutating preflight and release acceptance checks, follow `docs/production-deploy-verification.md` in the Mosoo source repository.
+For the authoritative stop conditions, recovery guidance, and release acceptance checks, follow [`docs/production-deploy-verification.md`](https://github.com/langgenius/mosoo/blob/main/docs/production-deploy-verification.md) in the mosoo source repository.
