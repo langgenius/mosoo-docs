@@ -12,6 +12,25 @@ async function* htmlFiles(directory) {
   }
 }
 
+async function* markdownFiles(directory) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) yield* markdownFiles(path);
+    if (entry.isFile() && entry.name === 'content.md') yield path;
+  }
+}
+
+export async function validateMarkdownExports(directory) {
+  const empty = [];
+  for await (const path of markdownFiles(directory)) {
+    if ((await readFile(path)).length === 0) empty.push(path);
+  }
+
+  if (empty.length > 0) {
+    throw new Error(`Empty Markdown exports:\n${empty.join('\n')}`);
+  }
+}
+
 export async function localizeChineseDocsHtml(directory) {
   for await (const path of htmlFiles(directory)) {
     const html = await readFile(path, 'utf8');
@@ -26,6 +45,7 @@ export async function prepareWorkerAssets({ outDir = 'out' } = {}) {
     recursive: true,
   });
   await localizeChineseDocsHtml(join(outDir, 'docs', 'zh-Hans'));
+  await validateMarkdownExports(join(outDir, 'docs', 'llms.mdx', 'docs'));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

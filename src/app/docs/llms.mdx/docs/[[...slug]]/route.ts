@@ -1,4 +1,5 @@
 import { getLLMText, getPageMarkdownUrl, source } from '@/lib/source';
+import { getDocsLanguage, getLocalizedSlugs } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
 
 export const revalidate = false;
@@ -9,7 +10,8 @@ export async function GET(
 ) {
   const { slug } = await params;
   // remove the appended "content.md"
-  const page = source.getPage(slug?.slice(0, -1));
+  const pageSlugs = slug?.slice(0, -1);
+  const page = source.getPage(getLocalizedSlugs(pageSlugs), getDocsLanguage(pageSlugs));
   if (!page) notFound();
 
   return new Response(await getLLMText(page), {
