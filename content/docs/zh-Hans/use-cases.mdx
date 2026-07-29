@@ -1,0 +1,38 @@
+---
+title: "常见 Agent 模式"
+description: "为常见工作流选择 Agent type 和 mosoo 功能。"
+---
+
+以下模式可作为起点，仍需用你的真实数据和失败场景完成测试。
+
+## 持续研究助手
+
+- **Type：**Assistant Agent
+- **原因：**重复研究工作可受益于持续 workspace。
+- **配置：**强调引用的 prompt、研究 Skills、可选 Remote HTTPS MCP source，以及包含分析 package 的 Environment。
+- **交付：**用 mosoo Thread 进行交互工作；通过 API access 嵌入其他产品。
+
+## Pull request reviewer
+
+- **Type：**Task Agent
+- **原因：**每次 review 都应从干净临时状态开始。
+- **配置：**repository-review Skill、GitHub MCP、严格输出格式和最小 Environment。
+- **交付：**每次 review 一个 Thread，或由外部系统调用 Public Thread API。
+
+## Ticket 分流工作者
+
+- **Type：**Task Agent
+- **原因：**ticket 是互相独立的任务，不应泄漏临时状态。
+- **配置：**Skill 中的分流规则、issue-tracker MCP，以及明确的 label 与 escalation 条件。
+- **运营：**过滤失败 Thread、检查 Logs，并将 production usage 与 Preview 分开查看。
+
+## 团队 Copilot
+
+- **Type：**Assistant Agent
+- **原因：**稳定 working directory 能帮助长期 copilot。
+- **配置：**产品与运营 Skills，以及已授权 MCP connections。
+- **边界：**mosoo 当前控制台是单所有者模式，不支持团队角色和共享管理。应通过适当外部界面交付 Agent，而不是共享 owner credential。
+
+## 公共应用
+
+先发布 Agent，再由你的 backend 调用 Public Thread API。如还需要简单网站，App Deployment 可发布一个受支持的 public repository 并绑定 Agent access。它不是通用 backend、authentication、scheduling 或 custom-domain 平台。

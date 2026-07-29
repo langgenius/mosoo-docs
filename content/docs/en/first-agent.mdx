@@ -1,0 +1,54 @@
+---
+title: "Create your first Agent"
+description: "Configure, test, and publish an Agent from the mosoo console."
+---
+
+This guide takes you from an empty App to a published Agent.
+
+## 1. Open an App
+
+Sign in at [try.mosoo.ai](https://try.mosoo.ai). mosoo creates a **Default App** for a new account. Use the App switcher to create or open another App when you need a separate resource and usage boundary.
+
+## 2. Add a Provider key
+
+Open **Config → Providers**. Add a key for the runtime you plan to use and run the optional connection test. A ready runtime appears at the top of the page.
+
+<Callout type="warning">
+  Provider credentials belong to the active App. Saved keys are masked; exported Agent packages do not contain them.
+</Callout>
+
+## 3. Create the Agent
+
+Open **Agents → Create agent**, enter a name, and choose a runtime.
+
+![The New Agent dialog offers Claude Agent SDK, OpenAI Runtime, and OpenCode.](/docs/images/product/create-agent.png)
+
+- **Claude Agent SDK** resolves an Anthropic key.
+- **OpenAI Runtime** resolves an OpenAI-compatible key and requires a compatible Responses API endpoint.
+- **OpenCode** can use supported provider credentials, including custom OpenAI-compatible endpoints.
+
+## 4. Configure behavior
+
+In **Preview**, choose **Assistant Agent** or **Task Agent**, then set the model and system prompt. Add Skills, MCP servers, or a custom Environment only when the Agent needs them.
+
+![Agent Preview combines live testing with the configuration editor.](/docs/images/product/configure-agent.png)
+
+## 5. Test before publishing
+
+Send a representative task in the left Preview pane. Verify the answer, tool calls, files, and failure behavior. Use **Logs** for execution details and **Cost** for model usage. Assistant Agents also expose a **Terminal** and reset controls for their working environment.
+
+## 6. Publish
+
+Open **Publish** and publish the draft. The first publish locks the Agent type. Later sessions start on the current published version; existing sessions keep the version they started with.
+
+After publishing, choose a delivery surface:
+
+- **Thread** — start work inside the mosoo console.
+- **API Access** — obtain the Agent ID and call the Public Thread API.
+- **Instruction for LLM** — copy Agent instructions for supported coding-agent workflows.
+
+<Cards>
+  <Card title="Configure an Agent" href="/docs/agent-configuration">Understand every configuration field.</Card>
+  <Card title="Preview and debug" href="/docs/test-and-debug">Test realistic tasks and diagnose failures.</Card>
+  <Card title="Publish and API access" href="/docs/publish-and-api-access">Choose a delivery surface.</Card>
+</Cards>

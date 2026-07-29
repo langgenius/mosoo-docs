@@ -1,0 +1,35 @@
+---
+title: "导入、导出、Fork 与版本"
+description: "安全复用 Agent 配置并理解发布历史。"
+---
+
+## 导出 Agent
+
+打开 Agent settings 并选择 **Export agent**。mosoo 会下载包含可移植 Agent 设置和已打包 Skills 的 `.agent` package。
+
+## 导入 package
+
+在 Agents 页面选择 **Import package**，选择 `.agent` 文件并检查需要修复的项目。导入结果是当前 App 中可编辑的新 draft。
+
+![Import 会从可移植的 .agent package 创建新 draft。](/docs/images/product/import-agent-package.png)
+
+## Fork Agent
+
+打开 Agent settings 并选择 **Fork agent**。Fork 会在同一 App 创建独立 draft，原 Agent 不变。可用于修改已发布 Agent 锁定的 type，或测试另一套配置。
+
+## 不会随 package 携带的内容
+
+`.agent` package 不是 App backup，也不是运行状态快照，不包含：
+
+- Provider 或 MCP credentials；
+- conversations、logs 或 usage history；
+- live runtime state 或 working files；
+- App deployment history。
+
+请在目标 App 重新连接外部服务，并补选缺失的 Environment 或 secret values。
+
+## Version history
+
+打开 draft 或 live-version badge，按从新到旧查看版本。列表标识 live version，并摘要显示 runtime、model、change 和 publish time。新 session 使用 live version，已有 session 保持启动时版本。
+
+版本历史当前只读，尚不能查看完整历史配置、并排比较、查看发布者身份或 restore。

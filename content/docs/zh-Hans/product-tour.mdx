@@ -1,0 +1,39 @@
+---
+title: "产品导览"
+description: "了解 mosoo 中组织、App、Agent 与运行记录之间的关系。"
+---
+
+mosoo 是一个用于构建、运行、发布和运营 AI Agent 的托管工作区。你可以先配置 Agent，在控制台中测试，然后通过 Thread、API endpoint 或 App deployment 对外提供能力。
+
+![App Overview 汇集了 Agent 配置、CLI 上手和部署入口。](/docs/images/product/app-overview.png)
+
+## 产品模型
+
+| 资源 | 负责的范围 |
+| --- | --- |
+| **Organization** | 账号级容器。当前产品是单所有者体验，暂不提供团队角色和邀请。 |
+| **App** | Agent、文件、配置、用量以及一个可选部署站点的工程与交付边界。新账号会获得 Default App。 |
+| **Agent** | 可复用的工作者，包含类型、runtime、模型、指令、Skills、MCP 连接和 Environment。 |
+| **Thread** | 一个 Agent 的持久对话与工作记录，可以通过后续回复异步恢复。 |
+| **Run** | Thread 中的一次执行，会产生事件、日志、用量和文件。 |
+
+## 典型工作流
+
+1. 打开或创建一个 App。
+2. 添加模型 Provider key。
+3. 创建 Agent 并选择 runtime。
+4. 配置身份、指令、Skills、MCP servers 和 Environment。
+5. 在 **Preview** 中测试；需要时检查 **Logs**、**Cost** 和 **Terminal**。
+6. 发布 Agent。
+7. 在 mosoo 中创建 Thread、启用 API access，或绑定到已部署 App。
+8. 持续查看 Runs、文件、版本和用量。
+
+<Callout type="info">
+  大部分配置属于当前 App。Provider key、MCP 凭据、Skill 和 Environment 不会自动跨 App 共享。
+</Callout>
+
+<Cards>
+  <Card title="创建第一个 Agent" href="/docs/zh-Hans/first-agent">完成控制台中的端到端流程。</Card>
+  <Card title="App、Agent 与 runtime" href="/docs/zh-Hans/concepts">选择正确的资源和执行边界。</Card>
+  <Card title="CLI 设置" href="/docs/zh-Hans/cli/overview">安装 CLI 并连接 mosoo Cloud。</Card>
+</Cards>

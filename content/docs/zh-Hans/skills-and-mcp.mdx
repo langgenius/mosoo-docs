@@ -1,0 +1,35 @@
+---
+title: "Skills 与 MCP servers"
+description: "为 Agent 添加可复用指令和已授权外部工具。"
+---
+
+Skills 和 MCP servers 都是 App-owned 资源，可绑定到选定的 Agents。
+
+## Skills
+
+Skill 将可信指令与配套文件打包，避免把同一内容手工复制到每个 prompt。
+
+1. 打开 **Config → Skills → Add skill**。
+2. 上传 `.md`、`.zip`、`.skill` 文件，上传根目录包含 `SKILL.md` 的文件夹，或从 GitHub、skills.sh 导入。
+3. 检查识别出的名称、描述和作者。
+4. 打开 Agent 并选择 **Add skill**。
+
+![Skill 可以从文件或文件夹上传，也可以从 URL 导入。](/docs/images/product/add-skill.png)
+
+当前控制台支持下载、fork 和 uninstall Skill，但没有站内编辑或更新操作。Fork 是独立副本。卸载后，已有 Agent attachment 可能显示为 **Missing**。
+
+## MCP servers
+
+1. 打开 **Config → MCP servers → Add MCP**。
+2. 填写名称和 Remote HTTPS URL。
+3. 选择 OAuth 或 bearer-token authorization 并保存。
+4. 完成授权，然后在 Agent editor 中绑定连接。
+5. 在 Preview 或新 Thread 中要求 Agent 使用该工具进行测试。
+
+![MCP 连接通过 OAuth 或 bearer token 访问 Remote HTTPS server。](/docs/images/product/add-mcp.png)
+
+<Callout type="warning">
+  **Connected** 只表示 mosoo 已保存有效凭据，不代表远端 server 及其所有工具一定可用。目前错误会在 Agent 首次调用时暴露。
+</Callout>
+
+MCP credential 会加密，保存后不再显示。当前不支持 local-process MCP、跨 App 共享、connector marketplace 或按 tool 选择。

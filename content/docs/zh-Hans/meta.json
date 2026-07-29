@@ -1,18 +1,33 @@
 {
-  "title": "mosoo API",
+  "title": "mosoo 文档",
   "pages": [
     "index",
     "---入门---",
+    "product-tour",
+    "first-agent",
+    "cli",
+    "---构建 Agent---",
+    "concepts",
+    "agent-configuration",
+    "providers-and-models",
+    "skills-and-mcp",
+    "environments",
+    "test-and-debug",
+    "---发布与运营---",
+    "publish-and-api-access",
+    "deploy-app",
+    "operations",
+    "import-export-versions",
+    "use-cases",
+    "---API 集成---",
     "quickstart",
-    "auth-and-access",
-    "---核心概念---",
     "agent-api-endpoints",
     "threads-and-runs",
     "events-and-streaming",
     "files",
+    "auth-and-access",
     "---参考---",
     "api-reference",
-    "errors-and-limits",
-    "cli"
+    "errors-and-limits"
   ]
 }

@@ -1,0 +1,33 @@
+---
+title: "Providers and models"
+description: "Add App-level model credentials and make runtimes ready."
+---
+
+Provider credentials are stored inside the active App and resolved when an Agent starts.
+
+![The Providers page shows runtime readiness and App-level credentials.](/docs/images/product/providers.png)
+
+## Add a Provider key
+
+1. Open **Config → Providers**.
+2. Find a built-in Provider and select **Add key**, or choose **Add custom model**.
+3. Enter a name, API key, optional base URL, and supported model names when requested.
+4. Select **Test** to verify connectivity, then save.
+5. Return to the Agent and select the runtime and model.
+
+Keys can be named, edited, tested, made default, and deleted. Saving is not conditional on a successful optional test.
+
+## Runtime readiness
+
+The **Runtime availability** card explains which credential a runtime will resolve. A missing matching key stops setup or the Run with a configuration error; mosoo never borrows a credential from another App.
+
+## Custom endpoints
+
+Custom OpenAI-compatible credentials can run through OpenCode. OpenAI Runtime additionally requires the endpoint to implement the Responses API used by that runtime.
+
+## Credential boundary
+
+- Saved keys are encrypted and shown only in masked form.
+- Raw values are not included in Agent settings, logs, diagnostics, or `.agent` exports.
+- Provider credentials do not inherit across Apps.
+- Deleting a key can make dependent Agents unable to start; inspect affected runtime readiness before removing it.

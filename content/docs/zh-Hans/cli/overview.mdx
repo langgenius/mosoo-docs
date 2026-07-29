@@ -1,12 +1,75 @@
 ---
 title: "CLI"
-description: "mosoo 命令行文档。"
+description: "从终端安装、认证、检查并操作 mosoo。"
 ---
 
-mosoo CLI 指南尚未发布。
+`mosoo` CLI 提供 Public Thread API、Console GraphQL、console REST，以及 machine-readable command catalog。
 
-当前集成请使用 API 文档，包括认证、Thread 创建、事件、文件和生命周期接口。
+## 安装
 
-<Card title="查看 API 文档" href="/docs/zh-Hans">
-  调用已发布的 mosoo Agent，创建 Thread，发送事件，附加文件并读取结果。
-</Card>
+```bash
+curl -fsSL https://install.mosoo.ai/install.sh | bash
+```
+
+Installer 会把 CLI 安装到 `~/.local/bin`，安装 `@mosoo` coding-agent Skill，登录 [try.mosoo.ai](https://try.mosoo.ai)，并运行 `doctor`。如需先检查计划且不修改系统：
+
+```bash
+curl -fsSL https://install.mosoo.ai/install.sh | bash -s -- --dry-run
+```
+
+## 认证与验证
+
+使用浏览器交互登录：
+
+```bash
+mosoo auth login --hostname try.mosoo.ai
+mosoo auth status --hostname try.mosoo.ai
+mosoo doctor --json
+```
+
+非交互登录应通过标准输入传 token，避免写入 shell history：
+
+```bash
+printf '%s' "$MOSOO_API_TOKEN" | \
+  mosoo auth login --hostname try.mosoo.ai --with-token
+```
+
+## 发现命令
+
+```bash
+mosoo --help
+mosoo commands --json
+mosoo commands show console apps deploy-app
+mosoo search "create environment"
+```
+
+`commands --json` 面向工具与 coding Agent；`commands show` 返回单个 generated command 的精确 schema。
+
+## 常用操作
+
+```bash
+# 列出 Apps、Agents 和 credential readiness
+mosoo ls -o json
+
+# 启动新的 Agent Run
+mosoo run \
+  --input-app-id <app-id> \
+  --input-agent-id <agent-id> \
+  --input-prompt "Summarize this repository" \
+  --wait -o json
+
+# 根据项目上下文或显式参数创建 Environment
+mosoo console environments create-environment
+
+# 部署 public GitHub repository
+mosoo console apps deploy-app \
+  --input-app-id <app-id> \
+  --input-repo-url https://github.com/owner/repository \
+  --wait
+```
+
+通过 `--target local|cloud|custom`、`--base-url` 或 `--hostname` 控制 endpoint resolution。输出格式包括 `table`、`json`、`yaml` 和 `raw`。
+
+<Callout type="warning">
+  不要把 token 放进 command argument、source file 或 Agent prompt。请使用交互登录，或通过标准输入传给 `--with-token`。
+</Callout>

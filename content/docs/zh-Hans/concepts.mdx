@@ -1,0 +1,33 @@
+---
+title: "App、Agent 与 runtime"
+description: "选择 mosoo 的所有权、连续性和执行边界。"
+---
+
+## App 是隔离边界
+
+App 将自己的 Agents、文件、配置资源、部署和用量保持独立。切换 App 会改变控制台中可见的资源。当前 Alpha 是单所有者模式，暂不提供组织团队角色、邀请或所有权转移。
+
+## Agent type 决定连续性
+
+| 类型 | Runtime state | 适合场景 |
+| --- | --- | --- |
+| **Assistant Agent** | 在 session 之间保留稳定工作环境。重建会保留选定 workspace 与 memory，但本地登录或缓存可能丢失。 | 持续助手、copilot，以及受益于连续状态的重复工作。 |
+| **Task Agent** | 每次 Run 都从干净环境开始，结束后释放临时状态；对话记录仍会保留。 | Review、分流、webhook 和相互隔离的批处理任务。 |
+
+新 Agent 默认为 Assistant Agent。在 draft 阶段可以切换类型；首次发布后类型锁定。之后如需改类型，请 fork 出新的 Agent，原 Agent 不受影响。
+
+## Runtime 是 Agent driver
+
+Runtime 决定 Agent 如何执行，以及解析哪一种 Provider credential。它与 Agent type 是两个独立维度：
+
+- **Claude Agent SDK** 使用 Anthropic。
+- **OpenAI Runtime** 使用 OpenAI 或兼容 Responses API 的 endpoint。
+- **OpenCode** 使用自身 runtime 和兼容的 Provider 配置。
+
+## Threads 与 Runs
+
+Thread 是一个 Agent 的持久交互记录。新的任务或恢复回复都可能启动一个 Run。Thread 保存历史并可异步重新打开；Run 是单次执行，具有状态、事件、文件、日志和用量。
+
+## 已发布版本
+
+发布会快照 Agent 配置。新 session 使用当前 live version，已有 session 保持开始时的版本。当前版本历史只读，尚不能完整恢复旧配置或进行并排比较。

@@ -1,0 +1,38 @@
+---
+title: "Preview and debug"
+description: "Test an Agent and inspect Logs, Cost, Terminal, and working state."
+---
+
+Use the Agent workspace to test draft configuration before publishing.
+
+## Preview
+
+Enter a representative task in the left pane. Test:
+
+- a normal request and expected output;
+- a request that uses each attached Skill or MCP server;
+- file input and generated artifacts;
+- missing information and clarification behavior;
+- tool, credential, or Environment failure paths.
+
+Draft changes affect Preview immediately. A green **Ready** state means the editor is ready to accept a task; it is not proof that every external dependency works.
+
+## Logs
+
+Open **Logs** to inspect session and execution history. Use it to correlate runtime startup, tool use, and failures. Secrets should not appear in logs; if a raw credential is present in user-authored content, remove it before sharing diagnostics.
+
+## Cost
+
+Open **Cost** for Agent-level spend estimates, model mix, and recent usage events. Filter production and debug use separately. Cost values are estimates from recorded model calls, not Provider invoices.
+
+## Terminal and reset
+
+Assistant Agents expose a Terminal and working-state controls because their environment can persist across sessions. Use reset when you intentionally want a clean state; it can remove local workspace state, caches, or sign-ins. Task Agents start clean for every Run and do not expose the same persistent controls.
+
+## Diagnose common failures
+
+1. **Runtime needs a key:** configure the matching Provider in this App.
+2. **Model is unavailable:** verify the Provider's model list and endpoint compatibility.
+3. **MCP tool fails:** confirm the connection is enabled and authorized, then retry a direct tool task.
+4. **Environment startup fails:** check exact package versions, setup script, and required variables.
+5. **Old session behaves differently:** start a new session to use the current published version.

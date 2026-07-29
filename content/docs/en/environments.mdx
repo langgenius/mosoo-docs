@@ -1,0 +1,38 @@
+---
+title: "Environments"
+description: "Create reusable runtime templates for Agent sessions."
+---
+
+An Environment makes Agent sessions start with a consistent package set, setup script, and variables.
+
+![The Environment editor defines packages, setup, variables, and network intent.](/docs/images/product/create-environment.png)
+
+## Create an Environment
+
+Open **Config → Environments → Create environment**, then configure:
+
+- **Name and description** for the reusable template.
+- **Packages** from public npm or PyPI with exact versions.
+- **Setup script** that runs after prepared packages are restored.
+- **Environment variables**, whose values are encrypted after save.
+- **Networking intent**, which is visible but not enforced by the current Sandbox runtime.
+
+You can also create one from project dependency files with:
+
+```bash
+mosoo console environments create-environment
+```
+
+## Assign and revise
+
+Make an Environment the App default or select one on a specific Agent. A new session captures the selected Environment revision. Later edits apply only to sessions created afterward; in-flight sessions are unchanged.
+
+## Package behavior
+
+npm package CLIs are exposed through `PATH`, CommonJS packages through `NODE_PATH`, and PyPI modules through `PYTHONPATH`. Node ESM bare imports require a project-local install. OS packages, Cargo, RubyGems, and Go modules are not Environment package options.
+
+<Callout type="warning">
+  Networking controls currently save intent only; they do not restrict traffic and must not be treated as a security boundary.
+</Callout>
+
+The App default and any Environment still selected by an Agent are protected from deletion.

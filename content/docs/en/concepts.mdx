@@ -1,0 +1,33 @@
+---
+title: "Apps, Agents, and runtimes"
+description: "Choose Mosoo's ownership, continuity, and execution boundaries."
+---
+
+## Apps are isolation boundaries
+
+An App keeps its Agents, files, configuration resources, deployment, and usage separate. Switching Apps changes the resources visible in the console. The current Alpha is single-owner: organization team roles, invitations, and ownership transfer are not available.
+
+## Agent types control continuity
+
+| Type | Runtime state | Best for |
+| --- | --- | --- |
+| **Assistant Agent** | Keeps a stable working environment across sessions. Rebuilds preserve selected workspace and memory, but may lose local sign-ins or caches. | Ongoing assistants, copilots, and repeated work that benefits from continuity. |
+| **Task Agent** | Starts clean for each Run and releases temporary state afterward. Conversation records remain. | Reviews, triage, webhooks, and isolated batch tasks. |
+
+New Agents start as Assistant Agents. You can switch type while the Agent is a draft; the first publish locks it. Fork the Agent to change type later without changing the original.
+
+## Runtimes are Agent drivers
+
+The runtime determines how the Agent executes and which Provider credential it resolves. Runtime choice is separate from Agent type:
+
+- **Claude Agent SDK** uses Anthropic.
+- **OpenAI Runtime** uses OpenAI or a compatible Responses API endpoint.
+- **OpenCode** supports its own runtime and compatible Provider configurations.
+
+## Threads and Runs
+
+A Thread is the durable interaction record for one Agent. Each new task or resumed reply may start a Run. A Thread keeps its history and can be reopened asynchronously. A Run is one execution with status, events, files, logs, and usage.
+
+## Published versions
+
+Publishing snapshots Agent configuration. New sessions use the current live version; an existing session stays on the version it began with. Version history is read-only today: complete historical restore and side-by-side comparison are not available.

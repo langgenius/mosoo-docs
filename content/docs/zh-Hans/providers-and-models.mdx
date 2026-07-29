@@ -1,0 +1,33 @@
+---
+title: "Providers 与模型"
+description: "添加 App 级模型凭据并让 runtime 进入可用状态。"
+---
+
+Provider credential 保存在当前 App 中，并在 Agent 启动时解析。
+
+![Providers 页面同时展示 runtime readiness 和 App 级凭据。](/docs/images/product/providers.png)
+
+## 添加 Provider key
+
+1. 打开 **Config → Providers**。
+2. 在内置 Provider 中选择 **Add key**，或选择 **Add custom model**。
+3. 按要求填写名称、API key、可选 base URL 和支持的模型名。
+4. 选择 **Test** 验证连接，然后保存。
+5. 回到 Agent 中选择 runtime 与模型。
+
+Key 可以命名、编辑、测试、设为默认和删除。可选测试失败并不会强制阻止保存。
+
+## Runtime readiness
+
+页面顶部的 **Runtime availability** 会说明每个 runtime 将解析哪一种凭据。若当前 App 没有匹配的 key，setup 或 Run 会以配置错误停止；mosoo 不会借用其他 App 的凭据。
+
+## 自定义 endpoint
+
+OpenCode 可使用自定义 OpenAI-compatible credential。OpenAI Runtime 还要求 endpoint 实现该 runtime 使用的 Responses API。
+
+## 凭据边界
+
+- 保存的 key 会加密，并只显示掩码。
+- Raw value 不会写入 Agent settings、logs、diagnostics 或 `.agent` export。
+- Provider credential 不会跨 App 继承。
+- 删除 key 可能导致依赖它的 Agent 无法启动，删除前应检查 runtime readiness。

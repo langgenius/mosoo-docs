@@ -1,0 +1,54 @@
+---
+title: "创建第一个 Agent"
+description: "在 mosoo 控制台中配置、测试并发布一个 Agent。"
+---
+
+本指南从空 App 开始，最终得到一个已发布的 Agent。
+
+## 1. 打开 App
+
+登录 [try.mosoo.ai](https://try.mosoo.ai)。新账号会自动创建 **Default App**。当你需要独立的资源与用量边界时，可通过 App switcher 创建或切换 App。
+
+## 2. 添加 Provider key
+
+打开 **Config → Providers**。为准备使用的 runtime 添加 key，并按需执行连接测试。配置完成后，页面顶部会显示 runtime 已就绪。
+
+<Callout type="warning">
+  Provider 凭据只属于当前 App。保存后的 key 只显示掩码，导出的 Agent package 也不会包含凭据。
+</Callout>
+
+## 3. 创建 Agent
+
+打开 **Agents → Create agent**，填写名称并选择 runtime。
+
+![New Agent 对话框提供 Claude Agent SDK、OpenAI Runtime 和 OpenCode。](/docs/images/product/create-agent.png)
+
+- **Claude Agent SDK** 使用 Anthropic key。
+- **OpenAI Runtime** 使用 OpenAI-compatible key，并要求 endpoint 支持相应 Responses API。
+- **OpenCode** 可使用支持的 Provider 配置，包括自定义 OpenAI-compatible endpoint。
+
+## 4. 配置行为
+
+在 **Preview** 中选择 **Assistant Agent** 或 **Task Agent**，再设置模型与 system prompt。只有确有需要时才添加 Skills、MCP servers 或自定义 Environment。
+
+![Agent Preview 将即时测试与配置编辑器放在同一个界面。](/docs/images/product/configure-agent.png)
+
+## 5. 发布前测试
+
+在左侧 Preview 中发送具有代表性的任务。验证回答、工具调用、文件以及失败行为。用 **Logs** 查看执行细节，用 **Cost** 查看模型用量。Assistant Agent 还提供 **Terminal** 和工作环境重置操作。
+
+## 6. 发布
+
+打开 **Publish** 并发布当前 draft。首次发布会锁定 Agent type。之后创建的新 session 使用当前已发布版本，已有 session 保持启动时的版本。
+
+发布后选择交付方式：
+
+- **Thread**：在 mosoo 控制台中开始工作。
+- **API Access**：取得 Agent ID，通过 Public Thread API 调用。
+- **Instruction for LLM**：复制适用于受支持 coding-agent 工作流的指令。
+
+<Cards>
+  <Card title="配置 Agent" href="/docs/zh-Hans/agent-configuration">理解所有配置项。</Card>
+  <Card title="Preview 与调试" href="/docs/zh-Hans/test-and-debug">测试真实任务并定位失败。</Card>
+  <Card title="发布与 API access" href="/docs/zh-Hans/publish-and-api-access">选择交付方式。</Card>
+</Cards>

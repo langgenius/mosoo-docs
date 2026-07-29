@@ -1,0 +1,39 @@
+---
+title: "Product tour"
+description: "Understand how Organizations, Apps, Agents, and runs fit together in mosoo."
+---
+
+mosoo is a managed workspace for building, running, publishing, and operating AI Agents. You configure an Agent once, test it in the console, then make it available through a Thread, an API endpoint, or an App deployment.
+
+![The App Overview connects Agent setup, CLI onboarding, and deployment.](/docs/images/product/app-overview.png)
+
+## The product model
+
+| Resource | What it owns |
+| --- | --- |
+| **Organization** | Your account-level container. The current product is a single-owner experience; team roles and invitations are not available. |
+| **App** | The engineering and delivery boundary for Agents, files, configuration, usage, and one optional deployed site. A new account starts with a Default App. |
+| **Agent** | A reusable worker with a type, runtime, model, instructions, Skills, MCP connections, and an Environment. |
+| **Thread** | The durable conversation and work record for one Agent. Replies can resume work asynchronously. |
+| **Run** | One execution inside a Thread. Runs produce events, logs, usage, and files. |
+
+## A typical workflow
+
+1. Open or create an App.
+2. Add a model Provider key.
+3. Create an Agent and choose its runtime.
+4. Configure its identity, instructions, Skills, MCP servers, and Environment.
+5. Test in **Preview**; inspect **Logs**, **Cost**, and **Terminal** when applicable.
+6. Publish the Agent.
+7. Start Threads in mosoo, enable API access, or bind the Agent to a deployed App.
+8. Monitor Runs, files, versions, and usage.
+
+<Callout type="info">
+  Most configuration belongs to the active App. Provider keys, MCP credentials, Skills, and Environments do not automatically cross App boundaries.
+</Callout>
+
+<Cards>
+  <Card title="Create your first Agent" href="/docs/first-agent">Follow the complete console path.</Card>
+  <Card title="Apps, Agents, and runtimes" href="/docs/concepts">Choose the right boundaries and execution model.</Card>
+  <Card title="CLI setup" href="/docs/cli/overview">Install the CLI and connect it to mosoo Cloud.</Card>
+</Cards>

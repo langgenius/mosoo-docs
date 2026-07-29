@@ -1,12 +1,75 @@
 ---
 title: "CLI"
-description: "Command-line documentation for mosoo."
+description: "Install, authenticate, inspect, and operate Mosoo from the terminal."
 ---
 
-The mosoo CLI guide is not published yet.
+The `mosoo` CLI exposes the Public Thread API, Console GraphQL operations, console REST operations, and a machine-readable command catalog.
 
-Use the API docs for current integration steps, including authentication, Thread creation, events, files, and lifecycle calls.
+## Install
 
-<Card title="Go to API docs" href="/docs">
-  Call published mosoo Agents, create Threads, send events, attach files, and read results.
-</Card>
+```bash
+curl -fsSL https://install.mosoo.ai/install.sh | bash
+```
+
+The installer places the CLI in `~/.local/bin`, installs the `@mosoo` coding-agent Skill, signs in to [try.mosoo.ai](https://try.mosoo.ai), and runs `doctor`. Review options without changing your system:
+
+```bash
+curl -fsSL https://install.mosoo.ai/install.sh | bash -s -- --dry-run
+```
+
+## Authenticate and verify
+
+Interactive browser login:
+
+```bash
+mosoo auth login --hostname try.mosoo.ai
+mosoo auth status --hostname try.mosoo.ai
+mosoo doctor --json
+```
+
+For non-interactive login, pipe a token through standard input instead of placing it in shell history:
+
+```bash
+printf '%s' "$MOSOO_API_TOKEN" | \
+  mosoo auth login --hostname try.mosoo.ai --with-token
+```
+
+## Discover commands
+
+```bash
+mosoo --help
+mosoo commands --json
+mosoo commands show console apps deploy-app
+mosoo search "create environment"
+```
+
+`commands --json` is intended for tools and coding Agents. `commands show` provides the precise schema for one generated command.
+
+## Common operations
+
+```bash
+# List Apps, Agents, and credential readiness
+mosoo ls -o json
+
+# Start a new Agent Run
+mosoo run \
+  --input-app-id <app-id> \
+  --input-agent-id <agent-id> \
+  --input-prompt "Summarize this repository" \
+  --wait -o json
+
+# Create an Environment from the project context or explicit flags
+mosoo console environments create-environment
+
+# Deploy a public GitHub repository
+mosoo console apps deploy-app \
+  --input-app-id <app-id> \
+  --input-repo-url https://github.com/owner/repository \
+  --wait
+```
+
+Use `--target local|cloud|custom`, `--base-url`, or `--hostname` to control endpoint resolution. Output formats are `table`, `json`, `yaml`, and `raw`.
+
+<Callout type="warning">
+  Never paste tokens into command arguments, source files, or Agent prompts. Use interactive login or pipe the token to `--with-token`.
+</Callout>
