@@ -11,7 +11,7 @@ description: "从终端安装、认证、检查并操作 mosoo。"
 curl -fsSL https://install.mosoo.ai/install.sh | bash
 ```
 
-Installer 会把 CLI 安装到 `~/.local/bin`，安装 `@mosoo` coding-agent Skill，登录 [try.mosoo.ai](https://try.mosoo.ai)，并运行 `doctor`。如需先检查计划且不修改系统：
+Installer 会把 CLI 安装到 `~/.local/bin`，安装 `@mosoo` coding-agent Skill，登录 [cloud.mosoo.ai](https://cloud.mosoo.ai)，并运行 `doctor`。如需先检查计划且不修改系统：
 
 ```bash
 curl -fsSL https://install.mosoo.ai/install.sh | bash -s -- --dry-run
@@ -22,8 +22,8 @@ curl -fsSL https://install.mosoo.ai/install.sh | bash -s -- --dry-run
 使用浏览器交互登录：
 
 ```bash
-mosoo auth login --hostname try.mosoo.ai
-mosoo auth status --hostname try.mosoo.ai
+mosoo auth login --hostname cloud.mosoo.ai
+mosoo auth status --hostname cloud.mosoo.ai
 mosoo doctor --json
 ```
 
@@ -31,7 +31,7 @@ mosoo doctor --json
 
 ```bash
 printf '%s' "$MOSOO_API_TOKEN" | \
-  mosoo auth login --hostname try.mosoo.ai --with-token
+  mosoo auth login --hostname cloud.mosoo.ai --with-token
 ```
 
 ## 发现命令
