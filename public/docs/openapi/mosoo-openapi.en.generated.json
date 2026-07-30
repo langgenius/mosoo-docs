@@ -2239,7 +2239,7 @@
   ],
   "servers": [
     {
-      "url": "https://try.mosoo.ai/api/v1"
+      "url": "https://cloud.mosoo.ai/api/v1"
     }
   ]
 }

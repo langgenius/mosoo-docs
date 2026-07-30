@@ -11,7 +11,7 @@ The `mosoo` CLI exposes the Public Thread API, Console GraphQL operations, conso
 curl -fsSL https://install.mosoo.ai/install.sh | bash
 ```
 
-The installer places the CLI in `~/.local/bin`, installs the `@mosoo` coding-agent Skill, signs in to [try.mosoo.ai](https://try.mosoo.ai), and runs `doctor`. Review options without changing your system:
+The installer places the CLI in `~/.local/bin`, installs the `@mosoo` coding-agent Skill, signs in to [cloud.mosoo.ai](https://cloud.mosoo.ai), and runs `doctor`. Review options without changing your system:
 
 ```bash
 curl -fsSL https://install.mosoo.ai/install.sh | bash -s -- --dry-run
@@ -22,8 +22,8 @@ curl -fsSL https://install.mosoo.ai/install.sh | bash -s -- --dry-run
 Interactive browser login:
 
 ```bash
-mosoo auth login --hostname try.mosoo.ai
-mosoo auth status --hostname try.mosoo.ai
+mosoo auth login --hostname cloud.mosoo.ai
+mosoo auth status --hostname cloud.mosoo.ai
 mosoo doctor --json
 ```
 
@@ -31,7 +31,7 @@ For non-interactive login, pipe a token through standard input instead of placin
 
 ```bash
 printf '%s' "$MOSOO_API_TOKEN" | \
-  mosoo auth login --hostname try.mosoo.ai --with-token
+  mosoo auth login --hostname cloud.mosoo.ai --with-token
 ```
 
 ## Discover commands
