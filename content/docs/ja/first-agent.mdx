@@ -1,0 +1,54 @@
+---
+title: "最初の Agent を作成"
+description: "mosoo console で Agent を設定、テスト、公開します。"
+---
+
+このガイドでは、空の App から Agent を公開するまでの手順を説明します。
+
+## 1. App を開く
+
+[cloud.mosoo.ai](https://cloud.mosoo.ai) にサインインします。mosoo は新しいアカウントに **Default App** を作成します。リソースと使用量を分ける必要がある場合は、App switcher から別の App を作成するか開きます。
+
+## 2. Provider key を追加する
+
+**Config → Providers** を開きます。使用する runtime に対応する key を追加し、必要に応じて接続テストを実行します。準備が整った runtime はページ上部に表示されます。
+
+<Callout type="warning">
+  Provider credential は現在の App に属します。保存済み key はマスクされ、エクスポートした Agent package には含まれません。
+</Callout>
+
+## 3. Agent を作成する
+
+**Agents → Create agent** を開き、名前を入力して runtime を選択します。
+
+![New Agent ダイアログでは Claude Agent SDK、OpenAI Runtime、OpenCode を選択できます。](/docs/images/product/create-agent.png)
+
+- **Claude Agent SDK** は Anthropic key を使用します。
+- **OpenAI Runtime** は OpenAI 互換 key を使用し、互換性のある Responses API endpoint が必要です。
+- **OpenCode** は custom OpenAI-compatible endpoint を含む、対応する Provider credential を使用できます。
+
+## 4. 動作を設定する
+
+**Preview** で **Assistant Agent** または **Task Agent** を選び、モデルと system prompt を設定します。Agent に必要な場合だけ Skill、MCP server、custom Environment を追加します。
+
+![Agent Preview ではライブテストと設定編集を同じ画面で行えます。](/docs/images/product/configure-agent.png)
+
+## 5. 公開前にテストする
+
+左側の Preview pane から代表的なタスクを送信します。回答、tool call、ファイル、失敗時の動作を確認してください。実行の詳細は **Logs**、モデル使用量は **Cost** で確認できます。Assistant Agent では作業 Environment の **Terminal** とリセット操作も利用できます。
+
+## 6. 公開する
+
+**Publish** を開いて draft を公開します。最初の公開時に Agent タイプが固定されます。以後の新しい session は現在の公開バージョンを使用し、既存 session は開始時のバージョンを維持します。
+
+公開後、提供方法を選択します。
+
+- **Thread** — mosoo console 内で作業を開始します。
+- **API Access** — Agent ID を取得し、Public Thread API を呼び出します。
+- **Instruction for LLM** — 対応する coding-agent workflow 向けの Agent 指示をコピーします。
+
+<Cards>
+  <Card title="Agent を設定" href="/docs/ja/agent-configuration">すべての設定項目を理解します。</Card>
+  <Card title="プレビューとデバッグ" href="/docs/ja/test-and-debug">実際のタスクをテストし、失敗を診断します。</Card>
+  <Card title="公開と API access" href="/docs/ja/publish-and-api-access">提供方法を選択します。</Card>
+</Cards>

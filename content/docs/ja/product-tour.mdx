@@ -1,0 +1,39 @@
+---
+title: "製品ツアー"
+description: "mosoo における Organization、App、Agent、Run の関係を理解します。"
+---
+
+mosoo は、AI Agent を構築、実行、公開、運用するためのマネージドワークスペースです。Agent を一度設定して console でテストした後、Thread、API endpoint、または App deployment から利用できるようにします。
+
+![App Overview は Agent のセットアップ、CLI のオンボーディング、デプロイを結び付けます。](/docs/images/product/app-overview.png)
+
+## 製品モデル
+
+| リソース | 所有するもの |
+| --- | --- |
+| **Organization** | アカウントレベルのコンテナです。現在は単一オーナー向けであり、チームロールや招待は利用できません。 |
+| **App** | Agent、ファイル、設定、使用量、任意のデプロイ済みサイト一つをまとめる開発・提供上の境界です。新しいアカウントには Default App が作成されます。 |
+| **Agent** | タイプ、runtime、モデル、指示、Skill、MCP connection、Environment を備えた再利用可能なワーカーです。 |
+| **Thread** | 一つの Agent に対する永続的な会話と作業の記録です。返信によって非同期に作業を再開できます。 |
+| **Run** | Thread 内の一回の実行です。Run はイベント、ログ、使用量、ファイルを生成します。 |
+
+## 一般的なワークフロー
+
+1. App を開くか作成します。
+2. モデル Provider の key を追加します。
+3. Agent を作成して runtime を選択します。
+4. 識別情報、指示、Skill、MCP server、Environment を設定します。
+5. **Preview** でテストし、必要に応じて **Logs**、**Cost**、**Terminal** を確認します。
+6. Agent を公開します。
+7. mosoo で Thread を開始するか、API access を有効にするか、デプロイ済み App に Agent を紐付けます。
+8. Run、ファイル、バージョン、使用量を監視します。
+
+<Callout type="info">
+  ほとんどの設定は現在の App に属します。Provider key、MCP credential、Skill、Environment は App の境界を越えて自動的に共有されません。
+</Callout>
+
+<Cards>
+  <Card title="最初の Agent を作成" href="/docs/ja/first-agent">console での一連の手順を実行します。</Card>
+  <Card title="App、Agent、runtime" href="/docs/ja/concepts">適切な境界と実行モデルを選択します。</Card>
+  <Card title="CLI のセットアップ" href="/docs/ja/cli/overview">CLI をインストールして mosoo Cloud に接続します。</Card>
+</Cards>

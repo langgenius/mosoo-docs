@@ -1,0 +1,29 @@
+---
+title: Thread ファイルを削除する
+description: "Thread からファイルを切り離します。"
+full: true
+_openapi:
+  preload:
+    - ja
+  method: DELETE
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: Thread からファイルを切り離します。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="ja" operations={[{"path":"/threads/{threadId}/files/{fileId}","method":"delete"}]} showDescription />
+    </>
+  );
+}

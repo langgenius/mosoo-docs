@@ -116,6 +116,7 @@ test('worker leaves non-HTML assets untouched', async () => {
 const localizedCases = [
   ['/docs/quickstart/', 'en'],
   ['/docs/zh-Hans/quickstart/', 'zh-Hans'],
+  ['/docs/ja/quickstart/', 'ja'],
 ] as const;
 
 for (const [pathname, language] of localizedCases) {

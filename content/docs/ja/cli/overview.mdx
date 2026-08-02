@@ -1,0 +1,75 @@
+---
+title: "CLI"
+description: "terminal から mosoo をインストール、認証、確認、操作します。"
+---
+
+`mosoo` CLI は Public Thread API、Console GraphQL operation、console REST operation、machine-readable command catalog を提供します。
+
+## インストール
+
+```bash
+curl -fsSL https://install.mosoo.ai/install.sh | bash
+```
+
+installer は CLI を `~/.local/bin` に配置し、`@mosoo` coding-agent Skill をインストールし、[cloud.mosoo.ai](https://cloud.mosoo.ai) にサインインして `doctor` を実行します。system を変更せずに option を確認するには次を実行します。
+
+```bash
+curl -fsSL https://install.mosoo.ai/install.sh | bash -s -- --dry-run
+```
+
+## 認証と確認
+
+interactive browser login:
+
+```bash
+mosoo auth login --hostname cloud.mosoo.ai
+mosoo auth status --hostname cloud.mosoo.ai
+mosoo doctor --json
+```
+
+non-interactive login では、token を shell history に残す引数ではなく standard input から渡します。
+
+```bash
+printf '%s' "$MOSOO_API_TOKEN" | \
+  mosoo auth login --hostname cloud.mosoo.ai --with-token
+```
+
+## Command を探す
+
+```bash
+mosoo --help
+mosoo commands --json
+mosoo commands show console apps deploy-app
+mosoo search "create environment"
+```
+
+`commands --json` は tool と coding Agent 向けです。`commands show` は一つの generated command の正確な schema を表示します。
+
+## 一般的な操作
+
+```bash
+# App、Agent、credential readiness を一覧表示
+mosoo ls -o json
+
+# 新しい Agent Run を開始
+mosoo run \
+  --input-app-id <app-id> \
+  --input-agent-id <agent-id> \
+  --input-prompt "Summarize this repository" \
+  --wait -o json
+
+# project context または明示した flag から Environment を作成
+mosoo console environments create-environment
+
+# public GitHub repository をデプロイ
+mosoo console apps deploy-app \
+  --input-app-id <app-id> \
+  --input-repo-url https://github.com/owner/repository \
+  --wait
+```
+
+endpoint resolution は `--target local|cloud|custom`、`--base-url`、`--hostname` で制御します。output format は `table`、`json`、`yaml`、`raw` です。
+
+<Callout type="warning">
+  token を command argument、source file、Agent prompt に貼り付けないでください。interactive login を使うか、`--with-token` に pipe してください。
+</Callout>

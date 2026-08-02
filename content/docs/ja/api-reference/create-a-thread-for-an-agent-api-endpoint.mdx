@@ -1,0 +1,32 @@
+---
+title: Agent API Endpoint の Thread を作成する
+description: "Thread とそのバッキング AgentSession を作成します。入力が存在する場合、mosoo は最初の Run もキューに入れます。入力を省略した場合、Thread は IDLE ステータスですぐに表示され、実行されません。 API token 呼び出し元は、API token 所有者に帰属します。"
+full: true
+_openapi:
+  preload:
+    - ja
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          Thread とそのバッキング AgentSession を作成します。入力が存在する場合、mosoo は最初の Run
+          もキューに入れます。入力を省略した場合、Thread は IDLE ステータスですぐに表示され、実行されません。 API token
+          呼び出し元は、API token 所有者に帰属します。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="ja" operations={[{"path":"/agents/{agentId}/threads","method":"post"}]} showDescription />
+    </>
+  );
+}

@@ -1,0 +1,60 @@
+---
+title: "Agent API Endpoint"
+description: "公開済み mosoo Agent を public API から呼び出せるようにする仕組みです。"
+---
+
+Agent API Endpoint は、公開済み mosoo Agent の public API entry point です。application は `agentId` と mosoo API token を使って呼び出します。
+
+## 必要なもの
+
+有効な Agent API Endpoint には次が必要です。
+
+- 実在する Agent ID。
+- Agent status が `published`。
+- live API endpoint version。
+- API token owner が所有する App。
+- Agent owner と App owner が一致していること。
+
+Agent が公開されていない場合、mosoo は `409 agent_not_published` を返します。live API endpoint version がない場合は `409 service_inactive`、token owner が Agent の App を所有していない場合は `403 forbidden` を返します。
+
+## `agentId`
+
+`agentId` は mosoo の Agent API Access panel で取得します。v1 の `agentId` は prefix のない ULID です。
+
+```text
+01J00000000000000000000001
+```
+
+`agent_` prefix を付けないでください。`threadId`、`fileId`、`runId` にも同じ bare-ULID rule が適用されます。
+
+## Endpoint が所有するもの
+
+Agent API Endpoint は runtime boundary を所有します。
+
+| mosoo が所有 | application が所有 |
+| --- | --- |
+| 公開済み Agent 設定、model provider setup、tool execution、sandbox/runtime behavior、Agent memory/runtime state、public event generation。 | Product UI、backend API、job、app-side user、business logic、storage、`thread.id` persistence、client-owned correlation ID。 |
+
+request から model provider credential、tool、channel、runtime setting、Agent configuration を上書きすることはできません。mosoo で変更し、Agent を再度公開してください。
+
+## 最初の API call
+
+Agent API Endpoint に Thread を作成します。
+
+```http
+POST /api/v1/agents/{agentId}/threads
+```
+
+`input` を指定すると最初の Run をすぐに queue に追加します。省略すると空の `IDLE` Thread を作成します。
+
+<Cards>
+  <Card title="認証とアクセス" href="/docs/ja/auth-and-access">
+    API token check と resource visibility を確認します。
+  </Card>
+  <Card title="Thread を作成" href="/docs/ja/api-reference/create-a-thread-for-an-agent-api-endpoint">
+    endpoint の完全なリファレンスです。
+  </Card>
+  <Card title="Thread と Run" href="/docs/ja/threads-and-runs">
+    Thread と Run の lifecycle state を理解します。
+  </Card>
+</Cards>

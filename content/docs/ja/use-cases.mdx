@@ -1,0 +1,38 @@
+---
+title: "一般的な Agent パターン"
+description: "一般的な workflow に合う Agent タイプと mosoo 機能を選択します。"
+---
+
+以下を出発点として、自分のデータと失敗ケースでテストしてください。
+
+## 継続的なリサーチアシスタント
+
+- **タイプ:** Assistant Agent
+- **理由:** 反復する調査では継続する workspace が役立ちます。
+- **設定:** citation を重視する prompt、関連する research Skill、任意の Remote HTTPS MCP source、分析 package 用の再利用可能な Environment。
+- **提供:** 対話的な作業には mosoo Thread、別の製品への組み込みには API access。
+
+## Pull request reviewer
+
+- **タイプ:** Task Agent
+- **理由:** 各 review はクリーンな一時 state で開始する必要があります。
+- **設定:** repository-review Skill、GitHub MCP connection、厳密な output format、最小限の Environment。
+- **提供:** review ごとに一つの Thread、または Public Thread API を呼び出す外部 system。
+
+## Ticket triage worker
+
+- **タイプ:** Task Agent
+- **理由:** ticket は独立した job であり、一時 state を相互に漏らすべきではありません。
+- **設定:** Skill 内の triage rubric、issue-tracker MCP、label と escalation の明示的なルール。
+- **運用:** 失敗した Thread を filter し、Logs を確認し、production usage と Preview を分けて監視します。
+
+## Team copilot
+
+- **タイプ:** Assistant Agent
+- **理由:** session 間で安定した working directory を維持すると copilot に役立ちます。
+- **設定:** product と operations の Skill、および認証済み MCP connection。
+- **境界:** mosoo の現在の console は単一オーナー向けです。team role と shared administration は利用できません。owner credential を共有せず、適切な外部 surface を通じて Agent を公開してください。
+
+## 公開 application
+
+Agent を公開し、backend から Public Thread API を使用します。簡単な website も必要な場合、App Deployment で対応する public repository を一つ公開し、Agent access を紐付けられます。これは汎用 backend、authentication、scheduling、custom-domain platform ではありません。

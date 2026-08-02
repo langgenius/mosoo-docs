@@ -1,0 +1,33 @@
+---
+title: "App、Agent、runtime"
+description: "mosoo の所有、継続性、実行の境界を選択します。"
+---
+
+## App は分離の境界
+
+App は Agent、ファイル、設定リソース、デプロイ、使用量を分離します。App を切り替えると console に表示されるリソースも変わります。現在の Alpha は単一オーナー向けであり、Organization のチームロール、招待、所有権移管は利用できません。
+
+## Agent タイプは継続性を決める
+
+| タイプ | Runtime state | 適した用途 |
+| --- | --- | --- |
+| **Assistant Agent** | session 間で安定した作業 Environment を維持します。再構築時に選択した workspace と memory は保持されますが、ローカルのサインインや cache が失われる場合があります。 | 継続性が役立つアシスタント、copilot、反復作業。 |
+| **Task Agent** | Run ごとにクリーンな状態で開始し、終了後に一時 state を解放します。会話記録は残ります。 | レビュー、triage、webhook、独立した batch task。 |
+
+新しい Agent は Assistant Agent として作成されます。draft の間はタイプを変更できますが、最初の公開時に固定されます。元の Agent を変えずにタイプを変更するには fork します。
+
+## Runtime は Agent driver
+
+runtime は Agent の実行方法と解決する Provider credential を決めます。runtime の選択は Agent タイプとは独立しています。
+
+- **Claude Agent SDK** は Anthropic を使用します。
+- **OpenAI Runtime** は OpenAI または互換性のある Responses API endpoint を使用します。
+- **OpenCode** は独自 runtime と互換性のある Provider 設定をサポートします。
+
+## Thread と Run
+
+Thread は一つの Agent に対する永続的な対話記録です。新しいタスクや再開時の返信によって Run が開始されます。Thread は履歴を保持し、非同期に再度開くことができます。Run は status、イベント、ファイル、ログ、使用量を持つ一回の実行です。
+
+## 公開バージョン
+
+公開すると Agent 設定の snapshot が作成されます。新しい session は現在の live version を使用し、既存 session は開始時のバージョンを使い続けます。現在、version history は読み取り専用であり、過去設定の完全な復元や並列比較は利用できません。

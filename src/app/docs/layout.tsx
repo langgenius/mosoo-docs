@@ -7,6 +7,7 @@ export default function Layout({ children }: LayoutProps<'/docs'>) {
       trees={{
         en: source.getPageTree('en'),
         'zh-Hans': source.getPageTree('zh-Hans'),
+        ja: source.getPageTree('ja'),
       }}
     >
       {children}

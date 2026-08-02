@@ -1,0 +1,249 @@
+---
+title: "Cloudflare に mosoo をデプロイ"
+description: "GitHub Actions またはローカルの Wrangler toolchain から Cloudflare Workers に mosoo をデプロイします。"
+---
+
+mosoo は二つの Cloudflare Worker として動作します。一つは D1、R2、Queues、Durable Objects、Containers を使用する API Worker、もう一つは console を配信し API service に binding する Web Worker です。単体の Cloudflare Pages site ではありません。
+
+このガイドでは、reference deployment で使用する二つの方法を説明します。
+
+- **Cloud deployment** — GitHub Actions で build して Cloudflare に公開します。
+- **Local toolchain deployment** — operator が local checkout から Wrangler で同じ設定を公開します。
+
+どちらも `apps/api/wrangler.toml`、`apps/web/wrangler.toml`、repository の deployment script を使用します。Cloudflare resource を一度準備してから、いずれかの release path を選択してください。
+
+## 前提条件
+
+- Workers、D1、R2、Queues、Durable Objects、Containers が利用可能な Cloudflare account。
+- Cloudflare DNS にある `console.example.com` などの domain。App Deployment を有効にする場合は `apps.example.com` などの deployment subdomain も必要です。
+- Git、Docker、[Bun](https://bun.sh/)、[just](https://just.systems/)、repository submodule。
+- 上記 resource のデプロイに必要な account と zone permission を持つ Cloudflare API token。token と secret value は Git の外に保管し、以下の操作に必要な最小権限を使用してください。
+
+| Scope | 必要な操作 |
+| --- | --- |
+| Account | Workers script、version、deployment、custom domain、Containers、D1 migration、R2、Queues。App Deployment を有効にする場合は Pages project と domain も必要です。 |
+| `CLOUDFLARE_ZONE_ID` で選択する Zone | App Deployment domain に対する Workers Routes の変更。 |
+| R2 S3 credential | deployed app が使用する sandbox-state bucket の読み書き。 |
+
+`CLOUDFLARE_ZONE_ID` は `MOSOO_APP_DEPLOYMENT_DOMAIN` を所有する zone を指定する必要があります。Cloudflare の token label は変わることがあるため、account 全体の administrator 権限を付与するのではなく、上記の API operation が許可されていることを確認してください。
+
+fork を clone し、固定された dependency を install します。
+
+```bash
+git clone --recurse-submodules https://github.com/<owner>/mosoo.git
+cd mosoo
+bun install --frozen-lockfile
+```
+
+## 1. Cloudflare resource を準備する
+
+workstation から provisioning する場合は Wrangler で認証します。
+
+```bash
+cd apps/api
+../../node_modules/.bin/vp exec wrangler login
+../../node_modules/.bin/vp exec wrangler whoami
+```
+
+production D1 database を一つ作成し、返された database ID をコピーします。
+
+```bash
+../../node_modules/.bin/vp exec wrangler d1 create mosoo-prod
+```
+
+production 設定で参照する R2 bucket を作成します。
+
+```bash
+../../node_modules/.bin/vp exec wrangler r2 bucket create mosoo-file
+../../node_modules/.bin/vp exec wrangler r2 bucket create mosoo-sandbox-state
+```
+
+API command、artifact build、最終 channel delivery に使用する queue を作成します。
+
+```bash
+for queue in \
+  api-command \
+  api-command-dlq \
+  environment-artifact-build \
+  channel-final-delivery \
+  channel-final-delivery-dlq
+do
+  ../../node_modules/.bin/vp exec wrangler queues create "$queue"
+done
+```
+
+resource 名を変更した場合は、`apps/api/wrangler.toml` にある対応するすべての producer、consumer、binding を更新します。
+
+## 2. Domain と binding を設定する
+
+両方の Wrangler file にある `[env.prod]` section を編集します。最低限、次を設定してください。
+
+1. `apps/api/wrangler.toml`:
+   - `WEB_ORIGIN` を公開 HTTPS console URL に設定。
+   - `MOSOO_APP_DEPLOYMENT_DOMAIN` を deployment domain に設定。
+   - API route を `<console-domain>/api/*` に設定し、その `zone_name` を指定。
+   - `wrangler d1 create` が返した D1 `database_id` を設定。
+   - default を使用しなかった場合は D1、R2、Queue 名を更新。
+   - `AUTH_EMAIL_FROM` を Cloudflare zone で認証済みの sender に更新。
+2. `apps/web/wrangler.toml`:
+   - production custom domain を同じ console domain に設定。
+   - `API` service binding は production API Worker 名を参照したままにする。
+
+例えば routing は次の形になります。
+
+```text
+https://console.example.com/*      -> Web Worker
+https://console.example.com/api/*  -> API Worker
+https://*.apps.example.com/*       -> Apps published by mosoo, when enabled
+```
+
+Cloudflare の各 resource namespace で未使用の名前を選びます。Workers、D1 database、Queue、R2 bucket、hostname にはそれぞれ異なる命名規則と一意性の要件があります。別の deployment の database ID、account ID、zone ID、hostname をコピーしないでください。
+
+## 3. Production secret を保存する
+
+現在の production 設定では、API Worker に次の secret が必要です。
+
+- `BETTER_AUTH_SECRET`
+- `RUNTIME_ACTION_TOKEN_SECRET`
+- `VAULT_ROOT_SECRET`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ZONE_ID`
+- `GOOGLE_OAUTH_CLIENT_ID`
+- `GOOGLE_OAUTH_CLIENT_SECRET`
+
+最初の三つにはそれぞれ独立した random value を生成します。R2 S3 credential と Cloudflare API token は Cloudflare dashboard で作成します。Google OAuth client には公開 mosoo origin と正確な callback URL `https://console.example.com/api/auth/callback/google` を設定し、example domain は `WEB_ORIGIN` に置き換えてください。
+
+各 value は Wrangler で保存し、`wrangler.toml` や commit 対象の `.env` file には追加しないでください。
+
+```bash
+cd apps/api
+../../node_modules/.bin/vp exec wrangler secret put BETTER_AUTH_SECRET --env prod
+# 上記の必須 secret ごとに繰り返します。
+```
+
+email login を使用する場合は Cloudflare Email Routing を設定し、`AUTH_EMAIL` binding が使用する sender を認証します。PostHog analytics は任意です。project key を省略すると analytics は無効のままです。
+
+## 4A. GitHub Actions による cloud deployment
+
+reference cloud path は `.github/workflows/deploy-try.yml` です。repository を検証し、D1 migration chain を local で実行し、remote D1 migration ledger と Queue list を読み取り、両 Worker を dry-run し、API と Web Worker をデプロイして、最後に public endpoint を確認します。R2、Container、binding のすべての resource を個別に preflight するものではありません。
+
+fork では次を行います。
+
+1. workflow の repository guard、environment URL、public health-check URL、deployment 固有の build variable を更新します。
+2. workflow が使用する GitHub Environment を作成し、release branch に制限します。
+3. `CLOUDFLARE_ACCOUNT_ID` と `CLOUDFLARE_API_TOKEN` を GitHub Environment secret として追加します。これらは CI の認証に使います。前 section の runtime secret は Cloudflare に残します。
+4. release branch を force-push と削除から保護します。
+5. review 済みの `main` commit だけを release branch に進めます。
+
+reference workflow は `deploy/try` への push をデプロイします。
+
+```bash
+git fetch origin
+git push origin origin/main:deploy/try
+```
+
+repository check、dry run、deployment、public verification がすべて成功するまで GitHub Actions run を監視します。D1 migration、Queue update、Worker publication は一つの atomic transaction ではないため、workflow は release を直列化します。
+
+<Callout type="warning">
+  commit 済み workflow は、設定された upstream 以外の repository からのデプロイを拒否します。fork で CI deployment を動かすには、この guard を意図的に変更する必要があります。
+</Callout>
+
+## 4B. Wrangler による local deployment
+
+clean で review 済みの checkout から、同じ commit 済み設定を使用します。Wrangler は `wrangler login` で認証できます。API token を export すると local command を CI に近づけられます。
+
+<Callout type="warning">
+  `just check` だけで deployment preflight が完了したと考えないでください。API deploy script は build と bundle の検証より前、最初の remote operation として pending remote D1 migration を適用します。`just deploy` の前に、同じ release commit で以下の非変更 check をすべて完了してください。
+</Callout>
+
+最初に production credential を export し、repository、submodule、build-input directory が clean であることを確認します。
+
+```bash
+export CLOUDFLARE_ACCOUNT_ID="<your-account-id>"
+export CLOUDFLARE_API_TOKEN="<your-api-token>"
+
+git status --short --branch
+test -z "$(git status --porcelain=v1 --untracked-files=all)"
+git submodule foreach --recursive \
+  'test -z "$(git status --porcelain=v1 --untracked-files=all)"'
+test -z "$(git ls-files -v | grep -E '^[a-zS]')"
+test -z "$(git ls-files --others --ignored --exclude-standard -- apps/web/src apps/web/public)"
+
+just check
+```
+
+isolated local D1 database に対して migration chain 全体を実行し、production migration ledger と Queue list を変更せずに確認します。
+
+```bash
+(
+  cd apps/api
+  persist_dir="$(mktemp -d)"
+  trap 'rm -rf "$persist_dir"' EXIT
+  ../../node_modules/.bin/vp exec wrangler d1 migrations apply DB \
+    --local --env prod --persist-to "$persist_dir"
+)
+
+(
+  cd apps/api
+  ../../node_modules/.bin/vp exec wrangler d1 migrations list DB --remote --env prod
+  ../../node_modules/.bin/vp exec wrangler queues list
+)
+```
+
+local migration chain が失敗した場合は停止します。remote ledger に pending migration がある場合は正確な SQL を確認し、migration が additive または明示的に承認済みの場合のみ続行します。step 1 で作成した五つの Queue がすべて存在することを確認してください。
+
+Driver と Web asset を build し、両 Worker upload を dry-run します。以下の command は Worker の公開や remote migration の適用をせずに、設定と bundle を検証します。
+
+```bash
+./node_modules/.bin/vp run --filter agent-driver build
+
+(
+  cd apps/api
+  ../../node_modules/.bin/vp exec wrangler deploy --env prod --minify --dry-run
+)
+
+./node_modules/.bin/vp run --filter @mosoo/web build
+
+(
+  cd apps/web
+  ../../node_modules/.bin/vp exec wrangler deploy --env prod --dry-run
+)
+
+git status --short
+```
+
+上記すべての check が同じ clean commit で成功してから公開します。
+
+```bash
+just deploy
+```
+
+`just deploy` は repository gate 全体を実行し、API、Web Worker の順にデプロイします。API deployment は pending remote D1 migration を適用し、期待する schema を検証し、必須 queue を用意し、Driver container を build して API Worker を公開します。その後、Web deployment が console Worker を build して公開します。
+
+部分的な失敗を診断した後に片側だけ release する場合は次を使用します。
+
+```bash
+just deploy-api
+just deploy-web
+```
+
+これらの部分 command は直接公開し、repository gate 全体を実行しません。同じ clean release commit を維持し、上記の関連する build と dry-run を再実行してください。適用済み D1 migration は決して書き換えず、production schema の変更ごとに新しい migration を追加します。
+
+## 5. Deployment を検証する
+
+example domain を置き換え、三つの public path をすべて確認します。
+
+```bash
+curl --fail --silent --show-error https://console.example.com/ >/dev/null
+curl --fail --silent --show-error https://console.example.com/api/health
+curl --fail --silent --show-error https://console.example.com/api/graphql \
+  -H 'content-type: application/json' \
+  --data '{"query":"query { __typename }"}'
+```
+
+console が HTTPS で読み込まれ、`/api/health` が mosoo service の OK を報告し、GraphQL が `Query` を返す必要があります。user に deployment を案内する前に、両 Worker のログも確認し、D1 migration と Queue consumer が正常であることを確かめてください。
+
+正式な停止条件、recovery guidance、release acceptance check については、mosoo source repository の [`docs/production-deploy-verification.md`](https://github.com/langgenius/mosoo/blob/main/docs/production-deploy-verification.md) に従ってください。

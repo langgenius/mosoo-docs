@@ -1,0 +1,36 @@
+---
+title: "公開と API access"
+description: "Agent を公開し、Thread、API、coding-agent の提供方法を選択します。"
+---
+
+公開すると draft 設定の snapshot が作られ、各提供方法が利用可能になります。
+
+![Publish menu には Thread、API Access、coding-agent instructions が表示されます。](/docs/images/product/publish-agent.png)
+
+## Draft を公開する
+
+1. Preview のテストを完了します。
+2. **Publish** を開いて draft を公開します。
+3. live-version badge と version summary を確認します。
+
+最初の公開時に Agent タイプが固定されます。新しい session は現在の live version を使用し、進行中の session は元のバージョンを使い続けます。
+
+## Thread を開始する
+
+**Thread** を選ぶか、**Runs → New thread** を開き、Agent を選択してタスクを入力し、dispatch します。後から返信すると同じ Thread を非同期に再開できます。
+
+![新しい Thread には一つの Agent と一つの初期タスクを割り当てます。](/docs/images/product/new-thread.png)
+
+## API access を有効にする
+
+Publish menu から **API Access** を選択します。prefix のない ULID 形式の Agent ID をコピーし、**Settings → API tokens** で account API token を作成します。
+
+![API token は公開済み Agent endpoint への呼び出しを認証します。](/docs/images/product/api-tokens.png)
+
+token は `Authorization: Bearer` header でのみ使用してください。API access は Thread の作成と再開を行います。Agent の作成、編集、公開は行いません。
+
+<Cards>
+  <Card title="API クイックスタート" href="/docs/ja/quickstart">curl で Thread を作成します。</Card>
+  <Card title="認証とアクセス" href="/docs/ja/auth-and-access">token と Agent access を理解します。</Card>
+  <Card title="API リファレンス" href="/docs/ja/api-reference">Public Thread API のすべての operation を参照します。</Card>
+</Cards>

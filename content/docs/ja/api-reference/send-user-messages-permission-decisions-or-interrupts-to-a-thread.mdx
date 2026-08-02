@@ -1,0 +1,32 @@
+---
+title: ユーザー メッセージ、権限決定、または割り込みを Thread に送信します。
+description: "Thread に一連のイベントを適用します。user message の送信、保留中の permission request への回答、現在の Run の中断ができます。Thread が idle の場合、user message は新しい Run を queue に追加します。"
+full: true
+_openapi:
+  preload:
+    - ja
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          Thread に一連のイベントを適用します。user message の送信、保留中の permission request
+          への回答、現在の Run の中断ができます。Thread が idle の場合、user message は新しい Run を queue
+          に追加します。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="ja" operations={[{"path":"/threads/{threadId}/events","method":"post"}]} showDescription />
+    </>
+  );
+}
