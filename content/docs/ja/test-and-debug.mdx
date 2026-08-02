@@ -1,0 +1,38 @@
+---
+title: "プレビューとデバッグ"
+description: "Agent をテストし、Logs、Cost、Terminal、作業 state を確認します。"
+---
+
+Agent workspace を使って、公開前に draft 設定をテストします。
+
+## Preview
+
+左側の pane に代表的なタスクを入力します。次をテストしてください。
+
+- 通常の request と期待する output。
+- 添付した各 Skill または MCP server を使用する request。
+- file input と生成される artifact。
+- 情報不足時の確認動作。
+- tool、credential、Environment の失敗経路。
+
+draft の変更はすぐに Preview に反映されます。緑色の **Ready** state は editor がタスクを受け付けられることを示すだけで、すべての外部 dependency が動作する保証ではありません。
+
+## Logs
+
+**Logs** を開いて session と実行履歴を確認します。runtime startup、tool use、failure を関連付けるために利用できます。secret がログに出力されるべきではありません。ユーザーが作成した内容に raw credential が含まれる場合は、診断情報を共有する前に削除してください。
+
+## Cost
+
+**Cost** では Agent 単位の費用見積もり、model mix、最近の usage event を確認できます。production と debug の使用を分けて filter してください。cost は記録された model call に基づく見積もりであり、Provider invoice ではありません。
+
+## Terminal とリセット
+
+Assistant Agent は Environment を session 間で維持できるため、Terminal と作業 state の control を提供します。意図的にクリーンな state に戻す場合に reset を使用します。reset により local workspace state、cache、sign-in が削除されることがあります。Task Agent は Run ごとにクリーンな状態で開始し、同じ永続 control は提供しません。
+
+## 一般的な失敗の診断
+
+1. **Runtime needs a key:** この App で対応する Provider を設定します。
+2. **Model is unavailable:** Provider の model list と endpoint compatibility を確認します。
+3. **MCP tool fails:** connection が有効かつ認証済みであることを確認し、tool を直接使うタスクを再試行します。
+4. **Environment startup fails:** 正確な package version、setup script、必須変数を確認します。
+5. **Old session behaves differently:** 現在の公開バージョンを使うには新しい session を開始します。

@@ -1,0 +1,108 @@
+---
+title: "イベントとストリーミング"
+description: "event snapshot または Server-Sent Events から Thread output を読み取ります。"
+---
+
+Thread event は mosoo API integration の安定した read surface です。公開可能な state だけを返します。raw runtime payload、private transcript、internal diagnostics はこの API に含まれません。
+
+## Snapshot を読み取る
+
+polling、job、backend state reconciliation には snapshot を使用します。
+
+```http
+GET /api/v1/threads/{threadId}/events?limit=100
+```
+
+response の `events` は、指定した window 内で古い順に返されます。limit に達したため古い public event が省略された場合、`truncated` は true です。default limit は 100、maximum は 1000 です。
+
+各 event には次が含まれます。
+
+| Field | 意味 |
+| --- | --- |
+| `id` | 安定した event ID。prefix のない ULID。 |
+| `runId` | Run に属する event の Run ID。属さない場合は `null`。 |
+| `type` | `agent.message.delta` や `run.completed` などの public event type。 |
+| `status` | `available`、`error`、`unsupported`。 |
+| `content` | public event content または関連 payload への参照。 |
+| `occurredAt` | RFC 3339 timestamp。 |
+| `durationMs` | 該当する場合の duration。 |
+| `tokens` | 該当する場合の token count。 |
+
+## Update を stream する
+
+長時間動作する user experience には SSE を使用します。
+
+```http
+GET /api/v1/threads/{threadId}/events/stream?limit=100
+```
+
+stream は comment heartbeat から始まります。
+
+```text
+: connected
+```
+
+各 public event は次の形式で送信されます。
+
+```text
+event: thread.event
+id: 01J00000000000000000000010
+data: {"id":"01J00000000000000000000010","runId":"01J0000000000000000000000A","type":"run.started","status":"available","content":"01J0000000000000000000000A","occurredAt":"2026-05-19T00:00:01.000Z","durationMs":null,"tokens":null}
+```
+
+stream は polling 中に観測した重複 event ID を抑制します。新しい event がない間は keepalive comment を送信します。開始後に stream が失敗した場合、mosoo は standard error envelope を含む `event: thread.error` を送信します。
+
+## 送信するイベント
+
+caller input を Thread に送信します。
+
+```http
+POST /api/v1/threads/{threadId}/events
+```
+
+送信できる event variant:
+
+```json
+{
+  "events": [
+    {
+      "type": "user_message",
+      "clientRequestId": "ticket-182-message-1",
+      "resources": [
+        {
+          "type": "file",
+          "file_id": "01J0000000000000000000000J"
+        }
+      ],
+      "text": "添付ファイルを要約してください。"
+    },
+    {
+      "type": "permission_decision",
+      "requestId": "tool-request-1",
+      "decision": "allow_once"
+    },
+    {
+      "type": "user_interrupt",
+      "runId": null
+    }
+  ]
+}
+```
+
+network retry によって同じ user input を二重送信しないよう、送信する event には `Idempotency-Key` を使用します。
+
+## Output を再構築する
+
+現在の UI 表示では、public event を `runId` ごとにまとめます。対象 Run の `agent.message.delta` event を時系列順に連結してください。Run が `completed` になった後は、Thread または send-event response に `run.finalOutput.text` があれば、それを優先します。
+
+<Cards>
+  <Card title="Thread event を一覧表示" href="/docs/ja/api-reference/list-thread-events">
+    snapshot endpoint のリファレンスです。
+  </Card>
+  <Card title="Thread event をストリーム" href="/docs/ja/api-reference/stream-thread-events">
+    SSE endpoint のリファレンスです。
+  </Card>
+  <Card title="イベントを送信" href="/docs/ja/api-reference/send-user-messages-permission-decisions-or-interrupts-to-a-thread">
+    送信 event の schema です。
+  </Card>
+</Cards>

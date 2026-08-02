@@ -1,6 +1,17 @@
+import { docsLanguages, isDocsLanguage, type DocsLanguage } from './i18n';
+
 const siteUrl = 'https://mosoo.ai';
 const docsRoot = '/docs';
-const zhPrefix = 'zh-Hans';
+const openGraphLocales: Record<DocsLanguage, string> = {
+  en: 'en_US',
+  'zh-Hans': 'zh_CN',
+  ja: 'ja_JP',
+};
+const docsRootNames: Record<DocsLanguage, string> = {
+  en: 'mosoo Docs',
+  'zh-Hans': 'mosoo 中文文档',
+  ja: 'mosoo 日本語ドキュメント',
+};
 
 interface SitemapPage {
   url: string;
@@ -19,16 +30,24 @@ function normalizePathname(pathname: string) {
 
 function toEnglishPath(pathname: string) {
   const path = normalizePathname(pathname);
-  return path === `${docsRoot}/${zhPrefix}`
-    ? docsRoot
-    : path.replace(`${docsRoot}/${zhPrefix}/`, `${docsRoot}/`);
+  for (const language of docsLanguages) {
+    if (language === 'en') continue;
+    const localizedRoot = `${docsRoot}/${language}`;
+    if (path === localizedRoot) return docsRoot;
+    if (path.startsWith(`${localizedRoot}/`)) {
+      return path.replace(localizedRoot, docsRoot);
+    }
+  }
+
+  return path;
 }
 
-function toChinesePath(pathname: string) {
+function toLanguagePath(pathname: string, language: DocsLanguage) {
   const englishPath = toEnglishPath(pathname);
+  if (language === 'en') return englishPath;
   return englishPath === docsRoot
-    ? `${docsRoot}/${zhPrefix}`
-    : englishPath.replace(`${docsRoot}/`, `${docsRoot}/${zhPrefix}/`);
+    ? `${docsRoot}/${language}`
+    : englishPath.replace(`${docsRoot}/`, `${docsRoot}/${language}/`);
 }
 
 export function toCanonicalDocsUrl(pathname: string) {
@@ -38,29 +57,38 @@ export function toCanonicalDocsUrl(pathname: string) {
 
 export function getDocumentLanguage(pathname: string) {
   const path = normalizePathname(pathname);
-  return path === `${docsRoot}/${zhPrefix}` || path.startsWith(`${docsRoot}/${zhPrefix}/`)
-    ? zhPrefix
-    : 'en';
+  const language = docsLanguages.find((candidate) => {
+    if (candidate === 'en') return false;
+    const localizedRoot = `${docsRoot}/${candidate}`;
+    return path === localizedRoot || path.startsWith(`${localizedRoot}/`);
+  });
+  return language ?? 'en';
+}
+
+export function getOpenGraphLocale(language: string) {
+  return openGraphLocales[isDocsLanguage(language) ? language : 'en'];
 }
 
 export function getOpenGraphAlternateLocale(language: string, hasTranslation: boolean) {
   if (!hasTranslation) return undefined;
-  return language === zhPrefix ? ['en_US'] : ['zh_CN'];
+  const currentLanguage = isDocsLanguage(language) ? language : 'en';
+  return docsLanguages
+    .filter((candidate) => candidate !== currentLanguage)
+    .map((candidate) => openGraphLocales[candidate]);
 }
 
 export function getLanguageAlternates(pathname: string, pagePaths: ReadonlySet<string>) {
   const availablePaths = new Set([...pagePaths].map(normalizePathname));
-  const enPath = toEnglishPath(pathname);
-  const zhPath = toChinesePath(pathname);
-  if (!availablePaths.has(enPath) || !availablePaths.has(zhPath)) return undefined;
+  const entries = docsLanguages.flatMap((language) => {
+    const path = toLanguagePath(pathname, language);
+    return availablePaths.has(path)
+      ? [[language, toCanonicalDocsUrl(path)] as const]
+      : [];
+  });
+  const english = entries.find(([language]) => language === 'en')?.[1];
+  if (!english || entries.length !== docsLanguages.length) return undefined;
 
-  const en = toCanonicalDocsUrl(enPath);
-  const zh = toCanonicalDocsUrl(zhPath);
-  return {
-    en,
-    'zh-Hans': zh,
-    'x-default': en,
-  };
+  return Object.fromEntries([...entries, ['x-default', english]]);
 }
 
 export function buildSitemapEntries(pages: SitemapPage[]) {
@@ -80,13 +108,13 @@ export function buildSitemapEntries(pages: SitemapPage[]) {
 export function buildDocsStructuredData({ title, description, pathname }: StructuredDataInput) {
   const url = toCanonicalDocsUrl(pathname);
   const language = getDocumentLanguage(pathname);
-  const localizedRoot = language === zhPrefix ? `${docsRoot}/${zhPrefix}` : docsRoot;
+  const localizedRoot = toLanguagePath(docsRoot, language);
   const rootUrl = toCanonicalDocsUrl(localizedRoot);
   const breadcrumbItems = [
     {
       '@type': 'ListItem',
       position: 1,
-      name: language === zhPrefix ? 'mosoo 中文文档' : 'mosoo Docs',
+      name: docsRootNames[language],
       item: rootUrl,
     },
   ];

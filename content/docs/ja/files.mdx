@@ -1,0 +1,99 @@
+---
+title: "ファイル"
+description: "ファイルを upload して mosoo API Thread に mount します。"
+---
+
+public API で upload したファイルは、Agent API Endpoint App を scope とする draft file resource です。Thread の作成時または user message の送信時に mount します。Agent が生成したファイルは artifact です。API token caller から見える場合、どちらも Thread file list に表示されます。
+
+## Upload flow
+
+public upload は `multipart/form-data` を使用し、67108864 bytes までのファイルを受け付けます。
+
+1. `POST /agents/{agentId}/files` で Agent にファイルを upload します。
+2. 返された `file.id` を保存します。
+3. Thread の作成時または後続の user message 送信時に `resources` でファイルを mount します。
+
+## ファイルを upload する
+
+```bash
+printf '顧客から実装計画を求められています。' > brief.txt
+
+curl -X POST "https://cloud.mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -F "file=@brief.txt;type=text/plain"
+```
+
+response は `PublicFileResponse` です。`file.id` を保存します。
+
+```json
+{
+  "file": {
+    "id": "01J0000000000000000000000J",
+    "name": "brief.txt",
+    "mimeType": "text/plain",
+    "size": 41,
+    "createdAt": "2026-05-19T00:02:00.000Z"
+  }
+}
+```
+
+## 最初の message でファイルを使用する
+
+```bash
+curl -X POST "https://cloud.mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "resources": [
+      {
+        "type": "file",
+        "file_id": "01J0000000000000000000000J"
+      }
+    ],
+    "input": {
+      "type": "user.message",
+      "content": [
+        {
+          "type": "text",
+          "text": "添付ファイルを要約してください。"
+        }
+      ]
+    }
+  }'
+```
+
+## 後続の message でファイルを使用する
+
+後続の user message の `resources` に file ID を指定します。
+
+```json
+{
+  "events": [
+    {
+      "type": "user_message",
+      "resources": [
+        {
+          "type": "file",
+          "file_id": "01J0000000000000000000000J"
+        }
+      ],
+      "text": "添付ファイルを要約してください。"
+    }
+  ]
+}
+```
+
+<Cards>
+  <Card title="Agent file を upload" href="/docs/ja/api-reference/upload-an-agent-file">
+    Thread の作成または再開前にファイルを upload します。
+  </Card>
+  <Card title="File metadata を取得" href="/docs/ja/api-reference/retrieve-file-metadata">
+    upload 済みまたは添付済みファイルの metadata を読み取ります。
+  </Card>
+  <Card title="Content を download" href="/docs/ja/api-reference/download-thread-file-content">
+    添付ファイルまたは Agent artifact の byte content を download します。
+  </Card>
+  <Card title="ファイルを削除" href="/docs/ja/api-reference/delete-a-file">
+    pre-Thread upload または表示可能な Thread file を削除します。
+  </Card>
+</Cards>

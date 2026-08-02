@@ -23,6 +23,14 @@ const specs = [
     title: 'API 参考',
     description: 'mosoo 公开 Thread API 的生成参考。',
   },
+  {
+    id: 'ja',
+    input: './public/docs/openapi/mosoo-openapi.ja.generated.json',
+    output: './content/docs/ja/api-reference',
+    baseUrl: '/docs/ja/api-reference',
+    title: 'API リファレンス',
+    description: 'mosoo Public Thread API の自動生成リファレンスです。',
+  },
 ];
 
 const englishSpec = JSON.parse(
@@ -48,6 +56,7 @@ const apiReferenceGroups = [
   {
     enTitle: 'Threads',
     zhHansTitle: '对话',
+    jaTitle: 'Thread',
     keys: [
       'POST /agents/{agentId}/threads',
       'GET /agents/{agentId}/threads',
@@ -60,6 +69,7 @@ const apiReferenceGroups = [
   {
     enTitle: 'Events',
     zhHansTitle: '事件',
+    jaTitle: 'イベント',
     keys: [
       'POST /threads/{threadId}/events',
       'GET /threads/{threadId}/events',
@@ -69,6 +79,7 @@ const apiReferenceGroups = [
   {
     enTitle: 'Files',
     zhHansTitle: '文件',
+    jaTitle: 'ファイル',
     keys: [
       'POST /agents/{agentId}/files',
       'GET /files/{fileId}',
@@ -179,7 +190,11 @@ function groupedIndexContent(spec, files) {
   ];
 
   for (const group of apiReferenceGroups) {
-    const groupTitle = spec.id === 'zh-Hans' ? group.zhHansTitle : group.enTitle;
+    const groupTitle = spec.id === 'zh-Hans'
+      ? group.zhHansTitle
+      : spec.id === 'ja'
+        ? group.jaTitle
+        : group.enTitle;
     lines.push('', `## ${groupTitle}`, '', '<Cards>');
 
     for (const key of group.keys) {

@@ -1,0 +1,29 @@
+---
+title: Thread をアーカイブする
+description: "Thread をアーカイブして、デフォルトの Thread リストから非表示にします。"
+full: true
+_openapi:
+  preload:
+    - ja
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: Thread をアーカイブして、デフォルトの Thread リストから非表示にします。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="ja" operations={[{"path":"/threads/{threadId}/archive","method":"post"}]} showDescription />
+    </>
+  );
+}

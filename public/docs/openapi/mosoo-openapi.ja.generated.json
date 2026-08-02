@@ -1,0 +1,2272 @@
+{
+  "components": {
+    "responses": {
+      "Conflict": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "Agent/セッション状態がこのアクションを拒否したか、Idempotency-Key がすでに処理中か、別のリクエストに再利用されました。"
+      },
+      "Forbidden": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "呼び出し元はこの Agent を利用できません。"
+      },
+      "InternalError": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "リクエストは予期せず失敗しました。"
+      },
+      "InvalidRequest": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "リクエストの形状またはクエリ値が無効です。"
+      },
+      "NotFound": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "この呼び出し元のリソースが見つかりませんでした。"
+      },
+      "RateLimited": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "API token は、現在のウィンドウのパブリック API リクエストの予算を超えました。",
+        "headers": {
+          "Retry-After": {
+            "description": "リクエストを再試行するまでに待機する秒数。",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "Unauthenticated": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "有効な API token が必要です。"
+      }
+    },
+    "schemas": {
+      "ThreadEventInput": {
+        "description": "Thread に投稿された単一のイベント。適用されるバリアントは 1 つだけです。ユーザー メッセージの送信、保留中の許可リクエストへの応答、または実行中の Run の中断です。",
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "description": "オプションでファイルを添付して、新しいユーザー メッセージを Thread に送信します。",
+            "properties": {
+              "resources": {
+                "description": "このメッセージに添付するファイル。各ファイルは、同じ API token 呼び出し元によって Agent ファイル エンドポイントを介してアップロードされた、準備ができているドラフト ファイルである必要があります。",
+                "items": {
+                  "$ref": "#/components/schemas/FileResource"
+                },
+                "type": "array"
+              },
+              "clientRequestId": {
+                "description": "オプションの発信者指定の相関 ID が一致するイベント結果にエコーバックされるため、送信したメッセージと応答を組み合わせることができます。",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "text": {
+                "description": "ユーザーのメッセージテキスト。空であってはなりません。",
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": {
+                "const": "user_message",
+                "description": "send-user-message バリアントを選択する識別子。"
+              }
+            },
+            "required": [
+              "type",
+              "text"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "description": "入力を待機している間に Agent が発行した許可リクエスト (ツールの確認など) に応答します。",
+            "properties": {
+              "decision": {
+                "description": "この 1 回の発生に対して要求されたアクションを許可するか拒否するか。 `allow_once` は現在それを許可しています。 `reject_once` は今それを否定しています。",
+                "enum": [
+                  "allow_once",
+                  "reject_once"
+                ]
+              },
+              "requestId": {
+                "description": "対応する `tool.confirmation.required` イベントから取得された、応答されている許可リクエストの ID。",
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": {
+                "const": "permission_decision",
+                "description": "許可決定バリアントを選択する識別子。"
+              }
+            },
+            "required": [
+              "type",
+              "requestId",
+              "decision"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "description": "Thread で現在実行中の Run を中断します。",
+            "properties": {
+              "runId": {
+                "description": "中断する Run ID（prefix のない ULID）。省略するか null を送信すると、Thread の現在の Run を中断します。",
+                "oneOf": [
+                  {
+                    "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                    "format": "ulid",
+                    "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": {
+                "const": "user_interrupt",
+                "description": "割り込みバリアントを選択する弁別子。"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "SendEventsRequest": {
+        "additionalProperties": false,
+        "description": "イベントのバッチを Thread に投稿するためのリクエスト本文。",
+        "properties": {
+          "events": {
+            "description": "Thread に適用するイベントの順序付きリスト。少なくとも 1 つは必要です。",
+            "items": {
+              "$ref": "#/components/schemas/ThreadEventInput"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "events"
+        ],
+        "type": "object"
+      },
+      "FileResource": {
+        "additionalProperties": false,
+        "description": "Thread またはユーザー メッセージにマウントするファイル リソース。",
+        "properties": {
+          "file_id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "maxLength": 26,
+            "minLength": 1,
+            "description": "Agent ファイル エンドポイントを通じてアップロードされた準備ができたドラフト ファイルの ID。"
+          },
+          "type": {
+            "const": "file",
+            "description": "リソース識別子。現在、`file` のみがサポートされています。"
+          }
+        },
+        "required": [
+          "type",
+          "file_id"
+        ],
+        "type": "object"
+      },
+      "PublicFile": {
+        "additionalProperties": false,
+        "description": "パブリック ファイル メタデータ。",
+        "properties": {
+          "createdAt": {
+            "description": "ファイル レコードが作成されたタイムスタンプ (RFC 3339)。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "maxLength": 26,
+            "minLength": 1,
+            "description": "ファイル ID (ベア ULID)。"
+          },
+          "mimeType": {
+            "description": "ファイルのMIME type、または未知の場合はnullを検出しました。",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "description": "元のファイル名。",
+            "type": "string"
+          },
+          "size": {
+            "description": "ファイル サイズ (バイト単位)。",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "createdAt",
+          "id",
+          "mimeType",
+          "name",
+          "size"
+        ],
+        "type": "object"
+      },
+      "PublicFileResponse": {
+        "additionalProperties": false,
+        "description": "単一の公開ファイル。",
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/PublicFile",
+            "description": "パブリック ファイル メタデータ。"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "description": "2xx 以外のパブリック API 応答に対して返される標準エラー エンベロープ。",
+        "properties": {
+          "error": {
+            "description": "リクエストが失敗した理由の詳細。",
+            "properties": {
+              "code": {
+                "description": "安定した、機械可読なエラー コードで分岐できます。",
+                "enum": [
+                  "agent_not_published",
+                  "forbidden",
+                  "idempotency_conflict",
+                  "internal_error",
+                  "invalid_json",
+                  "invalid_request",
+                  "not_found",
+                  "rate_limited",
+                  "readiness_blocked",
+                  "service_inactive",
+                  "unauthenticated"
+                ]
+              },
+              "message": {
+                "description": "人間が読めるエラーの説明。エンドユーザー向けではありません。",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "SendEventsResponse": {
+        "additionalProperties": false,
+        "description": "Thread に投稿されたイベントのバッチを受け入れた結果。",
+        "properties": {
+          "acceptedAt": {
+            "description": "イベント バッチが処理のために受け入れられたときのタイムスタンプ (RFC 3339)。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "events": {
+            "description": "送信されたイベントと同じ順序でのイベントごとの結果。",
+            "items": {
+              "$ref": "#/components/schemas/ThreadEventResult"
+            },
+            "type": "array"
+          },
+          "thread": {
+            "$ref": "#/components/schemas/ThreadSummary",
+            "description": "バッチ適用後の Thread の状態。"
+          },
+          "warnings": {
+            "description": "バッチの受け入れ中に発生した致命的ではない警告 (部分的に受け入れられたリクエストなど)。何もない場合は空になります。",
+            "items": {
+              "$ref": "#/components/schemas/UserWarning"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "acceptedAt",
+          "events",
+          "thread",
+          "warnings"
+        ],
+        "type": "object"
+      },
+      "ThreadEventLogEntry": {
+        "additionalProperties": false,
+        "description": "Thread の単一のパブリック イベント ログ エントリ。これは安定した読み取り面であり、生のランタイム ペイロード、トランスクリプト、または診断が公開されることはありません。",
+        "properties": {
+          "content": {
+            "description": "イベントのパブリック コンテンツ — 通常は、生のランタイム データではなく、関連するペイロード (メッセージ ID など) への参照です。",
+            "type": "string"
+          },
+          "durationMs": {
+            "description": "該当する場合、ミリ秒単位のイベントの実測期間 (たとえば、完了した Run)。測定されない場合はヌル。",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "一意のイベント ID (ベア ULID)、時系列順に単調増加。"
+          },
+          "occurredAt": {
+            "description": "イベントが発生したタイムスタンプ (RFC 3339)。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "runId": {
+            "description": "このイベントに関連付けられた Run ID（prefix のない ULID）。Run に属さないイベントでは null です。以前の Thread output を混ぜずに、現在の一つの Run の output を再構築するために使用します。",
+            "oneOf": [
+              {
+                "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                "format": "ulid",
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "description": "イベントの配信ステータス: イベントが完全に入力された場合は `available`、失敗した場合は `error`、このイベント タイプがパブリック サーフェイス上でレンダリングできない場合は `unsupported`。",
+            "enum": [
+              "available",
+              "error",
+              "unsupported"
+            ]
+          },
+          "tokens": {
+            "description": "該当する場合、イベントに関連付けられたトークン数 (モデルの使用状況など)。測定されない場合はヌル。",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "イベント タイプ (`run.started`、`run.completed`、`agent.message.delta`、`tool.use.started` など)。",
+            "enum": [
+              "agent.message.delta",
+              "agent.thinking.delta",
+              "file.changed",
+              "run.completed",
+              "run.failed",
+              "run.started",
+              "session.status",
+              "session_files.updated",
+              "tool.confirmation.required",
+              "tool.use.completed",
+              "tool.use.started",
+              "usage.updated",
+              "user.message"
+            ]
+          }
+        },
+        "required": [
+          "content",
+          "durationMs",
+          "id",
+          "occurredAt",
+          "runId",
+          "status",
+          "tokens",
+          "type"
+        ],
+        "type": "object"
+      },
+      "ThreadEventListResponse": {
+        "additionalProperties": false,
+        "description": "最新の Thread イベント ログ エントリの時系列順のページ。",
+        "properties": {
+          "events": {
+            "description": "返されたイベント ログ エントリ。要求されたウィンドウ内で最も古いものから順に並べられます。",
+            "items": {
+              "$ref": "#/components/schemas/ThreadEventLogEntry"
+            },
+            "type": "array"
+          },
+          "truncated": {
+            "description": "指定した limit に達し、返された範囲より古いイベントが存在する場合は true です。",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "events",
+          "truncated"
+        ],
+        "type": "object"
+      },
+      "ThreadEventResult": {
+        "additionalProperties": false,
+        "description": "送信された 1 つのイベントの結果。",
+        "properties": {
+          "clientRequestId": {
+            "description": "送信されたユーザー メッセージからエコーされた `clientRequestId`、または何も指定されなかった場合、またはイベント タイプにメッセージが含まれていない場合は null がエコーされました。",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "run": {
+            "description": "このイベントによって作成または影響を受けた Run、またはイベントが開始または Run を変更しなかった場合の null。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "description": "この結果が対応するイベントの種類。",
+            "enum": [
+              "permission_decision",
+              "user_interrupt",
+              "user_message"
+            ]
+          }
+        },
+        "required": [
+          "clientRequestId",
+          "run",
+          "type"
+        ],
+        "type": "object"
+      },
+      "CreateThreadRequest": {
+        "additionalProperties": false,
+        "description": "Thread を作成するためのリクエスト本文。すべてのフィールドはオプションです。`input` を省略して空の IDLE Thread を作成するか、これを含めて初期 Run をキューに入れます。",
+        "properties": {
+          "client_external_ref": {
+            "description": "相関のために Thread に保存される、オプションの呼び出し元所有の参照 (外部チケット キーなど)。一意ではなく、mosoo によって検証されていません。",
+            "maxLength": 255,
+            "type": "string"
+          },
+          "resources": {
+            "description": "Agent ファイル エンドポイントを通じてアップロードされ、最初の Run にマウントされたファイル。",
+            "items": {
+              "$ref": "#/components/schemas/FileResource"
+            },
+            "type": "array"
+          },
+          "input": {
+            "additionalProperties": false,
+            "description": "Thread をシードし、最初の Run をキューに入れる初期ユーザー メッセージ。実行のない空の Thread を作成するには省略します。",
+            "properties": {
+              "content": {
+                "description": "最初のメッセージを構成する順序付けされたコンテンツ部分。",
+                "items": {
+                  "additionalProperties": false,
+                  "description": "最初のメッセージの単一のコンテンツ部分。",
+                  "properties": {
+                    "text": {
+                      "description": "このコンテンツ部分のテキスト。空であってはなりません。",
+                      "maxLength": 32000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": {
+                      "const": "text",
+                      "description": "コンテンツ部分の識別子。現在、`text` のみがサポートされています。"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "text"
+                  ],
+                  "type": "object"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "type": {
+                "const": "user.message",
+                "description": "初期入力の識別子。常に`user.message`。"
+              }
+            },
+            "required": [
+              "type",
+              "content"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "CreateThreadResponse": {
+        "additionalProperties": false,
+        "description": "Thread を作成した結果。",
+        "properties": {
+          "links": {
+            "$ref": "#/components/schemas/ThreadLinks",
+            "description": "作成された Thread の便利なリンク。"
+          },
+          "run": {
+            "description": "`input` が提供された場合は最初の Run がキューに入れられ、空の Thread が作成された場合は null がキューに入れられました。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "thread": {
+            "$ref": "#/components/schemas/ThreadSummary",
+            "description": "作成されたThread。"
+          }
+        },
+        "required": [
+          "links",
+          "run",
+          "thread"
+        ],
+        "type": "object"
+      },
+      "RetrieveThreadResponse": {
+        "additionalProperties": false,
+        "description": "Thread の現在の状態。",
+        "properties": {
+          "links": {
+            "$ref": "#/components/schemas/ThreadLinks",
+            "description": "Thread の便利なリンク。"
+          },
+          "run": {
+            "description": "Thread の最新の Run、または Run がまだ作成されていない場合は null。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "thread": {
+            "$ref": "#/components/schemas/ThreadSummary",
+            "description": "Threadのまとめ。"
+          }
+        },
+        "required": [
+          "links",
+          "run",
+          "thread"
+        ],
+        "type": "object"
+      },
+      "ThreadFile": {
+        "additionalProperties": false,
+        "description": "Thread に関連付けられたファイル。",
+        "properties": {
+          "committed": {
+            "description": "ファイルが Thread に永続的に添付されると true、draft handle の間は false です。",
+            "type": "boolean"
+          },
+          "createdAt": {
+            "description": "ファイルが作成されたときのタイムスタンプ (RFC 3339)。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "一意のファイル ID (ベア ULID)。"
+          },
+          "kind": {
+            "description": "パブリック API を通じて追加されたファイルは添付ファイルです。アーティファクトは、Agent によって生成されるファイルです。",
+            "enum": [
+              "attachment",
+              "artifact"
+            ]
+          },
+          "mimeType": {
+            "description": "ファイルのMIME type、または未知の場合はnullを検出しました。",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "description": "元のファイル名。",
+            "type": "string"
+          },
+          "size": {
+            "description": "ファイル サイズ (バイト単位)。",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "committed",
+          "createdAt",
+          "id",
+          "kind",
+          "mimeType",
+          "name",
+          "size"
+        ],
+        "type": "object"
+      },
+      "ThreadFileListResponse": {
+        "additionalProperties": false,
+        "description": "Thread に添付されたファイルのリスト。",
+        "properties": {
+          "files": {
+            "description": "Thread のファイル。",
+            "items": {
+              "$ref": "#/components/schemas/ThreadFile"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "type": "object"
+      },
+      "ThreadFileResponse": {
+        "additionalProperties": false,
+        "description": "単一の Thread ファイル。",
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/ThreadFile",
+            "description": "Thread ファイルのメタデータ (識別子、名前、MIME type、および生成元を含む)。"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "type": "object"
+      },
+      "ThreadAttributedUser": {
+        "additionalProperties": false,
+        "description": "Thread が属するアカウント (API token 所有者)。",
+        "properties": {
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "Thread が属するアカウント ID (ベア ULID)。"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "ThreadCaller": {
+        "additionalProperties": false,
+        "description": "Thread を作成した資格情報。",
+        "properties": {
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "Thread を作成した呼び出し元の ID (ベア ULID)。"
+          },
+          "kind": {
+            "description": "呼び出し元の資格情報のタイプ。 `access_token` は、API token 呼び出し元を識別します。",
+            "enum": [
+              "access_token"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind"
+        ],
+        "type": "object"
+      },
+      "ThreadLinks": {
+        "additionalProperties": false,
+        "description": "Thread の便利なリンク。",
+        "properties": {
+          "thread": {
+            "description": "Thread リソースの絶対 API URL。",
+            "type": "string"
+          }
+        },
+        "required": [
+          "thread"
+        ],
+        "type": "object"
+      },
+      "ThreadSummary": {
+        "additionalProperties": false,
+        "description": "Agent API Endpoint に関する Thread の概要。",
+        "properties": {
+          "agent_id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "この Thread が属する Agent API Endpoint の ID (ベア ULID)。"
+          },
+          "attributed_user": {
+            "description": "Thread が属しているアカウント、またはアカウントに属していない場合は null。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ThreadAttributedUser"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "client_external_ref": {
+            "description": "作成時に提供された呼び出し元所有の参照、または何も提供されなかった場合は null。",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "description": "Thread が作成されたタイムスタンプ (RFC 3339)。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/ThreadCaller",
+            "description": "Thread を作成した資格情報。"
+          },
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "一意の Thread ID (ベア ULID)。"
+          },
+          "kind": {
+            "description": "この Thread をサポートする Agent 種類 (たとえば、永続的または 1 回限りの Agent API Endpoint)。",
+            "enum": [
+              "pet",
+              "cattle"
+            ]
+          },
+          "last_run_id": {
+            "description": "最新の Run、または Run がまだ存在しない場合は null の ID (ベア ULID)。",
+            "oneOf": [
+              {
+                "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                "format": "ulid",
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "const": "api",
+            "description": "Threadの由来。この API を介して作成された Thread の場合は、常に `api` です。"
+          },
+          "status": {
+            "description": "Thread のライフサイクル ステータス: `IDLE` (アクティブな実行なし)、`RUNNING` (Run が実行中)、`RESCHEDULING` (実行間)、または `TERMINATED` (終了)。",
+            "enum": [
+              "IDLE",
+              "RUNNING",
+              "RESCHEDULING",
+              "TERMINATED"
+            ]
+          },
+          "title": {
+            "description": "人間が読める Thread タイトル、またはまだ派生していない場合は null。",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updated_at": {
+            "description": "Thread に対する最新の変更のタイムスタンプ (RFC 3339)。",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "agent_id",
+          "attributed_user",
+          "client_external_ref",
+          "created_at",
+          "created_by",
+          "id",
+          "kind",
+          "last_run_id",
+          "source",
+          "status",
+          "title",
+          "updated_at"
+        ],
+        "type": "object"
+      },
+      "RunSummary": {
+        "additionalProperties": false,
+        "description": "Thread 上の単一の Agent Run の概要。",
+        "properties": {
+          "completedAt": {
+            "description": "Run が終端状態に達した時刻（RFC 3339）。完了していない間は null です。",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "description": "Run が作成されたタイムスタンプ (RFC 3339)。",
+            "format": "date-time",
+            "type": "string"
+          },
+          "error": {
+            "description": "ステータスが `failed` の場合の構造化障害の概要。成功、アクティブ、キャンセル、または期限切れの Run の場合は null。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finalOutput": {
+            "description": "完了した Run の、公開して安全な正規の最終 assistant answer。公開 `agent.message.delta` event から再構築するのではなく、永続化された最終 assistant message から生成します。最終 message が永続化される前、または Run に最終 answer がない場合は null です。",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/RunFinalOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+            "format": "ulid",
+            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+            "type": "string",
+            "description": "一意の Run ID (ベア ULID)。"
+          },
+          "startedAt": {
+            "description": "Run が実行を開始したときのタイムスタンプ (RFC 3339)、またはまだキューに入れられている間の null。",
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "description": "現在の Run status。`queued` と `booting` は実行前、`running` と `waiting_input` は実行中、`completed`、`failed`、`cancelled`、`expired` は終端状態です。",
+            "enum": [
+              "queued",
+              "booting",
+              "running",
+              "waiting_input",
+              "completed",
+              "failed",
+              "cancelled",
+              "expired"
+            ]
+          },
+          "trigger": {
+            "description": "Run を開始したもの: `user_prompt` (ユーザー メッセージ)、`retry`、`resume`、または `system`。",
+            "enum": [
+              "user_prompt",
+              "retry",
+              "resume",
+              "system"
+            ]
+          },
+          "updatedAt": {
+            "description": "Run に対する最新の変更のタイムスタンプ (RFC 3339)。",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "completedAt",
+          "createdAt",
+          "error",
+          "finalOutput",
+          "id",
+          "startedAt",
+          "status",
+          "trigger",
+          "updatedAt"
+        ],
+        "type": "object"
+      },
+      "RunError": {
+        "additionalProperties": false,
+        "description": "パブリック セーフ Run 障害の概要は、障害が発生したパブリック Run で公開されます。",
+        "properties": {
+          "code": {
+            "description": "安定した、機械可読な障害コード。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "message": {
+            "description": "人間が判読できる障害の概要。",
+            "minLength": 1,
+            "type": "string"
+          },
+          "retryable": {
+            "description": "入力を変更せずに Run の再試行が成功するかどうか。",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "retryable"
+        ],
+        "type": "object"
+      },
+      "RunFinalOutput": {
+        "additionalProperties": false,
+        "description": "完成したパブリック Thread Run に対する最終アシスタントの回答。",
+        "properties": {
+          "text": {
+            "description": "Run の永続化された最終 assistant message から生成した、公開して安全な text。Provider 固有の非公開 control markup は省略し、warning で報告します。",
+            "type": "string"
+          },
+          "warnings": {
+            "description": "Provider output を安全に公開する処理で発生した非致命的な warning。",
+            "items": {
+              "$ref": "#/components/schemas/RunFinalOutputWarning"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object"
+      },
+      "RunFinalOutputWarning": {
+        "additionalProperties": false,
+        "description": "正規の final output に付加される非致命的な warning。",
+        "properties": {
+          "code": {
+            "const": "unresolved_provider_citation",
+            "description": "解決できなかった Provider citation markup を識別する安定した code。"
+          },
+          "count": {
+            "description": "public text から削除された private citation envelope の数。",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "count"
+        ],
+        "type": "object"
+      },
+      "UserWarning": {
+        "additionalProperties": false,
+        "description": "致命的ではない警告が発信者に表示されました。",
+        "properties": {
+          "code": {
+            "description": "安定した、機械可読な警告コード。",
+            "type": "string"
+          },
+          "message": {
+            "description": "人間が読める警告の説明。",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "publicApiBearer": {
+        "bearerFormat": "mosoo API token",
+        "description": "Authorization: Bearer mst_... を使用します。 API token はアカウントを識別しますが、スコープは持ちません。",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "mosoo Agent API Endpoint で Thread を作成および取得するためのパブリック HTTPS API。 v1 リソース識別子は、プレフィックス付き ID ではなく、裸の ULID です。 API token はアカウントの呼び出し元を識別します。 Runtime の実行により、Agent API Endpoint 所有者の機能が解決されますが、Thread は API token 所有者に帰属されます。",
+    "title": "mosoo Public Thread API",
+    "version": "v1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/agents/{agentId}/files": {
+      "post": {
+        "description": "Thread が存在する前に、Agent API Endpoint の App ドラフト スコープにファイルをアップロードします。返されたファイル ID は、create-thread リソースまたは send-events リソースで使用します。",
+        "parameters": [
+          {
+            "description": "Agent の API アクセス パネルからの Agent API Endpoint ID。 v1 ID は裸の ULID です。",
+            "example": "01J00000000000000000000001",
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000001",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000001"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "file": {
+                    "description": "Thread に添付する前にアップロードするファイル バイト。",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "Agent ファイルをアップロードする",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "file": {
+                    "createdAt": "2026-05-19T00:02:00.000Z",
+                    "id": "01J0000000000000000000000J",
+                    "mimeType": "text/plain",
+                    "name": "brief.txt",
+                    "size": 19
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/PublicFileResponse"
+                }
+              }
+            },
+            "description": "アップロードされたファイル。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/files/{fileId}/content": {
+      "get": {
+        "description": "準備ができた Thread 添付ファイルまたは Agent アーティファクトのバイトをダウンロードします。ファイルは、API token 呼び出し元に表示されるパブリック Thread に属している必要があります。",
+        "parameters": [
+          {
+            "description": "Thread ファイルの追加またはリストによって返されるファイル ID。 v1 ID はベア ULID です。",
+            "example": "01J0000000000000000000000J",
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "example": "01J0000000000000000000000J",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J0000000000000000000000J"
+            }
+          },
+          {
+            "description": "Content-Disposition 応答ヘッダーを制御します。ダウンロードには添付ファイルを使用し、プレビュー可能なコンテンツにはインラインを使用します。",
+            "example": "attachment",
+            "in": "query",
+            "name": "disposition",
+            "schema": {
+              "default": "attachment",
+              "enum": [
+                "attachment",
+                "inline"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "Thread ファイルコンテンツをダウンロード",
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Thread ファイルの内容。",
+            "headers": {
+              "Cache-Control": {
+                "description": "パブリック API ファイルのダウンロードの場合はストアなしに設定します。",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Disposition": {
+                "description": "返されたファイルのダウンロードまたはインラインコンテンツの処理。",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Length": {
+                "description": "ファイル サイズ (バイト単位)。",
+                "schema": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "ETag": {
+                "description": "返されたオブジェクトのストレージ ETag。",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/files/{fileId}": {
+      "delete": {
+        "description": "Thread より前にアップロードされたファイル、または API token 呼び出し元に表示されるパブリック Thread に添付されたファイルを削除します。",
+        "parameters": [
+          {
+            "description": "Thread ファイルの追加またはリストによって返されるファイル ID。 v1 ID はベア ULID です。",
+            "example": "01J0000000000000000000000J",
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "example": "01J0000000000000000000000J",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J0000000000000000000000J"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "ファイルを削除する",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "削除されました。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "description": "Thread より前のアップロード ファイル、または API token 呼び出し元に表示されるパブリック Thread に添付されたファイルのパブリック ファイル メタデータを返します。",
+        "parameters": [
+          {
+            "description": "Thread ファイルの追加またはリストによって返されるファイル ID。 v1 ID はベア ULID です。",
+            "example": "01J0000000000000000000000J",
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "example": "01J0000000000000000000000J",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J0000000000000000000000J"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "ファイルのメタデータを取得する",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "file": {
+                    "createdAt": "2026-05-19T00:02:00.000Z",
+                    "id": "01J0000000000000000000000J",
+                    "mimeType": "text/plain",
+                    "name": "brief.txt",
+                    "size": 19
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/PublicFileResponse"
+                }
+              }
+            },
+            "description": "ファイルのメタデータ。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/agents/{agentId}/threads": {
+      "get": {
+        "description": "認証された API token 呼び出し元によって作成された Thread を返します。",
+        "parameters": [
+          {
+            "description": "Agent の API アクセス パネルからの Agent API Endpoint ID。 v1 ID は裸の ULID です。",
+            "example": "01J00000000000000000000001",
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000001",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000001"
+            }
+          },
+          {
+            "description": "archive state で絞り込みます。true は archive 済み Thread のみ、false は active Thread のみを返します。すべて返す場合は省略します。",
+            "in": "query",
+            "name": "archived",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "Agent API Endpoint の Thread をリストする",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "threads": {
+                      "items": {
+                        "$ref": "#/components/schemas/ThreadSummary"
+                      },
+                      "maxItems": 100,
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "threads"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Threadリスト。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "post": {
+        "description": "Thread とそのバッキング AgentSession を作成します。入力が存在する場合、mosoo は最初の Run もキューに入れます。入力を省略した場合、Thread は IDLE ステータスですぐに表示され、実行されません。 API token 呼び出し元は、API token 所有者に帰属します。",
+        "parameters": [
+          {
+            "description": "Agent の API アクセス パネルからの Agent API Endpoint ID。 v1 ID は裸の ULID です。",
+            "example": "01J00000000000000000000001",
+            "in": "path",
+            "name": "agentId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000001",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000001"
+            }
+          },
+          {
+            "description": "再試行安全なスレッド作成およびイベント送信呼び出しのオプションのキー。同じリクエストで同じキーを再利用すると、元のレスポンスが返されます。元のリクエストの処理中にキーを再利用すると、409 が返されます。",
+            "example": "thread-20260528-linear-eng-123",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "emptyThread": {
+                  "summary": "空のThreadを作成します",
+                  "value": {
+                    "client_external_ref": "draft-empty-thread"
+                  }
+                },
+                "accessTokenWithFile": {
+                  "summary": "アップロードされたファイルを含む API token",
+                  "value": {
+                    "client_external_ref": "linear-ENG-123",
+                    "input": {
+                      "content": [
+                        {
+                          "text": "Summarize the attached launch plan and list follow-ups.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "user.message"
+                    },
+                    "resources": [
+                      {
+                        "file_id": "01J0000000000000000000000J",
+                        "type": "file"
+                      }
+                    ]
+                  }
+                },
+                "accessTokenBasic": {
+                  "summary": "API token",
+                  "value": {
+                    "client_external_ref": "demo-thread-001",
+                    "input": {
+                      "content": [
+                        {
+                          "text": "Say hello from the API.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "user.message"
+                    }
+                  }
+                },
+                "cattleAgentSameShape": {
+                  "summary": "同じ request shape を使用する Cattle Agent",
+                  "value": {
+                    "input": {
+                      "content": [
+                        {
+                          "text": "Run this one-off Public Thread API request.",
+                          "type": "text"
+                        }
+                      ],
+                      "type": "user.message"
+                    }
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/CreateThreadRequest"
+              }
+            }
+          },
+          "required": false
+        },
+        "summary": "Agent API Endpoint の Thread を作成する",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateThreadResponse"
+                }
+              }
+            },
+            "description": "Threadを作成しました。",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "この応答が以前に完了した要求から再生されるときは、true として表示されます。",
+                "schema": {
+                  "const": "true",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}": {
+      "delete": {
+        "description": "Thread とそのバッキング AgentSession を完全に削除します。",
+        "parameters": [
+          {
+            "description": "Thread 作成時に返された Thread ID。v1 ID は prefix のない ULID です。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "Thread を削除する",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "削除されました。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "get": {
+        "description": "現在の Thread の概要、最新の Run、およびリンクを返します。",
+        "parameters": [
+          {
+            "description": "Thread 作成時に返された Thread ID。v1 ID は prefix のない ULID です。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "summary": "Thread の概要を取得",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetrieveThreadResponse"
+                }
+              }
+            },
+            "description": "Threadまとめ。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/archive": {
+      "post": {
+        "description": "Thread をアーカイブして、デフォルトの Thread リストから非表示にします。",
+        "parameters": [
+          {
+            "description": "Thread 作成時に返された Thread ID。v1 ID は prefix のない ULID です。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "Thread をアーカイブする",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "アーカイブされました。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/events": {
+      "get": {
+        "description": "この Thread の最新のパブリック イベント ログ エントリを時系列順に返します。制限に達したために古いパブリック エントリが省略された場合、`truncated` は true になります。イベント ID は安定しているため、呼び出し元は同じ ID を新しいイベントとして扱わずに再試行またはポーリングを行うことができます。これは、CLI および API コンシューマにとっての安定したスナップショット読み取り面です。生のランタイム ペイロード、トランスクリプト、または診断は公開されません。",
+        "parameters": [
+          {
+            "description": "Thread 作成時に返された Thread ID。v1 ID は prefix のない ULID です。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          },
+          {
+            "description": "返される最新の Thread イベントの最大数。",
+            "example": 100,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "summary": "Thread イベントのリスト",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadEventListResponse"
+                }
+              }
+            },
+            "description": "Threadイベントリスト。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "post": {
+        "description": "Thread に一連のイベントを適用します。user message の送信、保留中の permission request への回答、現在の Run の中断ができます。Thread が idle の場合、user message は新しい Run を queue に追加します。",
+        "parameters": [
+          {
+            "description": "Thread 作成時に返された Thread ID。v1 ID は prefix のない ULID です。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          },
+          {
+            "description": "再試行安全なスレッド作成およびイベント送信呼び出しのオプションのキー。同じリクエストで同じキーを再利用すると、元のレスポンスが返されます。元のリクエストの処理中にキーを再利用すると、409 が返されます。",
+            "example": "thread-20260528-linear-eng-123",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEventsRequest"
+              },
+              "example": {
+                "events": [
+                  {
+                    "text": "Say hello from the API.",
+                    "type": "user_message"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "ユーザー メッセージ、権限決定、または割り込みを Thread に送信します。",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendEventsResponse"
+                }
+              }
+            },
+            "description": "受け入れられたイベントバッチ。",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "この応答が以前に完了した要求から再生されるときは、true として表示されます。",
+                "schema": {
+                  "const": "true",
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/events/stream": {
+      "get": {
+        "description": "パブリック Thread イベント ログ エントリをサーバー送信イベントとしてストリーミングします。各 `thread.event` データ ペイロードは、GET /threads/{threadId}/events と同じ ThreadEventLogEntry 形状を使用します。イベントは安定したイベント ID によって発行され、ストリームはポーリング中に検出された重複 ID を抑制します。このストリームは長時間実行されるコンシューマー UX 用であり、生のランタイム ペイロード、内部診断、プライベート トランスクリプトは公開されません。",
+        "parameters": [
+          {
+            "description": "Thread 作成時に返された Thread ID。v1 ID は prefix のない ULID です。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          },
+          {
+            "description": "返される最新の Thread イベントの最大数。",
+            "example": 100,
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "maximum": 1000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "summary": "Thread イベントをストリーミングする",
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "example": ": connected\n\nevent: thread.event\nid: 01J00000000000000000000010\ndata: {\"id\":\"01J00000000000000000000010\",\"runId\":\"01J0000000000000000000000A\",\"type\":\"run.started\",\"status\":\"available\",\"content\":\"01J0000000000000000000000A\",\"occurredAt\":\"2026-05-19T00:00:01.000Z\",\"durationMs\":null,\"tokens\":null}\n\n",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Thread イベント ストリーム。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/files": {
+      "get": {
+        "description": "発信者の添付ファイルや Agent アーティファクトなど、Thread に添付されたファイルをリストします。",
+        "parameters": [
+          {
+            "description": "Thread 作成時に返された Thread ID。v1 ID は prefix のない ULID です。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "Thread ファイルをリストする",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "files": [
+                    {
+                      "committed": true,
+                      "createdAt": "2026-05-19T00:02:00.000Z",
+                      "id": "01J0000000000000000000000J",
+                      "kind": "attachment",
+                      "mimeType": "text/plain",
+                      "name": "brief.txt",
+                      "size": 19
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ThreadFileListResponse"
+                }
+              }
+            },
+            "description": "Thread ファイルリスト。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/files/{fileId}": {
+      "delete": {
+        "description": "Thread からファイルを切り離します。",
+        "parameters": [
+          {
+            "description": "Thread 作成時に返された Thread ID。v1 ID は prefix のない ULID です。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          },
+          {
+            "description": "Thread ファイルの追加またはリストによって返されるファイル ID。 v1 ID はベア ULID です。",
+            "example": "01J0000000000000000000000J",
+            "in": "path",
+            "name": "fileId",
+            "required": true,
+            "schema": {
+              "example": "01J0000000000000000000000J",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J0000000000000000000000J"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "Thread ファイルを削除する",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "削除されました。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/threads/{threadId}/unarchive": {
+      "post": {
+        "description": "以前にアーカイブされた Thread をアクティブな Thread リストに復元します。",
+        "parameters": [
+          {
+            "description": "Thread 作成時に返された Thread ID。v1 ID は prefix のない ULID です。",
+            "example": "01J00000000000000000000009",
+            "in": "path",
+            "name": "threadId",
+            "required": true,
+            "schema": {
+              "example": "01J00000000000000000000009",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string",
+              "x-default": "01J00000000000000000000009"
+            }
+          }
+        ],
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "Thread のアーカイブを解除する",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "アーカイブを解除しました。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "publicApiBearer": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "https://cloud.mosoo.ai/api/v1"
+    }
+  ]
+}

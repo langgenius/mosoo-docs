@@ -1,0 +1,38 @@
+---
+title: "Environment"
+description: "Agent session 向けの再利用可能な runtime template を作成します。"
+---
+
+Environment を使うと、Agent session を一貫した package set、setup script、変数で開始できます。
+
+![Environment editor では package、setup、変数、network intent を定義します。](/docs/images/product/create-environment.png)
+
+## Environment を作成する
+
+**Config → Environments → Create environment** を開き、次を設定します。
+
+- 再利用する template の **Name and description**。
+- public npm または PyPI の、正確な version を指定した **Packages**。
+- 準備済み package の復元後に実行される **Setup script**。
+- 保存後に値が暗号化される **Environment variables**。
+- 表示はされるものの、現在の Sandbox runtime では強制されない **Networking intent**。
+
+project の dependency file から作成することもできます。
+
+```bash
+mosoo console environments create-environment
+```
+
+## 割り当てと revision
+
+Environment を App default にするか、特定の Agent で選択します。新しい session は選択した Environment revision を取得します。後からの編集は、その後に作成される session にのみ適用され、実行中の session は変わりません。
+
+## Package の動作
+
+npm package の CLI は `PATH`、CommonJS package は `NODE_PATH`、PyPI module は `PYTHONPATH` から利用できます。Node ESM の bare import には project-local install が必要です。OS package、Cargo、RubyGems、Go module は Environment package として選択できません。
+
+<Callout type="warning">
+  Networking control は現在 intent を保存するだけで、通信を制限しません。security boundary として扱わないでください。
+</Callout>
+
+App default、および Agent が選択中の Environment は削除できません。

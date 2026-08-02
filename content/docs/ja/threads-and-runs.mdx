@@ -1,0 +1,82 @@
+---
+title: "Thread と Run"
+description: "mosoo が公開済み Agent の呼び出しを Thread と Run の lifecycle state に対応付ける方法です。"
+---
+
+mosoo は公開済み Agent を Thread-based API として公開します。application は Thread を作成または再利用し、Run を queue に追加する user event を送信します。mosoo は公開済み Agent 設定の中で各 Run を実行し、public event を Thread に書き戻します。
+
+## Resource model
+
+| 概念 | 意味 |
+| --- | --- |
+| Agent API Endpoint | Agent API Access panel に表示される公開済み Agent の entry point。v1 の `agentId` は prefix のない ULID です。 |
+| Thread | API で作成する conversation container。application に `thread.id` を保存します。 |
+| Run | Thread 上での Agent の一回の実行。create-thread input または user message によって Run を queue に追加できます。 |
+| Event | input、Agent output、tool state、file、usage、Run lifecycle の変更を表す public timeline entry。 |
+
+v1 の resource ID は prefix のない ULID です。`agent_`、`thread_`、`file_`、`run_` などの prefix を付けないでください。
+
+## 作成と取得
+
+公開済み Agent に Thread を作成します。
+
+```http
+POST /api/v1/agents/{agentId}/threads
+```
+
+`input` がある場合、mosoo は最初の Run を queue に追加します。`input` を省略した場合、Run のない空の `IDLE` Thread を作成します。
+
+現在の Thread state を取得します。
+
+```http
+GET /api/v1/threads/{threadId}
+```
+
+response には `thread`、存在する場合は最新の `run`、便利な `links` が含まれます。
+
+## Thread status
+
+| Status | 意味 |
+| --- | --- |
+| `IDLE` | active Run がありません。user message で作業を queue に追加できます。 |
+| `RUNNING` | Run を実行中です。 |
+| `RESCHEDULING` | Thread が Run と Run の間にあります。 |
+| `TERMINATED` | Thread が終了しています。 |
+
+## Run status
+
+| Status | 意味 |
+| --- | --- |
+| `queued` | Run は存在しますが、まだ開始していません。 |
+| `booting` | Runtime を準備中です。 |
+| `running` | Run を実行中です。 |
+| `waiting_input` | Run が caller input を待っています。多くの場合は permission decision です。 |
+| `completed` | 正常に終了しました。存在する場合、`finalOutput.text` は安定した値です。 |
+| `failed` | 失敗して終了しました。`run.error` を確認してください。 |
+| `cancelled` | cancel されて終了しました。 |
+| `expired` | timeout または期限切れで終了しました。 |
+
+## Lifecycle operation
+
+application 側の Thread list を整理するには lifecycle endpoint を使用します。
+
+| Operation | Endpoint |
+| --- | --- |
+| Agent の Thread を一覧表示 | `GET /api/v1/agents/{agentId}/threads` |
+| Thread を archive | `POST /api/v1/threads/{threadId}/archive` |
+| Thread を unarchive | `POST /api/v1/threads/{threadId}/unarchive` |
+| Thread を削除 | `DELETE /api/v1/threads/{threadId}` |
+
+archive すると Thread は default の active list に表示されなくなります。delete すると Thread と backing AgentSession が完全に削除されます。
+
+<Cards>
+  <Card title="Thread を作成" href="/docs/ja/api-reference/create-a-thread-for-an-agent-api-endpoint">
+    request と response の完全な schema です。
+  </Card>
+  <Card title="イベントを送信" href="/docs/ja/api-reference/send-user-messages-permission-decisions-or-interrupts-to-a-thread">
+    Run を queue に追加し、permission request に回答するか、実行を中断します。
+  </Card>
+  <Card title="Thread event を一覧表示" href="/docs/ja/api-reference/list-thread-events">
+    output と status の表示に使う public event を読み取ります。
+  </Card>
+</Cards>

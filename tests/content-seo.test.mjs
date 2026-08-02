@@ -69,3 +69,28 @@ test('Chinese docs display titles contain Chinese text', () => {
 
   assert.deepEqual(missingChinese, []);
 });
+
+test('Japanese docs mirror the translated page set and contain Japanese copy', () => {
+  const chineseRoot = join(root, 'zh-Hans');
+  const japaneseRoot = join(root, 'ja');
+  const relativePages = (directory) => walk(directory).map((path) => relative(directory, path)).sort();
+  assert.deepEqual(relativePages(japaneseRoot), relativePages(chineseRoot));
+
+  const missingJapanese = [];
+  const unlocalizedLinks = [];
+  for (const path of walk(japaneseRoot)) {
+    const content = readFileSync(path, 'utf8');
+    const page = relative(root, path);
+    const block = frontmatter(content);
+    const visibleCopy = [field(block, 'title'), field(block, 'description'), content].join('\n');
+    if (!/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/u.test(visibleCopy)) {
+      missingJapanese.push(page);
+    }
+    if (/href="\/docs\/(?!ja\/|images\/)/.test(content)) {
+      unlocalizedLinks.push(page);
+    }
+  }
+
+  assert.deepEqual(missingJapanese, []);
+  assert.deepEqual(unlocalizedLinks, []);
+});

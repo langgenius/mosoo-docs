@@ -900,7 +900,7 @@
             ]
           },
           "finalOutput": {
-            "description": "已完成 Run 的稳定最终答案。mosoo 会按时间顺序从该 Run 的公开 `agent.message.delta` 事件构建此内容。Run 状态变为 `completed` 前为 null。",
+            "description": "已完成 Run 的公开安全规范最终助手答案。该答案源自持久化的最终助手消息，而不是从公开 `agent.message.delta` 事件重建。在最终消息持久化之前，或 Run 没有最终助手答案时为 null。",
             "oneOf": [
               {
                 "$ref": "#/components/schemas/RunFinalOutput"
@@ -997,12 +997,39 @@
         "description": "已完成公开 Thread Run 的最终助手答案。",
         "properties": {
           "text": {
-            "description": "按时间顺序从当前 Run 的公开 `agent.message.delta` 事件重建出的文本。",
+            "description": "源自 Run 持久化最终助手消息的公开安全文本。Provider 私有控制标记会被省略，并通过 warnings 报告。",
             "type": "string"
+          },
+          "warnings": {
+            "description": "为了让 Provider 输出可安全公开而产生的非致命警告。",
+            "items": {
+              "$ref": "#/components/schemas/RunFinalOutputWarning"
+            },
+            "type": "array"
           }
         },
         "required": [
           "text"
+        ],
+        "type": "object"
+      },
+      "RunFinalOutputWarning": {
+        "additionalProperties": false,
+        "description": "附加到规范最终输出的非致命警告。",
+        "properties": {
+          "code": {
+            "const": "unresolved_provider_citation",
+            "description": "用于标识无法解析的 Provider citation 标记的稳定代码。"
+          },
+          "count": {
+            "description": "从公开文本中移除的私有 citation envelope 数量。",
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "count"
         ],
         "type": "object"
       },

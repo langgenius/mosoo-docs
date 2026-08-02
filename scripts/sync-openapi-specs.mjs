@@ -15,13 +15,17 @@ import { fileURLToPath } from "node:url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
-const TRANSLATION_FILE = path.join(SCRIPT_DIR, "openapi.zh-Hans.translations.json");
+const TRANSLATION_FILES = {
+  "zh-Hans": path.join(SCRIPT_DIR, "openapi.zh-Hans.translations.json"),
+  ja: path.join(SCRIPT_DIR, "openapi.ja.translations.json"),
+};
 const VISIBLE_TEXT_KEYS = new Set(["bearerFormat", "description", "summary", "title"]);
 const GENERATED_FILES = {
   codingAgents: "content/docs/en/coding-agents.mdx",
   en: "public/docs/openapi/mosoo-openapi.en.generated.json",
   legacy: "public/docs/openapi/mosoo-openapi.generated.json",
   zhHans: "public/docs/openapi/mosoo-openapi.zh-Hans.generated.json",
+  ja: "public/docs/openapi/mosoo-openapi.ja.generated.json",
 };
 const CODING_AGENTS_GENERATED_BEGIN = "{/* BEGIN GENERATED OPENAPI REFERENCE */}";
 const CODING_AGENTS_GENERATED_END = "{/* END GENERATED OPENAPI REFERENCE */}";
@@ -298,19 +302,19 @@ function getParent(root, pointer) {
   return pointer.slice(0, -1).reduce((current, segment) => current[segment], root);
 }
 
-function loadTranslations() {
-  return JSON.parse(readFileSync(TRANSLATION_FILE, "utf8"));
+function loadTranslations(language) {
+  return JSON.parse(readFileSync(TRANSLATION_FILES[language], "utf8"));
 }
 
-function formatMissingTranslationMessage(missing) {
+function formatMissingTranslationMessage(language, missing) {
   const details = missing
     .map((entry) => `${entry.pointer}\n  ${entry.value}`)
     .join("\n\n");
 
-  return `Missing ${missing.length} zh-Hans OpenAPI translation(s).\n${details}`;
+  return `Missing ${missing.length} ${language} OpenAPI translation(s).\n${details}`;
 }
 
-function seedMissingTranslationPlaceholders(translations, missing) {
+function seedMissingTranslationPlaceholders(language, translations, missing) {
   let seeded = 0;
 
   for (const entry of missing) {
@@ -321,18 +325,19 @@ function seedMissingTranslationPlaceholders(translations, missing) {
   }
 
   if (seeded > 0) {
-    writeFileSync(TRANSLATION_FILE, formatJson(translations));
+    const translationFile = TRANSLATION_FILES[language];
+    writeFileSync(translationFile, formatJson(translations));
     console.warn(
-      `Seeded ${seeded} zh-Hans OpenAPI translation placeholder(s) in ${path.relative(
+      `Seeded ${seeded} ${language} OpenAPI translation placeholder(s) in ${path.relative(
         REPO_ROOT,
-        TRANSLATION_FILE,
+        translationFile,
       )}.`,
     );
   }
 }
 
 function createLocalizedSpec(englishDocument, translations, options = {}) {
-  const { allowMissingFallback = false } = options;
+  const { allowMissingFallback = false, language } = options;
   const document = cloneJson(englishDocument);
   const missing = [];
 
@@ -354,11 +359,11 @@ function createLocalizedSpec(englishDocument, translations, options = {}) {
 
   if (missing.length > 0) {
     if (!allowMissingFallback) {
-      throw new Error(formatMissingTranslationMessage(missing));
+      throw new Error(formatMissingTranslationMessage(language, missing));
     }
 
-    console.warn(formatMissingTranslationMessage(missing));
-    console.warn("Using English source text for missing zh-Hans entries in write mode.");
+    console.warn(formatMissingTranslationMessage(language, missing));
+    console.warn(`Using English source text for missing ${language} entries in write mode.`);
   }
 
   assertSameStructure(englishDocument, document);
@@ -916,6 +921,11 @@ function buildLlmsTxtOutput(englishDocument) {
       "Localized OpenAPI contract for Simplified Chinese API reference pages.",
     ),
     renderLlmsLink(
+      "Japanese OpenAPI JSON",
+      "/openapi/mosoo-openapi.ja.generated.json",
+      "Localized OpenAPI contract for Japanese API reference pages.",
+    ),
+    renderLlmsLink(
       "Compatibility OpenAPI JSON",
       "/openapi/mosoo-openapi.generated.json",
       "English compatibility copy for older links and tooling.",
@@ -949,13 +959,22 @@ function buildOutputs() {
   const { mosooRepo, source } = resolveMosooOpenApiSource();
   const sourceDocument = generateSourceOpenApi(mosooRepo, source);
   const englishDocument = normalizeEnglishSpec(sourceDocument);
-  const translations = loadTranslations();
-  const zhHans = createLocalizedSpec(englishDocument, translations, {
+  const zhHansTranslations = loadTranslations("zh-Hans");
+  const zhHans = createLocalizedSpec(englishDocument, zhHansTranslations, {
     allowMissingFallback: MODE === "write",
+    language: "zh-Hans",
+  });
+  const jaTranslations = loadTranslations("ja");
+  const ja = createLocalizedSpec(englishDocument, jaTranslations, {
+    allowMissingFallback: MODE === "write",
+    language: "ja",
   });
 
   if (MODE === "write" && zhHans.missing.length > 0) {
-    seedMissingTranslationPlaceholders(translations, zhHans.missing);
+    seedMissingTranslationPlaceholders("zh-Hans", zhHansTranslations, zhHans.missing);
+  }
+  if (MODE === "write" && ja.missing.length > 0) {
+    seedMissingTranslationPlaceholders("ja", jaTranslations, ja.missing);
   }
 
   return {
@@ -963,6 +982,7 @@ function buildOutputs() {
     [GENERATED_FILES.en]: formatJson(englishDocument),
     [GENERATED_FILES.legacy]: formatJson(englishDocument),
     [GENERATED_FILES.zhHans]: formatJson(zhHans.document),
+    [GENERATED_FILES.ja]: formatJson(ja.document),
   };
 }
 

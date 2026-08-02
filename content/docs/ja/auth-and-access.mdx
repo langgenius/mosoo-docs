@@ -1,0 +1,69 @@
+---
+title: "認証とアクセス"
+description: "API token、Agent API Endpoint、Thread visibility の連携を説明します。"
+---
+
+すべての mosoo API request は Bearer API token を使用します。
+
+```http
+Authorization: Bearer mst_...
+```
+
+JSON request では次も使用します。
+
+```http
+Content-Type: application/json
+```
+
+mosoo は API token を認証し、現在の mosoo account を解決してから、その account が選択した Agent API Endpoint と resource を利用できるか確認します。
+
+## API token
+
+API token は code から mosoo API を呼び出すための credential です。mosoo account settings で作成し、App backend、local tool、automation job に保存します。
+
+<Callout type="warn">
+  API token は model provider credential や channel connection credential ではありません。Slack、Lark、Discord、Telegram、WeChat、model provider setup、tool configuration、channel setup は mosoo で管理します。
+</Callout>
+
+## Agent API Endpoint access
+
+API access は Agent が公開済みで、live API endpoint version がある場合にのみ利用できます。有効な request は次の check をすべて通過する必要があります。
+
+1. API token が存在し、有効で、revoke されていない。
+2. `agentId` が実在する Agent の v1 bare ULID である。
+3. Agent が公開済みである。
+4. Agent に live API endpoint version がある。
+5. API token owner が Agent を所有する App を所有している。
+6. Agent owner と App owner が一致している。
+
+token が有効でも caller が Agent を利用できない場合、mosoo は `403 forbidden` を返します。Agent または resource が caller から見えない場合は `404 not_found` を返します。
+
+<Card title="Agent API Endpoint" href="/docs/ja/agent-api-endpoints">
+  公開済み Agent state、live endpoint version、`agentId` の関係を確認します。
+</Card>
+
+## Caller identity と実行
+
+public API で作成した Thread は API token owner に帰属します。underlying Agent API Endpoint に引き続き access できる場合、その owner は Thread と file を読み取れます。
+
+Run は公開済み Agent 設定で実行されます。API caller が model provider になることはなく、request に provider credential を含めたり、この API から tool、channel、runtime setting、Agent configuration を上書きしたりすることはできません。
+
+## Token lifecycle
+
+API token を revoke すると、その token からの今後の API request は拒否されます。既存の Thread は削除されません。
+
+可能であれば system ごとに別の API token を使用してください。
+
+- local development 用に一つ。
+- server-side integration または automation ごとに一つ。
+- audit と rotation のために明確な API token label を付ける。
+
+## 安全な再試行
+
+Thread の作成または event submission を retry するときは、同じ `Idempotency-Key` を送信します。
+
+```http
+Idempotency-Key: support-ticket-182-create-thread
+```
+
+同じ request に同じ key を使用すると元の response が返ります。最初の request が処理中に key を再使用した場合、または異なる request body に同じ key を使用した場合は `409 idempotency_conflict` が返ります。

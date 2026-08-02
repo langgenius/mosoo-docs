@@ -1,0 +1,33 @@
+---
+title: "App をデプロイ"
+description: "対応する公開 GitHub repository を mosoo から公開します。"
+---
+
+App Deployment は、Agent と並んで一つの対応する公開 repository を mosoo 管理 URL に公開するための secondary Alpha 機能です。
+
+## Overview からデプロイする
+
+1. App の **Overview** を開きます。
+2. public GitHub repository URL を入力します。
+3. **Deploy** を選択します。
+4. deployment の **Deploying**、**Successful**、**Failed** state を確認します。
+5. 成功後、live site を開くか、以前の attempt を確認します。
+
+mosoo は default branch の HEAD を取得し、対応する static または request-handling web App を自動検出します。`.mosoo.toml` で対応する検出設定を上書きできます。
+
+## CLI でデプロイする
+
+```bash
+mosoo console apps deploy-app \
+  --input-app-id <app-id> \
+  --input-repo-url https://github.com/owner/repository \
+  --wait
+```
+
+## Deployment を運用する
+
+Overview から、最新の default branch の再公開、source repository の変更、deployment の削除ができます。後の attempt が失敗しても、最後に成功した URL は表示され続けます。deployment を削除すると hosted site と紐付いた Agent access は削除されますが、GitHub repository は変更されません。
+
+<Callout type="warning">
+  App Deployment は現在、public repository と App ごとに一つの deployed site をサポートします。private repository、custom domain、branch preview、automatic deployment、rollback、App-user authentication、schedule、durable backend state は提供しません。
+</Callout>

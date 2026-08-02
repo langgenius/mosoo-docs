@@ -1,0 +1,70 @@
+---
+title: "エラーと制限"
+description: "mosoo API のエラー、再試行、idempotency、public API limit を処理します。"
+---
+
+2xx 以外のすべての JSON error は同じ envelope を使用します。
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "Request body must be an object."
+  }
+}
+```
+
+`error.message` ではなく `error.code` で branch してください。message は developer 向けであり、end user に直接表示すべきではありません。
+
+## Error code
+
+| HTTP | `error.code` | Caller の対応 |
+| --- | --- | --- |
+| 400 | `invalid_request` | request shape、field value、body size、unsupported field を修正します。変更せずに retry しないでください。 |
+| 400 | `invalid_json` | serialization または `Content-Type` を修正します。 |
+| 401 | `unauthenticated` | `Authorization` を確認し、API token を rotate または再作成します。 |
+| 403 | `forbidden` | API token がこの Agent、Thread、file に access できるか確認します。 |
+| 404 | `not_found` | ID が存在し、この API token から見えることを確認します。 |
+| 409 | `agent_not_published` | Agent を公開し、API access を有効にします。 |
+| 409 | `service_inactive` | mosoo で Agent を再公開または修復します。 |
+| 409 | `readiness_blocked` | mosoo で Agent readiness または configuration を修正します。 |
+| 409 | `idempotency_conflict` | 処理中なら `Retry-After` まで待ち、body が異なる場合は新しい key を使用します。 |
+| 429 | `rate_limited` | backoff し、`Retry-After` の後に retry します。 |
+| 500 | `internal_error` | 短時間の backoff で retry し、繰り返す場合は failure detail を保存します。 |
+
+## Idempotency
+
+`Idempotency-Key` は次でサポートされます。
+
+- `POST /agents/{agentId}/threads`
+- `POST /threads/{threadId}/events`
+
+ルール:
+
+- key の scope は API token、method、route、request body です。
+- 同じ request に同じ key を再使用すると、保存済み response が replay されます。
+- 異なる request に同じ key を使用すると `409 idempotency_conflict` が返ります。
+- 最初の request が処理中に key を再使用すると `409 idempotency_conflict` が返ります。
+- key は空でなく、128 文字以下である必要があります。
+- conflict response には `Retry-After` が含まれる場合があります。
+
+## Public limit
+
+| Limit | 値 |
+| --- | --- |
+| Create Thread input text | 32000 文字 |
+| `client_external_ref` | 255 文字 |
+| File ID | 26 文字 |
+| File upload | 67108864 bytes |
+| Event list default | 100 events |
+| Event list maximum | 1000 events |
+| Thread list maximum | 100 Threads |
+
+<Cards>
+  <Card title="API リファレンス" href="/docs/ja/api-reference">
+    自動生成された endpoint ごとの request と response の詳細です。
+  </Card>
+  <Card title="認証とアクセス" href="/docs/ja/auth-and-access">
+    API token と Agent access の check を説明します。
+  </Card>
+</Cards>

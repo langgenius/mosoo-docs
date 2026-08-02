@@ -1111,7 +1111,7 @@ Fields:
 - `completedAt` required, `string | null(date-time)`. Timestamp (RFC 3339) at which the Run reached a terminal state, or null while it has not finished.
 - `createdAt` required, `string(date-time)`. Timestamp (RFC 3339) at which the Run was created.
 - `error` required, `RunError | null`. Structured failure summary when status is `failed`; null for successful, active, cancelled, or expired Runs.
-- `finalOutput` required, `RunFinalOutput | null`. Stable final answer for a completed Run. mosoo builds this from that Run's public `agent.message.delta` events in chronological order. Null until the Run status is `completed`.
+- `finalOutput` required, `RunFinalOutput | null`. Public-safe canonical final assistant answer for a completed Run. It is derived from the persisted final assistant message, not reconstructed from public `agent.message.delta` events. Null until that final message is persisted or when the Run has no final assistant answer.
 - `id` required, `string(ulid)`. Unique Run ID (bare ULID).
 - `startedAt` required, `string | null(date-time)`. Timestamp (RFC 3339) at which the Run began executing, or null while it is still queued.
 - `status` required, `"queued" | "booting" | "running" | "waiting_input" | "completed" | "failed" | "cancelled" | "expired"`. Current Run status. `queued` and `booting` precede execution; `running` and `waiting_input` are active; `completed`, `failed`, `cancelled`, `expired` are terminal.
@@ -1134,7 +1134,17 @@ Final assistant answer for a completed public Thread Run.
 
 Fields:
 
-- `text` required, `string`. Text reconstructed from the current Run's public `agent.message.delta` events in chronological order.
+- `text` required, `string`. Public-safe text derived from the Run's persisted final assistant message. Provider-private control markup is omitted and reported through warnings.
+- `warnings` optional, `RunFinalOutputWarning[]`. Non-fatal warnings raised while making provider output safe for public consumption.
+
+### `RunFinalOutputWarning`
+
+A non-fatal warning attached to canonical final output.
+
+Fields:
+
+- `code` required, `"unresolved_provider_citation"`. Stable code identifying provider citation markup that could not be resolved.
+- `count` required, `integer`. Number of private citation envelopes removed from the public text.
 
 ### `UserWarning`
 

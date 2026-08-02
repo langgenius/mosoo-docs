@@ -7,6 +7,15 @@ const chinese = readFileSync(
   new URL('../content/docs/zh-Hans/deploy-mosoo.mdx', import.meta.url),
   'utf8',
 );
+const japanese = readFileSync(
+  new URL('../content/docs/ja/deploy-mosoo.mdx', import.meta.url),
+  'utf8',
+);
+const deploymentGuides = [
+  ['en', english],
+  ['zh-Hans', chinese],
+  ['ja', japanese],
+];
 
 const requiredPreflightCommands = [
   'wrangler d1 migrations apply DB \\\n    --local --env prod --persist-to "$persist_dir"',
@@ -16,11 +25,8 @@ const requiredPreflightCommands = [
   'wrangler deploy --env prod --dry-run',
 ];
 
-test('both deployment guides put the non-mutating production preflight before deploy', () => {
-  for (const [locale, content] of [
-    ['en', english],
-    ['zh-Hans', chinese],
-  ]) {
+test('deployment guides put the non-mutating production preflight before deploy', () => {
+  for (const [locale, content] of deploymentGuides) {
     for (const command of requiredPreflightCommands) {
       assert.ok(content.includes(command), `${locale} is missing preflight command: ${command}`);
     }
@@ -28,15 +34,12 @@ test('both deployment guides put the non-mutating production preflight before de
     const firstDryRun = content.indexOf('wrangler deploy --env prod --minify --dry-run');
     const realDeploy = content.indexOf('\njust deploy\n');
     assert.ok(firstDryRun >= 0 && realDeploy > firstDryRun, `${locale} deploy precedes dry-run`);
-    assert.match(content, /first remote (action|operation)|第一个远程操作/);
+    assert.match(content, /first remote (action|operation)|第一个远程操作|最初の remote operation/);
   }
 });
 
 test('deployment guides document callback and Cloudflare permission scope', () => {
-  for (const [locale, content] of [
-    ['en', english],
-    ['zh-Hans', chinese],
-  ]) {
+  for (const [locale, content] of deploymentGuides) {
     assert.ok(content.includes('/api/auth/callback/google'), `${locale} callback path missing`);
     assert.ok(content.includes('Workers Routes'), `${locale} Workers Routes permission missing`);
     assert.ok(content.includes('Pages'), `${locale} Pages permission missing`);
@@ -44,13 +47,16 @@ test('deployment guides document callback and Cloudflare permission scope', () =
   }
 });
 
-test('checked-in Chinese API reference matches localized generator output', () => {
-  const generated = readFileSync(
-    new URL('../content/docs/zh-Hans/api-reference/index.mdx', import.meta.url),
-    'utf8',
-  );
-  assert.match(generated, /title: "API 参考"/);
-  for (const heading of ['## 对话', '## 事件', '## 文件']) {
-    assert.ok(generated.includes(heading));
+test('checked-in API references match localized generator output', () => {
+  for (const [locale, title, headings] of [
+    ['zh-Hans', 'API 参考', ['## 对话', '## 事件', '## 文件']],
+    ['ja', 'API リファレンス', ['## Thread', '## イベント', '## ファイル']],
+  ]) {
+    const generated = readFileSync(
+      new URL(`../content/docs/${locale}/api-reference/index.mdx`, import.meta.url),
+      'utf8',
+    );
+    assert.match(generated, new RegExp(`title: "${title}"`));
+    for (const heading of headings) assert.ok(generated.includes(heading));
   }
 });

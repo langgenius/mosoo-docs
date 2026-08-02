@@ -9,6 +9,7 @@ export const translations = i18n
   .add({
     en: { displayName: 'English' },
     'zh-Hans': { displayName: '简体中文' },
+    ja: { displayName: '日本語' },
   });
 
 export function baseOptions(): BaseLayoutProps {

@@ -31,10 +31,10 @@ export async function validateMarkdownExports(directory) {
   }
 }
 
-export async function localizeChineseDocsHtml(directory) {
+export async function localizeDocsHtml(directory, language) {
   for await (const path of htmlFiles(directory)) {
     const html = await readFile(path, 'utf8');
-    await writeFile(path, html.replace('<html lang="en"', '<html lang="zh-Hans"'));
+    await writeFile(path, html.replace('<html lang="en"', `<html lang="${language}"`));
   }
 }
 
@@ -44,7 +44,8 @@ export async function prepareWorkerAssets({ outDir = 'out' } = {}) {
     force: true,
     recursive: true,
   });
-  await localizeChineseDocsHtml(join(outDir, 'docs', 'zh-Hans'));
+  await localizeDocsHtml(join(outDir, 'docs', 'zh-Hans'), 'zh-Hans');
+  await localizeDocsHtml(join(outDir, 'docs', 'ja'), 'ja');
   await validateMarkdownExports(join(outDir, 'docs', 'llms.mdx', 'docs'));
 }
 

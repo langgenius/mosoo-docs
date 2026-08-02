@@ -236,5 +236,11 @@
   "Delete a file": "删除 file",
   "Returns public file metadata for a pre-Thread uploaded file or a file attached to a public Thread visible to the API token caller.": "返回 pre-Thread 上传文件或 API token 调用方可见公开 Thread 文件的公开 metadata。",
   "Retrieve file metadata": "读取 file metadata",
-  "File metadata.": "文件 metadata。"
+  "File metadata.": "文件 metadata。",
+  "Public-safe canonical final assistant answer for a completed Run. It is derived from the persisted final assistant message, not reconstructed from public `agent.message.delta` events. Null until that final message is persisted or when the Run has no final assistant answer.": "已完成 Run 的公开安全规范最终助手答案。该答案源自持久化的最终助手消息，而不是从公开 `agent.message.delta` 事件重建。在最终消息持久化之前，或 Run 没有最终助手答案时为 null。",
+  "Public-safe text derived from the Run's persisted final assistant message. Provider-private control markup is omitted and reported through warnings.": "源自 Run 持久化最终助手消息的公开安全文本。Provider 私有控制标记会被省略，并通过 warnings 报告。",
+  "Non-fatal warnings raised while making provider output safe for public consumption.": "为了让 Provider 输出可安全公开而产生的非致命警告。",
+  "A non-fatal warning attached to canonical final output.": "附加到规范最终输出的非致命警告。",
+  "Stable code identifying provider citation markup that could not be resolved.": "用于标识无法解析的 Provider citation 标记的稳定代码。",
+  "Number of private citation envelopes removed from the public text.": "从公开文本中移除的私有 citation envelope 数量。"
 }

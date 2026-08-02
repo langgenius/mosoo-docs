@@ -1,0 +1,145 @@
+---
+title: "クイックスタート"
+description: "curl を使って公開済み mosoo Agent に Thread を作成します。"
+---
+
+公開済み Agent に Thread を作成し、follow-up message を一つ送信して、public event log を読み取り、ファイルを添付します。
+
+## 始める前に
+
+次が必要です。
+
+- mosoo で API access を有効にした公開済み Agent。
+- Agent API Access panel に表示される `agentId`。
+- その Agent を呼び出せる mosoo API token。
+
+```bash
+export MOSOO_API_BASE="https://cloud.mosoo.ai/api/v1"
+export MOSOO_API_TOKEN="mst_..."
+export MOSOO_AGENT_ID="01J00000000000000000000001"
+```
+
+<Callout type="info">
+  v1 の resource ID は prefix のない ULID です。`agent_...` や `thread_...` のような prefix 付き ID ではありません。
+</Callout>
+
+## 1. Thread を作成する
+
+Thread は公開済み Agent の API conversation container です。`input` を指定して作成すると、最初の Run も queue に追加されます。
+
+```bash
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: quickstart-create-thread" \
+  -d '{
+    "client_external_ref": "quickstart-001",
+    "input": {
+      "type": "user.message",
+      "content": [
+        {
+          "type": "text",
+          "text": "こんにちは。どのような支援ができるか説明してください。"
+        }
+      ]
+    }
+  }'
+```
+
+response から `thread.id` をコピーします。
+
+```bash
+export MOSOO_THREAD_ID="01J00000000000000000000009"
+```
+
+## 2. 別の message を送信する
+
+同じ Agent interaction を続けるには `thread.id` を使用します。
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: quickstart-send-message-1" \
+  -d '{
+    "events": [
+      {
+        "type": "user_message",
+        "clientRequestId": "quickstart-message-1",
+        "text": "次に行うべき重要な三つの手順を教えてください。"
+      }
+    ]
+  }'
+```
+
+現在の Run が input 待ち、または実行中の場合は、`permission_decision` や `user_interrupt` event も送信できます。
+
+## 3. Event log を読み取る
+
+public event を時系列順に読み取ります。
+
+```bash
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events?limit=100" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+```
+
+event log は結果を読み取るための安定した場所です。user message、Agent message delta、thinking delta、tool status、file change、usage update、run status などが含まれます。
+
+## 4. ファイルを添付する
+
+最初に Agent へファイルを upload します。
+
+```bash
+printf '顧客から実装計画を求められています。' > brief.txt
+
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -F "file=@brief.txt;type=text/plain"
+```
+
+response から `file.id` をコピーします。
+
+```bash
+export MOSOO_FILE_ID="01J0000000000000000000000J"
+```
+
+後続の user message とともにファイルを送信します。
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: quickstart-file-message-1" \
+  -d '{
+    "events": [
+      {
+        "type": "user_message",
+        "clientRequestId": "quickstart-file-message-1",
+        "resources": [
+          {
+            "type": "file",
+            "file_id": "01J0000000000000000000000J"
+          }
+        ],
+        "text": "添付ファイルを要約してください。"
+      }
+    ]
+  }'
+```
+
+最初の user message にファイルを含めるには、step 1 より前に upload し、create-Thread request に同じ `resources` array を追加します。
+
+<Cards>
+  <Card title="Thread と Run" href="/docs/ja/threads-and-runs">
+    Thread と Run の lifecycle state を理解します。
+  </Card>
+  <Card title="イベントとストリーミング" href="/docs/ja/events-and-streaming">
+    snapshot を読み取るか、SSE で Thread event を stream します。
+  </Card>
+  <Card title="ファイル" href="/docs/ja/files">
+    ファイルを upload して Thread message に mount します。
+  </Card>
+  <Card title="エラーと制限" href="/docs/ja/errors-and-limits">
+    retry、idempotency conflict、rate limit、invalid request を処理します。
+  </Card>
+</Cards>

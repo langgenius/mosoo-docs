@@ -5,7 +5,11 @@ import { type ReactNode } from 'react';
 import { i18nProvider } from 'fumadocs-ui/i18n';
 import { translations } from '@/lib/layout.shared';
 import { usePathname, useRouter } from 'next/navigation';
-import { getDocsLanguageFromPathname, getLocalizedDocsPath } from '@/lib/i18n';
+import {
+  getDocsLanguageFromPathname,
+  getLocalizedDocsPath,
+  isDocsLanguage,
+} from '@/lib/i18n';
 
 export function Provider({
   children,
@@ -28,7 +32,7 @@ export function Provider({
           router.push(
             getLocalizedDocsPath(
               pathname,
-              locale === 'zh-Hans' ? 'zh-Hans' : 'en',
+              isDocsLanguage(locale) ? locale : 'en',
               docsPaths,
             ),
           );

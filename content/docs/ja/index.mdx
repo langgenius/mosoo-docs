@@ -1,0 +1,37 @@
+---
+title: "mosoo ドキュメント"
+description: "mosoo でマネージド AI Agent を構築、実行、公開、統合します。"
+---
+
+mosoo は、AI Agent の設定、実際のタスクによるテスト、安定版の公開、Run とファイルの運用、Public Thread API を通じた統合を一つのワークスペースで提供します。
+
+<Cards>
+  <Card title="最初の Agent を作成" href="/docs/ja/first-agent">Provider を設定し、Agent を作成、テスト、公開します。</Card>
+  <Card title="製品ツアー" href="/docs/ja/product-tour">App、Agent、Thread、Run、提供方法の関係を理解します。</Card>
+  <Card title="CLI のセットアップ" href="/docs/ja/cli/overview">CLI をインストールしてサインインし、クラウドの準備状態を確認します。</Card>
+  <Card title="API クイックスタート" href="/docs/ja/quickstart">バックエンドから curl で公開済み Agent を呼び出します。</Card>
+</Cards>
+
+## 構築
+
+- [App の境界と Agent タイプ](/docs/ja/concepts)を選択します。
+- [Provider の認証情報とモデル](/docs/ja/providers-and-models)を追加します。
+- Agent の[識別情報、runtime、指示、Skill、MCP、Environment](/docs/ja/agent-configuration)を設定します。
+- 公開前に[プレビューとデバッグ](/docs/ja/test-and-debug)を行います。
+
+## 公開と運用
+
+- [Agent を公開して API access を有効化](/docs/ja/publish-and-api-access)します。
+- [対応する公開 App をデプロイ](/docs/ja/deploy-app)します。
+- [Run、ファイル、使用量](/docs/ja/operations)を確認します。
+- [インポート、エクスポート、fork、バージョン履歴](/docs/ja/import-export-versions)で設定を再利用します。
+
+## 統合
+
+Public Thread API は、公開済み Agent と対話するための API です。Thread の作成と再開、イベントの読み取りやストリーミング、ファイル転送を行えます。Agent の作成と設定は引き続き console または CLI で行います。
+
+<Cards>
+  <Card title="API の基本概念" href="/docs/ja/threads-and-runs">Thread と Run のライフサイクルを理解します。</Card>
+  <Card title="API リファレンス" href="/docs/ja/api-reference">自動生成された request と response の schema を参照します。</Card>
+  <Card title="エラーと制限" href="/docs/ja/errors-and-limits">安全な再試行と失敗状態の処理を実装します。</Card>
+</Cards>

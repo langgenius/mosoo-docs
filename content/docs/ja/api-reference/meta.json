@@ -1,0 +1,19 @@
+{
+  "pages": [
+    "create-a-thread-for-an-agent-api-endpoint",
+    "list-threads-for-an-agent-api-endpoint",
+    "retrieve-thread-summary",
+    "archive-a-thread",
+    "unarchive-a-thread",
+    "delete-a-thread",
+    "send-user-messages-permission-decisions-or-interrupts-to-a-thread",
+    "list-thread-events",
+    "stream-thread-events",
+    "upload-an-agent-file",
+    "retrieve-file-metadata",
+    "list-thread-files",
+    "download-thread-file-content",
+    "delete-a-file",
+    "remove-a-thread-file"
+  ]
+}

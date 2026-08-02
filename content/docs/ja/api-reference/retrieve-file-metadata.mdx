@@ -1,0 +1,31 @@
+---
+title: ファイルのメタデータを取得する
+description: "Thread より前のアップロード ファイル、または API token 呼び出し元に表示されるパブリック Thread に添付されたファイルのパブリック ファイル メタデータを返します。"
+full: true
+_openapi:
+  preload:
+    - ja
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          Thread より前のアップロード ファイル、または API token 呼び出し元に表示されるパブリック Thread
+          に添付されたファイルのパブリック ファイル メタデータを返します。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="ja" operations={[{"path":"/files/{fileId}","method":"get"}]} showDescription />
+    </>
+  );
+}

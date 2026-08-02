@@ -9,7 +9,7 @@ export const source = loader({
   source: docs.toFumadocsSource(),
   i18n,
   url(slugs, locale) {
-    const language = locale === 'zh-Hans' ? '/zh-Hans' : '';
+    const language = !locale || locale === 'en' ? '' : `/${locale}`;
     const pathname = slugs.length > 0 ? `/${slugs.join('/')}` : '';
     return `${docsRoute}${language}${pathname}`;
   },
@@ -17,14 +17,14 @@ export const source = loader({
 });
 
 export function getPageUrl(page: (typeof source)['$inferPage']) {
-  const locale = page.locale === 'zh-Hans' ? '/zh-Hans' : '';
+  const locale = page.locale === 'en' ? '' : `/${page.locale}`;
   const pathname = page.slugs.length > 0 ? `/${page.slugs.join('/')}` : '';
   return `${docsRoute}${locale}${pathname}`;
 }
 
 export function getPageImage(page: (typeof source)['$inferPage']) {
   const segments = [
-    ...(page.locale === 'zh-Hans' ? ['zh-Hans'] : []),
+    ...(page.locale === 'en' ? [] : [page.locale]),
     ...page.slugs,
     'image.png',
   ];
@@ -37,7 +37,7 @@ export function getPageImage(page: (typeof source)['$inferPage']) {
 
 export function getPageMarkdownUrl(page: (typeof source)['$inferPage']) {
   const segments = [
-    ...(page.locale === 'zh-Hans' ? ['zh-Hans'] : []),
+    ...(page.locale === 'en' ? [] : [page.locale]),
     ...page.slugs,
     'content.md',
   ];

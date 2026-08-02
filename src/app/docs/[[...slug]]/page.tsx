@@ -18,6 +18,7 @@ import {
   buildDocsStructuredData,
   getDocsLanguageAlternates,
   getDocumentLanguage,
+  getOpenGraphLocale,
   getOpenGraphAlternateLocale,
   toCanonicalDocsUrl,
 } from '@/lib/seo';
@@ -73,7 +74,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
 
 export async function generateStaticParams() {
   return source.getPages().map((page) => ({
-    slug: page.locale === 'zh-Hans' ? ['zh-Hans', ...page.slugs] : page.slugs,
+    slug: page.locale === 'en' ? page.slugs : [page.locale, ...page.slugs],
   }));
 }
 
@@ -103,7 +104,7 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
       title: page.data.title,
       description,
       url: canonical,
-      locale: documentLanguage === 'zh-Hans' ? 'zh_CN' : 'en_US',
+      locale: getOpenGraphLocale(documentLanguage),
       alternateLocale: getOpenGraphAlternateLocale(documentLanguage, Boolean(languages)),
       images: [{ url: image, alt: page.data.title }],
     },

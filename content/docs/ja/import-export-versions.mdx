@@ -1,0 +1,35 @@
+---
+title: "インポート、エクスポート、fork、バージョン"
+description: "Agent 設定を安全に再利用し、公開履歴を理解します。"
+---
+
+## Agent をエクスポートする
+
+Agent settings を開いて **Export agent** を選択します。mosoo は portable Agent setup と package 化した Skill を含む `.agent` package を download します。
+
+## Package をインポートする
+
+Agents ページで **Import package** を選択し、`.agent` file を選び、報告された repair を確認します。結果は現在の App に編集可能な draft として作成されます。
+
+![Import は portable .agent package から新しい draft を作成します。](/docs/images/product/import-agent-package.png)
+
+## Agent を fork する
+
+Agent settings を開いて **Fork agent** を選択します。fork は同じ App に独立した draft を作成し、元の Agent は変更しません。公開済み Agent の固定されたタイプを変える場合や、別の設定をテストする場合に使用します。
+
+## 移行されないもの
+
+`.agent` package は App backup や実行 state の snapshot ではありません。次は含まれません。
+
+- Provider または MCP credential。
+- conversation、ログ、使用履歴。
+- live runtime state または作業ファイル。
+- App deployment history。
+
+移行先 App で外部 service を再接続し、見つからない Environment や secret value を再選択してください。
+
+## Version history
+
+draft または live-version badge を開くと、最新順に version が表示されます。list には live version が示され、runtime、model、変更、公開時刻が要約されます。新しい session は live version を使用し、既存 session は開始時のバージョンを維持します。
+
+version history は読み取り専用です。過去設定の完全な内容、並列比較、publisher identity、restore は現在利用できません。

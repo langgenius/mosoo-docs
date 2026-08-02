@@ -1,0 +1,33 @@
+---
+title: Thread イベントのリスト
+description: "この Thread の最新のパブリック イベント ログ エントリを時系列順に返します。制限に達したために古いパブリック エントリが省略された場合、`truncated` は true になります。"
+full: true
+_openapi:
+  preload:
+    - ja
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          この Thread の最新のパブリック イベント ログ エントリを時系列順に返します。制限に達したために古いパブリック
+          エントリが省略された場合、`truncated` は true になります。イベント ID は安定しているため、呼び出し元は同じ ID
+          を新しいイベントとして扱わずに再試行またはポーリングを行うことができます。これは、CLI および API
+          コンシューマにとっての安定したスナップショット読み取り面です。生のランタイム ペイロード、トランスクリプト、または診断は公開されません。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="ja" operations={[{"path":"/threads/{threadId}/events","method":"get"}]} showDescription />
+    </>
+  );
+}

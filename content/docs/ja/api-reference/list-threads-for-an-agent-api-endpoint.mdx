@@ -1,0 +1,29 @@
+---
+title: Agent API Endpoint の Thread をリストする
+description: "認証された API token 呼び出し元によって作成された Thread を返します。"
+full: true
+_openapi:
+  preload:
+    - ja
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: 認証された API token 呼び出し元によって作成された Thread を返します。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="ja" operations={[{"path":"/agents/{agentId}/threads","method":"get"}]} showDescription />
+    </>
+  );
+}

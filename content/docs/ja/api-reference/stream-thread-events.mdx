@@ -1,0 +1,34 @@
+---
+title: Thread イベントをストリーミングする
+description: "パブリック Thread イベント ログ エントリをサーバー送信イベントとしてストリーミングします。各 `thread.event` データ ペイロードは、GET /threads/{threadId}/events と同じ ThreadEventLogEntry 形状を使用します。"
+full: true
+_openapi:
+  preload:
+    - ja
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          パブリック Thread イベント ログ エントリをサーバー送信イベントとしてストリーミングします。各 `thread.event` データ
+          ペイロードは、GET /threads/{threadId}/events と同じ ThreadEventLogEntry
+          形状を使用します。イベントは安定したイベント ID によって発行され、ストリームはポーリング中に検出された重複 ID
+          を抑制します。このストリームは長時間実行されるコンシューマー UX 用であり、生のランタイム ペイロード、内部診断、プライベート
+          トランスクリプトは公開されません。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="ja" operations={[{"path":"/threads/{threadId}/events/stream","method":"get"}]} showDescription />
+    </>
+  );
+}

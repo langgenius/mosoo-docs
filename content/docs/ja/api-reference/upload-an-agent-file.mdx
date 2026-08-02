@@ -1,0 +1,32 @@
+---
+title: Agent ファイルをアップロードする
+description: "Thread が存在する前に、Agent API Endpoint の App ドラフト スコープにファイルをアップロードします。返されたファイル ID は、create-thread リソースまたは send-events リソースで使用します。"
+full: true
+_openapi:
+  preload:
+    - ja
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          Thread が存在する前に、Agent API Endpoint の App ドラフト
+          スコープにファイルをアップロードします。返されたファイル ID は、create-thread リソースまたは send-events
+          リソースで使用します。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="ja" operations={[{"path":"/agents/{agentId}/files","method":"post"}]} showDescription />
+    </>
+  );
+}
