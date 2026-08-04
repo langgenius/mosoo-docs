@@ -1,49 +1,29 @@
-# mosoo-docs
+# mosoo documentation
 
-This is a Next.js application generated with
-[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
+Product and API documentation for the [mosoo](https://github.com/langgenius/mosoo) open-source agent runtime for coding agents.
 
-It is a Next.js app with [Static Export](https://nextjs.org/docs/app/guides/static-exports) configured.
+The canonical documentation is published at [mosoo.ai/docs](https://mosoo.ai/docs/). It covers configuring, running, publishing, and integrating agents, including the Public Thread API reference.
 
-Run development server:
+## Development
 
 ```bash
+npm ci
 npm run dev
-# or
-pnpm dev
-# or
-yarn dev
 ```
 
-Open http://localhost:3000 with your browser to see the result.
+Open [http://localhost:3000/docs/](http://localhost:3000/docs/).
 
-## Explore
+## Verification
 
-In the project, you can see:
-
-- `lib/source.ts`: Code for content source adapter, [`loader()`](https://fumadocs.dev/docs/headless/source-api) provides the interface to access your content.
-- `lib/layout.shared.tsx`: Shared options for layouts, optional but preferred to keep.
-
-| Route                     | Description                                            |
-| ------------------------- | ------------------------------------------------------ |
-| `app/(home)`              | The route group for your landing page and other pages. |
-| `app/docs`                | The documentation layout and pages.                    |
-| `app/api/search/route.ts` | The Route Handler for search.                          |
-
-### Fumadocs MDX
-
-A `source.config.ts` config file has been included, you can customise different options like frontmatter schema.
-
-Read the [Introduction](https://fumadocs.dev/docs/mdx) for further details.
+```bash
+npm run lint
+npm run types:check
+npm run build
+```
 
 ## Deployment
 
-Pushes to `main` are linted, type-checked, built, and deployed to the
-`mosoo-docs` Cloudflare Worker by GitHub Actions. The GitHub `production`
-environment requires a `CLOUDFLARE_ACCOUNT_ID` variable and a scoped
-`CLOUDFLARE_API_TOKEN` secret. Create the token from Cloudflare's **Edit
-Cloudflare Workers** template, restricted to the production account and
-`mosoo.ai` zone.
+Pushes to `main` are verified and deployed to the `mosoo-docs` Cloudflare Worker by GitHub Actions. The production environment is [mosoo.ai/docs](https://mosoo.ai/docs/); `docs.mosoo.ai` redirects to that canonical URL.
 
 For a manual deployment:
 
@@ -51,12 +31,8 @@ For a manual deployment:
 npm run deploy
 ```
 
-## Learn More
+## Related
 
-To learn more about Next.js and Fumadocs, take a look at the following
-resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [Fumadocs](https://fumadocs.dev) - learn about Fumadocs
+- [mosoo source](https://github.com/langgenius/mosoo)
+- [mosoo website](https://mosoo.ai/)
+- [mosoo Cloud](https://cloud.mosoo.ai/)
