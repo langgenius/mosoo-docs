@@ -3,14 +3,11 @@ import Link from 'next/link';
 export default function HomePage() {
   return (
     <div className="flex flex-col justify-center text-center flex-1">
-      <h1 className="text-2xl font-bold mb-4">mosoo Docs</h1>
-      <p>
-        You can open{' '}
-        <Link href="/docs" className="font-medium underline">
-          /docs
-        </Link>{' '}
-        and see the documentation.
-      </p>
+      <h1 className="text-2xl font-bold mb-4">mosoo documentation</h1>
+      <p className="mb-4">Product and API documentation for the mosoo agent runtime.</p>
+      <Link href="/docs/" className="font-medium underline">
+        Open documentation
+      </Link>
     </div>
   );
 }
