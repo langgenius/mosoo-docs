@@ -42,6 +42,11 @@ const worker = {
       return Response.redirect(url.toString(), 308);
     }
 
+    if (shouldAddDocsTrailingSlash(url.pathname)) {
+      url.pathname += '/';
+      return Response.redirect(url.toString(), 308);
+    }
+
     const response = await env.ASSETS.fetch(request);
     if (!response.headers.get('content-type')?.includes('text/html')) return response;
 
@@ -64,5 +69,15 @@ const worker = {
       .transform(localizedResponse);
   },
 };
+
+function shouldAddDocsTrailingSlash(pathname: string) {
+  return (
+    pathname.startsWith('/docs/') &&
+    !pathname.endsWith('/') &&
+    !pathname.startsWith('/docs/api/') &&
+    !pathname.startsWith('/docs/og/') &&
+    !pathname.split('/').some((segment) => segment.includes('.'))
+  );
+}
 
 export default worker;

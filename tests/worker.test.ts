@@ -97,6 +97,35 @@ test('worker redirects the bare docs root permanently', async () => {
   assert.equal(response.headers.get('location'), 'https://mosoo.ai/docs/?source=test');
 });
 
+test('worker redirects slashless docs pages to canonical trailing-slash URLs', async () => {
+  const cases = [
+    ['https://mosoo.ai/docs/quickstart?source=test', 'https://mosoo.ai/docs/quickstart/?source=test'],
+    ['https://mosoo.ai/docs/zh-Hans', 'https://mosoo.ai/docs/zh-Hans/'],
+    ['https://mosoo.ai/docs/zh-Hans/quickstart', 'https://mosoo.ai/docs/zh-Hans/quickstart/'],
+  ] as const;
+
+  for (const [from, to] of cases) {
+    const response = await worker.fetch(new Request(from), {
+      ASSETS: assets(new Response('unused')),
+    });
+
+    assert.equal(response.status, 308);
+    assert.equal(response.headers.get('location'), to);
+  }
+});
+
+test('worker does not treat docs route handlers as slash-normalized pages', async () => {
+  const upstream = new Response('{"ok":true}', {
+    headers: { 'content-type': 'application/json' },
+  });
+  const response = await worker.fetch(
+    new Request('https://mosoo.ai/docs/api/search'),
+    { ASSETS: assets(upstream) },
+  );
+
+  assert.equal(response, upstream);
+});
+
 test('worker leaves non-HTML assets untouched', async () => {
   const upstream = new Response('{"ok":true}', {
     status: 202,
