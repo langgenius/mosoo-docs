@@ -178,6 +178,7 @@ for (const [pathname, language] of localizedCases) {
     assert.equal(response.statusText, 'Created');
     assert.equal(response.headers.get('x-upstream'), 'kept');
     assert.equal(response.headers.get('content-language'), language);
+    assert.equal(response.headers.get('content-signal'), 'ai-train=no, search=yes, ai-input=yes');
     assert.equal(
       response.headers.get('link'),
       '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"',

@@ -1,4 +1,5 @@
 import { getDocumentLanguage } from './lib/seo-core';
+import { AI_CONTENT_SIGNAL, DOCS_LLM_LINK_HEADER } from './lib/ai-discovery';
 
 interface AssetBinding {
   fetch(request: Request): Promise<Response>;
@@ -58,7 +59,8 @@ const worker = {
     const language = getDocumentLanguage(url.pathname);
     const headers = new Headers(response.headers);
     headers.set('content-language', language);
-    headers.append('link', '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"');
+    headers.set('content-signal', AI_CONTENT_SIGNAL);
+    headers.append('link', DOCS_LLM_LINK_HEADER);
     const localizedResponse = new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
