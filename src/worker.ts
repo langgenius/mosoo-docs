@@ -31,6 +31,9 @@ const worker = {
       url.hostname = 'mosoo.ai';
       if (url.pathname === '/') {
         url.pathname = '/docs/';
+      } else if (url.pathname === '/robots.txt') {
+        // Keep host-level robots at the domain root; /docs/robots.txt is not a real asset.
+        url.pathname = '/robots.txt';
       } else if (!url.pathname.startsWith('/docs/')) {
         url.pathname = `/docs${url.pathname}`;
       }

@@ -76,6 +76,7 @@ test('worker redirects the legacy docs host to canonical docs URLs', async () =>
     ['https://docs.mosoo.ai/quickstart?source=test', 'https://mosoo.ai/docs/quickstart/?source=test'],
     ['http://docs.mosoo.ai/quickstart?source=test', 'https://mosoo.ai/docs/quickstart/?source=test'],
     ['https://docs.mosoo.ai/llms.txt', 'https://mosoo.ai/docs/llms.txt'],
+    ['https://docs.mosoo.ai/robots.txt', 'https://mosoo.ai/robots.txt'],
   ] as const;
 
   for (const [from, to] of cases) {
