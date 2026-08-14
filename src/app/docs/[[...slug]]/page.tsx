@@ -1,4 +1,4 @@
-import { getPageImage, getPageMarkdownUrl, getPageUrl, source } from '@/lib/source';
+import { getPageImage, getPageMarkdownUrl, getPageSourceUrl, getPageUrl, source } from '@/lib/source';
 import {
   DocsBody,
   DocsDescription,
@@ -11,7 +11,6 @@ import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/components/mdx';
 import type { Metadata } from 'next';
 import { createRelativeLink } from 'fumadocs-ui/mdx';
-import { gitConfig } from '@/lib/shared';
 import { OpenAPIPage } from '@/components/api-page';
 import { openapi } from '@/lib/openapi';
 import {
@@ -33,11 +32,15 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
   const MDX = page.data.body;
   const pageUrl = getPageUrl(page);
   const markdownUrl = getPageMarkdownUrl(page).url;
+  const markdownCanonicalUrl = new URL(markdownUrl, 'https://mosoo.ai').toString();
+  const sourceUrl = getPageSourceUrl(page);
   const description = page.data.description ?? 'mosoo product and API documentation.';
   const structuredData = buildDocsStructuredData({
     title: page.data.title,
     description,
     pathname: pageUrl,
+    markdownUrl: markdownCanonicalUrl,
+    sourceUrl,
   });
 
   return (
@@ -54,7 +57,7 @@ export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
         <MarkdownCopyButton markdownUrl={markdownUrl} />
         <ViewOptionsPopover
           markdownUrl={markdownUrl}
-          githubUrl={`https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/docs/${page.path}`}
+          githubUrl={sourceUrl}
         />
       </div>
       <DocsBody>
