@@ -89,6 +89,43 @@ test('worker redirects the legacy docs host to canonical docs URLs', async () =>
   }
 });
 
+test('worker permanently redirects legacy docs URLs with clear replacements', async () => {
+  const cases = [
+    ['https://mosoo.ai/docs/api-reference/complete-thread-file-upload/', 'https://mosoo.ai/docs/files/'],
+    ['https://mosoo.ai/docs/api-reference/upload-thread-file-content', 'https://mosoo.ai/docs/files/'],
+    ['https://mosoo.ai/docs/api-reference/create-a-thread-file-upload', 'https://mosoo.ai/docs/files/'],
+    ['https://mosoo.ai/docs/api-reference/add-a-thread-file/', 'https://mosoo.ai/docs/files/'],
+    ['https://mosoo.ai/docs/zh-Hans/api-reference/complete-thread-file-upload', 'https://mosoo.ai/docs/zh-Hans/files/'],
+    ['https://mosoo.ai/docs/zh-Hans/api-reference/upload-thread-file-content/', 'https://mosoo.ai/docs/zh-Hans/files/'],
+    ['https://mosoo.ai/docs/zh-Hans/api-reference/create-a-thread-file-upload', 'https://mosoo.ai/docs/zh-Hans/files/'],
+    ['https://mosoo.ai/docs/zh-Hans/api-reference/add-a-thread-file/', 'https://mosoo.ai/docs/zh-Hans/files/'],
+    ['https://docs.mosoo.ai/api-reference/列出-thread-文件', 'https://mosoo.ai/docs/zh-Hans/api-reference/list-thread-files/'],
+    ['https://docs.mosoo.ai/api-reference/归档-thread', 'https://mosoo.ai/docs/zh-Hans/api-reference/archive-a-thread/'],
+    ['https://docs.mosoo.ai/api-reference/读取-thread-摘要', 'https://mosoo.ai/docs/zh-Hans/api-reference/retrieve-thread-summary/'],
+    ['https://docs.mosoo.ai/api-reference/移除-thread-文件', 'https://mosoo.ai/docs/zh-Hans/api-reference/remove-a-thread-file/'],
+    ['https://docs.mosoo.ai/api-reference/列出-agent-api-endpoint-的-thread', 'https://mosoo.ai/docs/zh-Hans/api-reference/list-threads-for-an-agent-api-endpoint/'],
+    ['https://docs.mosoo.ai/api-reference/为-agent-api-endpoint-创建-thread', 'https://mosoo.ai/docs/zh-Hans/api-reference/create-a-thread-for-an-agent-api-endpoint/'],
+    ['https://docs.mosoo.ai/api-reference/下载-thread-文件内容', 'https://mosoo.ai/docs/zh-Hans/api-reference/download-thread-file-content/'],
+    ['https://docs.mosoo.ai/api-reference/向-thread-发送用户消息、权限决策或中断', 'https://mosoo.ai/docs/zh-Hans/api-reference/send-user-messages-permission-decisions-or-interrupts-to-a-thread/'],
+    ['https://docs.mosoo.ai/api-reference/列出-thread-事件', 'https://mosoo.ai/docs/zh-Hans/api-reference/list-thread-events/'],
+    ['https://docs.mosoo.ai/api-reference/取消归档-thread', 'https://mosoo.ai/docs/zh-Hans/api-reference/unarchive-a-thread/'],
+    ['https://docs.mosoo.ai/api-reference/删除-thread', 'https://mosoo.ai/docs/zh-Hans/api-reference/delete-a-thread/'],
+    ['https://docs.mosoo.ai/api-reference/列出-thread-文件.md', 'https://mosoo.ai/docs/zh-Hans/api-reference/list-thread-files/'],
+    ['https://docs.mosoo.ai/zh-Hans.md', 'https://mosoo.ai/docs/zh-Hans/'],
+    ['https://docs.mosoo.ai/threads/{threadId}/unarchive', 'https://mosoo.ai/docs/api-reference/unarchive-a-thread/'],
+    ['https://docs.mosoo.ai/threads/{threadId}/events', 'https://mosoo.ai/docs/api-reference/list-thread-events/'],
+  ] as const;
+
+  for (const [from, to] of cases) {
+    const response = await worker.fetch(new Request(from), {
+      ASSETS: assets(new Response('unused')),
+    });
+
+    assert.equal(response.status, 308, from);
+    assert.equal(response.headers.get('location'), to, from);
+  }
+});
+
 test('worker redirects the bare docs root permanently', async () => {
   const response = await worker.fetch(
     new Request('https://mosoo.ai/docs?source=test'),
