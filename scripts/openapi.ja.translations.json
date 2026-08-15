@@ -46,11 +46,8 @@
   "The returned event log entries, oldest first within the requested window.": "返されたイベント ログ エントリ。要求されたウィンドウ内で最も古いものから順に並べられます。",
   "True when older events exist beyond the returned window because the requested limit was reached.": "指定した limit に達し、返された範囲より古いイベントが存在する場合は true です。",
   "Outcome of a single submitted event.": "送信された 1 つのイベントの結果。",
-  "The `clientRequestId` echoed from the submitted user message, or null when none was provided or the event type does not carry one.": "送信されたユーザー メッセージからエコーされた `clientRequestId`、または何も指定されなかった場合、またはイベント タイプにメッセージが含まれていない場合は null がエコーされました。",
   "The Run created or affected by this event, or null when the event did not start or change a Run.": "このイベントによって作成または影響を受けた Run、またはイベントが開始または Run を変更しなかった場合の null。",
   "The kind of event this result corresponds to.": "この結果が対応するイベントの種類。",
-  "Request body for creating a Thread. All fields are optional: omit `input` to create an empty IDLE Thread, or include it to queue the initial Run.": "Thread を作成するためのリクエスト本文。すべてのフィールドはオプションです。`input` を省略して空の IDLE Thread を作成するか、これを含めて初期 Run をキューに入れます。",
-  "Optional caller-owned reference (for example an external ticket key) stored on the Thread for correlation. Not unique and not validated by mosoo.": "相関のために Thread に保存される、オプションの呼び出し元所有の参照 (外部チケット キーなど)。一意ではなく、mosoo によって検証されていません。",
   "Draft file handles uploaded by the same API token caller.": "同じ API token 呼び出し元によってアップロードされたドラフト ファイル ハンドル。",
   "Reference to a single uploaded draft file to attach to the Thread.": "Thread に添付する単一のアップロードされたドラフト ファイルへの参照。",
   "ID (bare ULID) of a ready draft file uploaded by the same caller.": "同じ呼び出し元によってアップロードされた準備済みドラフト ファイルの ID (ベア ULID)。",
@@ -242,5 +239,14 @@
   "Non-fatal warnings raised while making provider output safe for public consumption.": "Provider output を安全に公開する処理で発生した非致命的な warning。",
   "A non-fatal warning attached to canonical final output.": "正規の final output に付加される非致命的な warning。",
   "Stable code identifying provider citation markup that could not be resolved.": "解決できなかった Provider citation markup を識別する安定した code。",
-  "Number of private citation envelopes removed from the public text.": "public text から削除された private citation envelope の数。"
+  "Number of private citation envelopes removed from the public text.": "public text から削除された private citation envelope の数。",
+  "Optional caller-supplied request ID echoed back on the matching event result so you can pair responses with the message you sent.": "",
+  "Opaque, durable ID shared by lifecycle events for one logical tool invocation. Use this value, not the event `id`, to correlate start, confirmation, and terminal events.": "",
+  "Structured tool arguments when this event carries a complete canonical input object.": "",
+  "Harness-neutral tool name when supplied by the runtime.": "",
+  "The `requestId` echoed from the submitted user message, or null when none was provided or the event type does not carry one.": "",
+  "Request body for creating a Thread. `userId` is required. Omit `input` to create an empty IDLE Thread, or include it to queue the initial Run.": "",
+  "Opaque application-user identifier supplied by the trusted backend. It is immutable for the lifetime of the Thread and is delegated to MCP servers during Runs.": "",
+  "Immutable opaque application-user identifier supplied when the Thread was created.": "",
+  "Creates a Thread and the backing AgentSession for the required application `userId`. If input is present, mosoo also queues the initial Run. If input is omitted, the Thread is immediately visible with IDLE status and no run.": ""
 }

@@ -1,6 +1,6 @@
 ---
 title: Create a Thread for an Agent API Endpoint
-description: "Creates a Thread and the backing AgentSession. If input is present, mosoo also queues the initial Run."
+description: "Creates a Thread and the backing AgentSession for the required application `userId`. If input is present, mosoo also queues the initial Run."
 full: true
 _openapi:
   preload:
@@ -12,10 +12,10 @@ _openapi:
     headings: []
     contents:
       - content: >-
-          Creates a Thread and the backing AgentSession. If input is present,
-          mosoo also queues the initial Run. If input is omitted, the Thread is
-          immediately visible with IDLE status and no run. API token callers are
-          attributed to the API token owner.
+          Creates a Thread and the backing AgentSession for the required
+          application `userId`. If input is present, mosoo also queues the
+          initial Run. If input is omitted, the Thread is immediately visible
+          with IDLE status and no run.
 ---
 
 {/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}

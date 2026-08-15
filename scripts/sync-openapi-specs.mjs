@@ -26,6 +26,7 @@ const GENERATED_FILES = {
   legacy: "public/docs/openapi/mosoo-openapi.generated.json",
   zhHans: "public/docs/openapi/mosoo-openapi.zh-Hans.generated.json",
   ja: "public/docs/openapi/mosoo-openapi.ja.generated.json",
+  provenance: "public/docs/openapi/mosoo-openapi.provenance.json",
 };
 const CODING_AGENTS_GENERATED_BEGIN = "{/* BEGIN GENERATED OPENAPI REFERENCE */}";
 const CODING_AGENTS_GENERATED_END = "{/* END GENERATED OPENAPI REFERENCE */}";
@@ -44,6 +45,15 @@ const MOSOO_OPENAPI_SOURCES = [
     importPath: "./apps/api/src/adapters/http/routes/public-api-openapi.ts",
     markerPath: "apps/api/src/adapters/http/routes/public-api-openapi.ts",
   },
+];
+const COPY_PASTE_GUIDES = [
+  "content/docs/en/quickstart.mdx",
+  "content/docs/zh-Hans/quickstart.mdx",
+  "content/docs/ja/quickstart.mdx",
+  "content/docs/en/events-and-streaming.mdx",
+  "content/docs/zh-Hans/events-and-streaming.mdx",
+  "content/docs/ja/events-and-streaming.mdx",
+  "content/docs/en/coding-agents.mdx",
 ];
 
 if (!["check", "write"].includes(MODE)) {
@@ -174,6 +184,19 @@ function findOpenApiSourceInRepo(mosooRepo) {
     if (existsSync(path.join(mosooRepo, source.markerPath))) {
       return {
         mosooRepo,
+        provenance: {
+          upstreamRef: process.env.MOSOO_REPO_REF ?? DEFAULT_MOSOO_REPO_REF,
+          upstreamRepository: redactSensitiveText(
+            runCommand("git", ["config", "--get", "remote.origin.url"], {
+              cwd: mosooRepo,
+              failureMessage: "Failed to read mosoo source repository.",
+            }).stdout.trim(),
+          ).replace(/\.git$/, ""),
+          upstreamSha: runCommand("git", ["rev-parse", "HEAD"], {
+            cwd: mosooRepo,
+            failureMessage: "Failed to read mosoo source revision.",
+          }).stdout.trim(),
+        },
         source,
       };
     }
@@ -220,6 +243,113 @@ console.log(JSON.stringify(createOpenApiDocument(${JSON.stringify(DEFAULT_API_OR
   }
 
   return JSON.parse(result.stdout);
+}
+
+function collectCopyPasteRequestExamples() {
+  const examples = [];
+
+  for (const relativePath of COPY_PASTE_GUIDES) {
+    const content = readFileSync(path.join(REPO_ROOT, relativePath), "utf8");
+
+    for (const match of content.matchAll(/```bash\s*\n([\s\S]*?)\n```/g)) {
+      const block = match[1];
+      const dataMarker = "-d '";
+      const dataStart = block.indexOf(dataMarker);
+      const dataEnd = block.lastIndexOf("'");
+
+      if (dataStart === -1 || dataEnd <= dataStart) {
+        continue;
+      }
+
+      let kind = null;
+      if (/\/agents\/[^\s"']+\/threads/.test(block)) {
+        kind = "createThread";
+      } else if (/\/threads\/[^\s"']+\/events/.test(block)) {
+        kind = "sendEvents";
+      }
+
+      if (kind === null) {
+        continue;
+      }
+
+      const bodyText = block.slice(dataStart + dataMarker.length, dataEnd);
+      let body;
+      try {
+        body = JSON.parse(bodyText);
+      } catch (error) {
+        throw new Error(
+          `${relativePath} contains invalid JSON in a ${kind} curl example: ${error.message}`,
+        );
+      }
+
+      examples.push({ body, kind, source: relativePath });
+    }
+  }
+
+  const createCount = examples.filter((example) => example.kind === "createThread").length;
+  const sendCount = examples.filter((example) => example.kind === "sendEvents").length;
+
+  if (createCount < 4 || sendCount < 4) {
+    throw new Error(
+      `Expected at least four createThread and four sendEvents copy-paste examples; found ${createCount} and ${sendCount}.`,
+    );
+  }
+
+  return examples;
+}
+
+function validateCopyPasteRequestExamples(mosooRepo) {
+  const examples = collectCopyPasteRequestExamples();
+  const evalSource = `
+import {
+  readCreateThreadRequest,
+  readSendEventsRequest,
+} from "./apps/api/src/adapters/http/routes/public-thread-api-request.ts";
+
+const examples = JSON.parse(await Bun.stdin.text());
+for (const example of examples) {
+  try {
+    if (example.kind === "createThread") {
+      await readCreateThreadRequest({
+        req: {
+          raw: new Request("https://docs.example/api/v1/agents/01J00000000000000000000001/threads", {
+            body: JSON.stringify(example.body),
+            headers: { "Content-Type": "application/json" },
+            method: "POST",
+          }),
+        },
+      });
+    } else {
+      await readSendEventsRequest({ req: { json: async () => example.body } });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(example.source + " failed the mosoo runtime " + example.kind + " reader: " + message);
+  }
+}
+
+console.log("validated " + examples.length + " docs request examples through mosoo runtime readers");
+`;
+  const result = spawnSync("bun", ["--eval", evalSource], {
+    cwd: mosooRepo,
+    encoding: "utf8",
+    input: JSON.stringify(examples),
+    maxBuffer: GIT_COMMAND_MAX_BUFFER,
+  });
+
+  if (result.status !== 0) {
+    throw new Error(
+      [
+        "Failed to validate docs copy-paste examples through mosoo runtime readers.",
+        trimProcessOutput(result.stdout),
+        trimProcessOutput(result.stderr),
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    );
+  }
+
+  console.log(result.stdout.trim());
 }
 
 function normalizePublicTerminology(text) {
@@ -363,7 +493,7 @@ function createLocalizedSpec(englishDocument, translations, options = {}) {
     }
 
     console.warn(formatMissingTranslationMessage(language, missing));
-    console.warn(`Using English source text for missing ${language} entries in write mode.`);
+    console.warn(`Using English source text for missing ${language} entries.`);
   }
 
   assertSameStructure(englishDocument, document);
@@ -956,17 +1086,18 @@ function buildLlmsTxtOutput(englishDocument) {
 }
 
 function buildOutputs() {
-  const { mosooRepo, source } = resolveMosooOpenApiSource();
+  const { mosooRepo, provenance, source } = resolveMosooOpenApiSource();
+  validateCopyPasteRequestExamples(mosooRepo);
   const sourceDocument = generateSourceOpenApi(mosooRepo, source);
   const englishDocument = normalizeEnglishSpec(sourceDocument);
   const zhHansTranslations = loadTranslations("zh-Hans");
   const zhHans = createLocalizedSpec(englishDocument, zhHansTranslations, {
-    allowMissingFallback: MODE === "write",
+    allowMissingFallback: true,
     language: "zh-Hans",
   });
   const jaTranslations = loadTranslations("ja");
   const ja = createLocalizedSpec(englishDocument, jaTranslations, {
-    allowMissingFallback: MODE === "write",
+    allowMissingFallback: true,
     language: "ja",
   });
 
@@ -983,6 +1114,10 @@ function buildOutputs() {
     [GENERATED_FILES.legacy]: formatJson(englishDocument),
     [GENERATED_FILES.zhHans]: formatJson(zhHans.document),
     [GENERATED_FILES.ja]: formatJson(ja.document),
+    [GENERATED_FILES.provenance]: formatJson({
+      normalizedOpenApiSha256: sha256(formatJson(englishDocument)),
+      ...provenance,
+    }),
   };
 }
 

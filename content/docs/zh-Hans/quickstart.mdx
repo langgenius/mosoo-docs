@@ -12,6 +12,7 @@ description: "用 curl 在已发布的 mosoo Agent 上创建 Thread。"
 - mosoo 中一个已发布并启用 API access 的 Agent。
 - Agent API Access 面板中的 `agentId`。
 - 一个有权限调用该 Agent 的 mosoo API token。
+- 由你的后端完成身份验证的应用用户对应的 opaque `userId`。
 
 ```bash
 export MOSOO_API_BASE="https://cloud.mosoo.ai/api/v1"
@@ -33,7 +34,7 @@ curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: quickstart-create-thread" \
   -d '{
-    "client_external_ref": "quickstart-001",
+    "userId": "customer-123",
     "input": {
       "type": "user.message",
       "content": [
@@ -65,7 +66,7 @@ curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
     "events": [
       {
         "type": "user_message",
-        "clientRequestId": "quickstart-message-1",
+        "requestId": "quickstart-message-1",
         "text": "Give me the three most important next steps."
       }
     ]
@@ -114,7 +115,7 @@ curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
     "events": [
       {
         "type": "user_message",
-        "clientRequestId": "quickstart-file-message-1",
+        "requestId": "quickstart-file-message-1",
         "resources": [
           {
             "type": "file",

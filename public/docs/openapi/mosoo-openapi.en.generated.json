@@ -96,8 +96,8 @@
                 },
                 "type": "array"
               },
-              "clientRequestId": {
-                "description": "Optional caller-supplied correlation ID echoed back on the matching event result so you can pair responses with the message you sent.",
+              "requestId": {
+                "description": "Optional caller-supplied request ID echoed back on the matching event result so you can pair responses with the message you sent.",
                 "type": [
                   "string",
                   "null"
@@ -401,6 +401,21 @@
               "unsupported"
             ]
           },
+          "toolCallId": {
+            "description": "Opaque, durable ID shared by lifecycle events for one logical tool invocation. Use this value, not the event `id`, to correlate start, confirmation, and terminal events.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "toolInput": {
+            "additionalProperties": true,
+            "description": "Structured tool arguments when this event carries a complete canonical input object.",
+            "type": "object"
+          },
+          "toolName": {
+            "description": "Harness-neutral tool name when supplied by the runtime.",
+            "minLength": 1,
+            "type": "string"
+          },
           "tokens": {
             "description": "Token count associated with the event when applicable (for example model usage). Null when not measured.",
             "type": [
@@ -465,8 +480,8 @@
         "additionalProperties": false,
         "description": "Outcome of a single submitted event.",
         "properties": {
-          "clientRequestId": {
-            "description": "The `clientRequestId` echoed from the submitted user message, or null when none was provided or the event type does not carry one.",
+          "requestId": {
+            "description": "The `requestId` echoed from the submitted user message, or null when none was provided or the event type does not carry one.",
             "type": [
               "string",
               "null"
@@ -493,7 +508,7 @@
           }
         },
         "required": [
-          "clientRequestId",
+          "requestId",
           "run",
           "type"
         ],
@@ -501,11 +516,12 @@
       },
       "CreateThreadRequest": {
         "additionalProperties": false,
-        "description": "Request body for creating a Thread. All fields are optional: omit `input` to create an empty IDLE Thread, or include it to queue the initial Run.",
+        "description": "Request body for creating a Thread. `userId` is required. Omit `input` to create an empty IDLE Thread, or include it to queue the initial Run.",
         "properties": {
-          "client_external_ref": {
-            "description": "Optional caller-owned reference (for example an external ticket key) stored on the Thread for correlation. Not unique and not validated by mosoo.",
+          "userId": {
+            "description": "Opaque application-user identifier supplied by the trusted backend. It is immutable for the lifetime of the Thread and is delegated to MCP servers during Runs.",
             "maxLength": 255,
+            "minLength": 1,
             "type": "string"
           },
           "resources": {
@@ -557,7 +573,9 @@
             "type": "object"
           }
         },
-        "required": [],
+        "required": [
+          "userId"
+        ],
         "type": "object"
       },
       "CreateThreadResponse": {
@@ -708,47 +726,6 @@
         ],
         "type": "object"
       },
-      "ThreadAttributedUser": {
-        "additionalProperties": false,
-        "description": "The account a Thread is attributed to (the API token owner).",
-        "properties": {
-          "id": {
-            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-            "format": "ulid",
-            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "description": "Account ID (bare ULID) the Thread is attributed to."
-          }
-        },
-        "required": [
-          "id"
-        ],
-        "type": "object"
-      },
-      "ThreadCaller": {
-        "additionalProperties": false,
-        "description": "The credential that created the Thread.",
-        "properties": {
-          "id": {
-            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-            "format": "ulid",
-            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "description": "ID (bare ULID) of the caller that created the Thread."
-          },
-          "kind": {
-            "description": "Caller credential type. `access_token` identifies an API token caller.",
-            "enum": [
-              "access_token"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "kind"
-        ],
-        "type": "object"
-      },
       "ThreadLinks": {
         "additionalProperties": false,
         "description": "Convenience links for a Thread.",
@@ -774,32 +751,10 @@
             "type": "string",
             "description": "ID (bare ULID) of the Agent API Endpoint this Thread belongs to."
           },
-          "attributed_user": {
-            "description": "The account the Thread is attributed to, or null when not attributed to an account.",
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ThreadAttributedUser"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "client_external_ref": {
-            "description": "The caller-owned reference supplied at creation, or null when none was provided.",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "created_at": {
             "description": "Timestamp (RFC 3339) at which the Thread was created.",
             "format": "date-time",
             "type": "string"
-          },
-          "created_by": {
-            "$ref": "#/components/schemas/ThreadCaller",
-            "description": "The credential that created the Thread."
           },
           "id": {
             "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
@@ -853,21 +808,25 @@
             "description": "Timestamp (RFC 3339) of the most recent change to the Thread.",
             "format": "date-time",
             "type": "string"
+          },
+          "userId": {
+            "description": "Immutable opaque application-user identifier supplied when the Thread was created.",
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
           }
         },
         "required": [
           "agent_id",
-          "attributed_user",
-          "client_external_ref",
           "created_at",
-          "created_by",
           "id",
           "kind",
           "last_run_id",
           "source",
           "status",
           "title",
-          "updated_at"
+          "updated_at",
+          "userId"
         ],
         "type": "object"
       },
@@ -1476,7 +1435,7 @@
         }
       },
       "post": {
-        "description": "Creates a Thread and the backing AgentSession. If input is present, mosoo also queues the initial Run. If input is omitted, the Thread is immediately visible with IDLE status and no run. API token callers are attributed to the API token owner.",
+        "description": "Creates a Thread and the backing AgentSession for the required application `userId`. If input is present, mosoo also queues the initial Run. If input is omitted, the Thread is immediately visible with IDLE status and no run.",
         "parameters": [
           {
             "description": "Agent API Endpoint ID from the Agent's API Access panel. v1 IDs are bare ULIDs.",
@@ -1510,13 +1469,12 @@
                 "emptyThread": {
                   "summary": "Create an empty Thread",
                   "value": {
-                    "client_external_ref": "draft-empty-thread"
+                    "userId": "customer-123"
                   }
                 },
                 "accessTokenWithFile": {
                   "summary": "API token with an uploaded file",
                   "value": {
-                    "client_external_ref": "linear-ENG-123",
                     "input": {
                       "content": [
                         {
@@ -1531,13 +1489,13 @@
                         "file_id": "01J0000000000000000000000J",
                         "type": "file"
                       }
-                    ]
+                    ],
+                    "userId": "customer-123"
                   }
                 },
                 "accessTokenBasic": {
                   "summary": "API token",
                   "value": {
-                    "client_external_ref": "demo-thread-001",
                     "input": {
                       "content": [
                         {
@@ -1546,7 +1504,8 @@
                         }
                       ],
                       "type": "user.message"
-                    }
+                    },
+                    "userId": "customer-123"
                   }
                 },
                 "cattleAgentSameShape": {
@@ -1560,7 +1519,8 @@
                         }
                       ],
                       "type": "user.message"
-                    }
+                    },
+                    "userId": "automation"
                   }
                 }
               },
@@ -1569,7 +1529,7 @@
               }
             }
           },
-          "required": false
+          "required": true
         },
         "summary": "Create a Thread for an Agent API Endpoint",
         "responses": {

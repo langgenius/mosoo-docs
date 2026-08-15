@@ -96,8 +96,8 @@
                 },
                 "type": "array"
               },
-              "clientRequestId": {
-                "description": "调用方可选提供的关联 ID。它会在匹配的事件结果中原样返回，便于你把响应与发送的消息对应起来。",
+              "requestId": {
+                "description": "Optional caller-supplied request ID echoed back on the matching event result so you can pair responses with the message you sent.",
                 "type": [
                   "string",
                   "null"
@@ -401,6 +401,21 @@
               "unsupported"
             ]
           },
+          "toolCallId": {
+            "description": "Opaque, durable ID shared by lifecycle events for one logical tool invocation. Use this value, not the event `id`, to correlate start, confirmation, and terminal events.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "toolInput": {
+            "additionalProperties": true,
+            "description": "Structured tool arguments when this event carries a complete canonical input object.",
+            "type": "object"
+          },
+          "toolName": {
+            "description": "Harness-neutral tool name when supplied by the runtime.",
+            "minLength": 1,
+            "type": "string"
+          },
           "tokens": {
             "description": "与事件相关的 token 数量；仅在适用时返回，例如模型用量。未测量时为 null。",
             "type": [
@@ -465,8 +480,8 @@
         "additionalProperties": false,
         "description": "单个已提交事件的处理结果。",
         "properties": {
-          "clientRequestId": {
-            "description": "从提交的用户消息中回传的 `clientRequestId`。如果没有提供，或该事件类型不携带此字段，则为 null。",
+          "requestId": {
+            "description": "The `requestId` echoed from the submitted user message, or null when none was provided or the event type does not carry one.",
             "type": [
               "string",
               "null"
@@ -493,7 +508,7 @@
           }
         },
         "required": [
-          "clientRequestId",
+          "requestId",
           "run",
           "type"
         ],
@@ -501,11 +516,12 @@
       },
       "CreateThreadRequest": {
         "additionalProperties": false,
-        "description": "创建 Thread 的请求体。所有字段都是可选的：省略 `input` 会创建一个空的 IDLE Thread；提供 `input` 会排队启动初始 Run。",
+        "description": "Request body for creating a Thread. `userId` is required. Omit `input` to create an empty IDLE Thread, or include it to queue the initial Run.",
         "properties": {
-          "client_external_ref": {
-            "description": "调用方自定义的可选引用，例如外部工单 key。该值会存储在 Thread 上用于关联；不要求唯一，也不会由 mosoo 校验。",
+          "userId": {
+            "description": "Opaque application-user identifier supplied by the trusted backend. It is immutable for the lifetime of the Thread and is delegated to MCP servers during Runs.",
             "maxLength": 255,
+            "minLength": 1,
             "type": "string"
           },
           "resources": {
@@ -557,7 +573,9 @@
             "type": "object"
           }
         },
-        "required": [],
+        "required": [
+          "userId"
+        ],
         "type": "object"
       },
       "CreateThreadResponse": {
@@ -708,47 +726,6 @@
         ],
         "type": "object"
       },
-      "ThreadAttributedUser": {
-        "additionalProperties": false,
-        "description": "该 Thread 归属的账号，即 API token 所有者。",
-        "properties": {
-          "id": {
-            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-            "format": "ulid",
-            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "description": "该 Thread 归属账号的账号 ID（不带前缀的 ULID）。"
-          }
-        },
-        "required": [
-          "id"
-        ],
-        "type": "object"
-      },
-      "ThreadCaller": {
-        "additionalProperties": false,
-        "description": "创建该 Thread 的凭证。",
-        "properties": {
-          "id": {
-            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-            "format": "ulid",
-            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "description": "创建该 Thread 的调用方 ID（不带前缀的 ULID）。"
-          },
-          "kind": {
-            "description": "调用方凭证类型。`access_token` 表示 API token 调用方。",
-            "enum": [
-              "access_token"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "kind"
-        ],
-        "type": "object"
-      },
       "ThreadLinks": {
         "additionalProperties": false,
         "description": "Thread 的便捷链接。",
@@ -774,32 +751,10 @@
             "type": "string",
             "description": "此 Thread 所属 Agent API Endpoint 的 ID（不带前缀的 ULID）。"
           },
-          "attributed_user": {
-            "description": "该 Thread 归属的账号；未归属到账号时为 null。",
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ThreadAttributedUser"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "client_external_ref": {
-            "description": "创建时由调用方提供的自定义引用；未提供时为 null。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "created_at": {
             "description": "Thread 创建时间戳（RFC 3339）。",
             "format": "date-time",
             "type": "string"
-          },
-          "created_by": {
-            "$ref": "#/components/schemas/ThreadCaller",
-            "description": "创建该 Thread 的凭证。"
           },
           "id": {
             "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
@@ -853,21 +808,25 @@
             "description": "Thread 最近一次变更的时间戳（RFC 3339）。",
             "format": "date-time",
             "type": "string"
+          },
+          "userId": {
+            "description": "Immutable opaque application-user identifier supplied when the Thread was created.",
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
           }
         },
         "required": [
           "agent_id",
-          "attributed_user",
-          "client_external_ref",
           "created_at",
-          "created_by",
           "id",
           "kind",
           "last_run_id",
           "source",
           "status",
           "title",
-          "updated_at"
+          "updated_at",
+          "userId"
         ],
         "type": "object"
       },
@@ -1476,7 +1435,7 @@
         }
       },
       "post": {
-        "description": "创建 Thread 及其底层 AgentSession。如果提供 input，mosoo 也会排队启动初始 Run。如果省略 input，Thread 会立即以 IDLE 状态可见，且没有 Run。API token 调用方会归属于 API token 所有者。",
+        "description": "Creates a Thread and the backing AgentSession for the required application `userId`. If input is present, mosoo also queues the initial Run. If input is omitted, the Thread is immediately visible with IDLE status and no run.",
         "parameters": [
           {
             "description": "来自 Agent API Access 面板的 Agent API Endpoint ID。v1 ID 是不带前缀的 ULID。",
@@ -1510,13 +1469,12 @@
                 "emptyThread": {
                   "summary": "创建空 Thread",
                   "value": {
-                    "client_external_ref": "draft-empty-thread"
+                    "userId": "customer-123"
                   }
                 },
                 "accessTokenWithFile": {
                   "summary": "带已上传文件的 API token",
                   "value": {
-                    "client_external_ref": "linear-ENG-123",
                     "input": {
                       "content": [
                         {
@@ -1531,13 +1489,13 @@
                         "file_id": "01J0000000000000000000000J",
                         "type": "file"
                       }
-                    ]
+                    ],
+                    "userId": "customer-123"
                   }
                 },
                 "accessTokenBasic": {
                   "summary": "API token",
                   "value": {
-                    "client_external_ref": "demo-thread-001",
                     "input": {
                       "content": [
                         {
@@ -1546,7 +1504,8 @@
                         }
                       ],
                       "type": "user.message"
-                    }
+                    },
+                    "userId": "customer-123"
                   }
                 },
                 "cattleAgentSameShape": {
@@ -1560,7 +1519,8 @@
                         }
                       ],
                       "type": "user.message"
-                    }
+                    },
+                    "userId": "automation"
                   }
                 }
               },
@@ -1569,7 +1529,7 @@
               }
             }
           },
-          "required": false
+          "required": true
         },
         "summary": "为 Agent API Endpoint 创建 Thread",
         "responses": {
