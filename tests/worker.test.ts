@@ -191,6 +191,37 @@ test('worker leaves non-HTML assets untouched', async () => {
   assert.equal(response.headers.get('x-upstream'), 'kept');
 });
 
+test('worker adds AI discovery headers to docs LLM text assets', async () => {
+  const cases = [
+    '/docs/llms.txt',
+    '/docs/llms-full.txt',
+    '/docs/llms.mdx/docs/quickstart/content.md',
+  ] as const;
+
+  for (const pathname of cases) {
+    const response = await worker.fetch(
+      new Request(`https://mosoo.ai${pathname}`),
+      {
+        ASSETS: assets(
+          new Response('# mosoo docs', {
+            headers: { 'content-type': 'text/plain; charset=utf-8', 'x-upstream': 'kept' },
+          }),
+        ),
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-upstream'), 'kept');
+    assert.equal(response.headers.get('content-type'), 'text/markdown; charset=utf-8');
+    assert.equal(response.headers.get('content-signal'), 'ai-train=no, search=yes, ai-input=yes');
+    assert.equal(
+      response.headers.get('link'),
+      '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"',
+    );
+    assert.equal(await response.text(), '# mosoo docs');
+  }
+});
+
 const localizedCases = [
   ['/docs/quickstart/', 'en'],
   ['/docs/zh-Hans/quickstart/', 'zh-Hans'],
@@ -216,6 +247,7 @@ for (const [pathname, language] of localizedCases) {
     assert.equal(response.statusText, 'Created');
     assert.equal(response.headers.get('x-upstream'), 'kept');
     assert.equal(response.headers.get('content-language'), language);
+    assert.equal(response.headers.get('content-signal'), 'ai-train=no, search=yes, ai-input=yes');
     assert.equal(
       response.headers.get('link'),
       '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"',

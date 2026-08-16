@@ -43,6 +43,19 @@ test('every indexable docs page has a title and meta description', () => {
   assert.deepEqual(missing, []);
 });
 
+test('docs LLM text routes use markdown discovery headers', () => {
+  const routes = [
+    '../src/app/docs/llms.txt/route.ts',
+    '../src/app/docs/llms-full.txt/route.ts',
+    '../src/app/docs/llms.mdx/docs/[[...slug]]/route.ts',
+  ];
+
+  for (const route of routes) {
+    const content = readFileSync(new URL(route, import.meta.url), 'utf8');
+    assert.match(content, /docsMarkdownHeaders/);
+  }
+});
+
 test('Chinese docs display titles contain Chinese text', () => {
   const missingChinese = [];
   const chineseRoot = join(root, 'zh-Hans');

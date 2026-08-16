@@ -9,6 +9,11 @@ import {
   getOpenGraphAlternateLocale,
   toCanonicalDocsUrl,
 } from '../src/lib/seo-core.ts';
+import {
+  contentSignal,
+  docsDiscoveryLinkHeader,
+  docsMarkdownHeaders,
+} from '../src/lib/shared.ts';
 
 const translatedPages = new Set([
   '/docs',
@@ -90,4 +95,17 @@ test('docs structured data identifies the page, language, and breadcrumb trail',
   assert.deepEqual(data.author, { '@id': 'https://mosoo.ai/#organization' });
   assert.deepEqual(data.publisher, { '@id': 'https://mosoo.ai/#organization' });
   assert.equal(data.breadcrumb.itemListElement.at(-1)?.name, 'Quickstart');
+});
+
+test('docs LLM text endpoints expose AI discovery headers', () => {
+  assert.equal(contentSignal, 'ai-train=no, search=yes, ai-input=yes');
+  assert.equal(
+    docsDiscoveryLinkHeader,
+    '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"',
+  );
+  assert.deepEqual(docsMarkdownHeaders, {
+    'content-signal': contentSignal,
+    'content-type': 'text/markdown; charset=utf-8',
+    link: docsDiscoveryLinkHeader,
+  });
 });

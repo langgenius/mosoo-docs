@@ -1,4 +1,9 @@
 import { getDocumentLanguage } from './lib/seo-core';
+import {
+  contentSignal,
+  docsDiscoveryLinkHeader,
+  docsMarkdownHeaders,
+} from './lib/shared';
 
 interface AssetBinding {
   fetch(request: Request): Promise<Response>;
@@ -103,12 +108,17 @@ const worker = {
     if (forceHttps) return Response.redirect(url.toString(), 308);
 
     const response = await env.ASSETS.fetch(request);
+    if (isDocsMarkdownDiscoveryPath(url.pathname) && response.status !== 404) {
+      return withDocsMarkdownHeaders(response);
+    }
+
     if (!response.headers.get('content-type')?.includes('text/html')) return response;
 
     const language = getDocumentLanguage(url.pathname);
     const headers = new Headers(response.headers);
     headers.set('content-language', language);
-    headers.append('link', '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"');
+    headers.set('content-signal', contentSignal);
+    headers.append('link', docsDiscoveryLinkHeader);
     const localizedResponse = new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
@@ -133,6 +143,27 @@ function shouldAddDocsTrailingSlash(pathname: string) {
     !pathname.startsWith('/docs/og/') &&
     !pathname.split('/').some((segment) => segment.includes('.'))
   );
+}
+
+function isDocsMarkdownDiscoveryPath(pathname: string) {
+  return (
+    pathname === '/docs/llms.txt' ||
+    pathname === '/docs/llms-full.txt' ||
+    (pathname.startsWith('/docs/llms.mdx/docs/') && pathname.endsWith('/content.md'))
+  );
+}
+
+function withDocsMarkdownHeaders(response: Response) {
+  const headers = new Headers(response.headers);
+  for (const [name, value] of Object.entries(docsMarkdownHeaders)) {
+    headers.set(name, value);
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
 function getLegacyDocRedirect(pathname: string) {
