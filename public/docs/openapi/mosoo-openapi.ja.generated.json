@@ -96,8 +96,8 @@
                 },
                 "type": "array"
               },
-              "clientRequestId": {
-                "description": "オプションの発信者指定の相関 ID が一致するイベント結果にエコーバックされるため、送信したメッセージと応答を組み合わせることができます。",
+              "requestId": {
+                "description": "Optional caller-supplied request ID echoed back on the matching event result so you can pair responses with the message you sent.",
                 "type": [
                   "string",
                   "null"
@@ -401,6 +401,21 @@
               "unsupported"
             ]
           },
+          "toolCallId": {
+            "description": "Opaque, durable ID shared by lifecycle events for one logical tool invocation. Use this value, not the event `id`, to correlate start, confirmation, and terminal events.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "toolInput": {
+            "additionalProperties": true,
+            "description": "Structured tool arguments when this event carries a complete canonical input object.",
+            "type": "object"
+          },
+          "toolName": {
+            "description": "Harness-neutral tool name when supplied by the runtime.",
+            "minLength": 1,
+            "type": "string"
+          },
           "tokens": {
             "description": "該当する場合、イベントに関連付けられたトークン数 (モデルの使用状況など)。測定されない場合はヌル。",
             "type": [
@@ -465,8 +480,8 @@
         "additionalProperties": false,
         "description": "送信された 1 つのイベントの結果。",
         "properties": {
-          "clientRequestId": {
-            "description": "送信されたユーザー メッセージからエコーされた `clientRequestId`、または何も指定されなかった場合、またはイベント タイプにメッセージが含まれていない場合は null がエコーされました。",
+          "requestId": {
+            "description": "The `requestId` echoed from the submitted user message, or null when none was provided or the event type does not carry one.",
             "type": [
               "string",
               "null"
@@ -493,7 +508,7 @@
           }
         },
         "required": [
-          "clientRequestId",
+          "requestId",
           "run",
           "type"
         ],
@@ -501,11 +516,12 @@
       },
       "CreateThreadRequest": {
         "additionalProperties": false,
-        "description": "Thread を作成するためのリクエスト本文。すべてのフィールドはオプションです。`input` を省略して空の IDLE Thread を作成するか、これを含めて初期 Run をキューに入れます。",
+        "description": "Request body for creating a Thread. `userId` is required. Omit `input` to create an empty IDLE Thread, or include it to queue the initial Run.",
         "properties": {
-          "client_external_ref": {
-            "description": "相関のために Thread に保存される、オプションの呼び出し元所有の参照 (外部チケット キーなど)。一意ではなく、mosoo によって検証されていません。",
+          "userId": {
+            "description": "Opaque application-user identifier supplied by the trusted backend. It is immutable for the lifetime of the Thread and is delegated to MCP servers during Runs.",
             "maxLength": 255,
+            "minLength": 1,
             "type": "string"
           },
           "resources": {
@@ -557,7 +573,9 @@
             "type": "object"
           }
         },
-        "required": [],
+        "required": [
+          "userId"
+        ],
         "type": "object"
       },
       "CreateThreadResponse": {
@@ -708,47 +726,6 @@
         ],
         "type": "object"
       },
-      "ThreadAttributedUser": {
-        "additionalProperties": false,
-        "description": "Thread が属するアカウント (API token 所有者)。",
-        "properties": {
-          "id": {
-            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-            "format": "ulid",
-            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "description": "Thread が属するアカウント ID (ベア ULID)。"
-          }
-        },
-        "required": [
-          "id"
-        ],
-        "type": "object"
-      },
-      "ThreadCaller": {
-        "additionalProperties": false,
-        "description": "Thread を作成した資格情報。",
-        "properties": {
-          "id": {
-            "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-            "format": "ulid",
-            "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "description": "Thread を作成した呼び出し元の ID (ベア ULID)。"
-          },
-          "kind": {
-            "description": "呼び出し元の資格情報のタイプ。 `access_token` は、API token 呼び出し元を識別します。",
-            "enum": [
-              "access_token"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "kind"
-        ],
-        "type": "object"
-      },
       "ThreadLinks": {
         "additionalProperties": false,
         "description": "Thread の便利なリンク。",
@@ -774,32 +751,10 @@
             "type": "string",
             "description": "この Thread が属する Agent API Endpoint の ID (ベア ULID)。"
           },
-          "attributed_user": {
-            "description": "Thread が属しているアカウント、またはアカウントに属していない場合は null。",
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/ThreadAttributedUser"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "client_external_ref": {
-            "description": "作成時に提供された呼び出し元所有の参照、または何も提供されなかった場合は null。",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "created_at": {
             "description": "Thread が作成されたタイムスタンプ (RFC 3339)。",
             "format": "date-time",
             "type": "string"
-          },
-          "created_by": {
-            "$ref": "#/components/schemas/ThreadCaller",
-            "description": "Thread を作成した資格情報。"
           },
           "id": {
             "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
@@ -853,21 +808,25 @@
             "description": "Thread に対する最新の変更のタイムスタンプ (RFC 3339)。",
             "format": "date-time",
             "type": "string"
+          },
+          "userId": {
+            "description": "Immutable opaque application-user identifier supplied when the Thread was created.",
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
           }
         },
         "required": [
           "agent_id",
-          "attributed_user",
-          "client_external_ref",
           "created_at",
-          "created_by",
           "id",
           "kind",
           "last_run_id",
           "source",
           "status",
           "title",
-          "updated_at"
+          "updated_at",
+          "userId"
         ],
         "type": "object"
       },
@@ -1476,7 +1435,7 @@
         }
       },
       "post": {
-        "description": "Thread とそのバッキング AgentSession を作成します。入力が存在する場合、mosoo は最初の Run もキューに入れます。入力を省略した場合、Thread は IDLE ステータスですぐに表示され、実行されません。 API token 呼び出し元は、API token 所有者に帰属します。",
+        "description": "Creates a Thread and the backing AgentSession for the required application `userId`. If input is present, mosoo also queues the initial Run. If input is omitted, the Thread is immediately visible with IDLE status and no run.",
         "parameters": [
           {
             "description": "Agent の API アクセス パネルからの Agent API Endpoint ID。 v1 ID は裸の ULID です。",
@@ -1510,13 +1469,12 @@
                 "emptyThread": {
                   "summary": "空のThreadを作成します",
                   "value": {
-                    "client_external_ref": "draft-empty-thread"
+                    "userId": "customer-123"
                   }
                 },
                 "accessTokenWithFile": {
                   "summary": "アップロードされたファイルを含む API token",
                   "value": {
-                    "client_external_ref": "linear-ENG-123",
                     "input": {
                       "content": [
                         {
@@ -1531,13 +1489,13 @@
                         "file_id": "01J0000000000000000000000J",
                         "type": "file"
                       }
-                    ]
+                    ],
+                    "userId": "customer-123"
                   }
                 },
                 "accessTokenBasic": {
                   "summary": "API token",
                   "value": {
-                    "client_external_ref": "demo-thread-001",
                     "input": {
                       "content": [
                         {
@@ -1546,7 +1504,8 @@
                         }
                       ],
                       "type": "user.message"
-                    }
+                    },
+                    "userId": "customer-123"
                   }
                 },
                 "cattleAgentSameShape": {
@@ -1560,7 +1519,8 @@
                         }
                       ],
                       "type": "user.message"
-                    }
+                    },
+                    "userId": "automation"
                   }
                 }
               },
@@ -1569,7 +1529,7 @@
               }
             }
           },
-          "required": false
+          "required": true
         },
         "summary": "Agent API Endpoint の Thread を作成する",
         "responses": {

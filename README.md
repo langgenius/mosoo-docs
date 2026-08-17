@@ -18,12 +18,18 @@ Open [http://localhost:3000/docs/](http://localhost:3000/docs/).
 ```bash
 npm run lint
 npm run types:check
+npm run openapi:check
 npm run build
 ```
 
 ## Deployment
 
 Pushes to `main` are verified and deployed to the `mosoo-docs` Cloudflare Worker by GitHub Actions. The production environment is [mosoo.ai/docs](https://mosoo.ai/docs/); `docs.mosoo.ai` redirects to that canonical URL.
+
+Pull requests and deploys regenerate the canonical OpenAPI from `langgenius/mosoo`
+and fail when the checked-in snapshots, coding-agent reference, or recorded
+upstream SHA/digest are stale. Missing translations explicitly fall back to the
+English source text; structural contract drift still blocks publication.
 
 For a manual deployment:
 
