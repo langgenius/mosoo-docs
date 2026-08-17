@@ -1,6 +1,7 @@
 import { getLLMText, getPageMarkdownUrl, source } from '@/lib/source';
 import { getDocsLanguage, getLocalizedSlugs } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
+import { docsLlmHeaders } from '@/lib/shared';
 
 export const revalidate = false;
 
@@ -15,9 +16,7 @@ export async function GET(
   if (!page) notFound();
 
   return new Response(await getLLMText(page), {
-    headers: {
-      'Content-Type': 'text/markdown',
-    },
+    headers: docsLlmHeaders,
   });
 }
 

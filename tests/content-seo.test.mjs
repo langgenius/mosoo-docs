@@ -30,6 +30,18 @@ test('SEO regressions run as part of every production build', () => {
   assert.match(packageJson.scripts.build, /npm run openapi:pages && npm run test:seo && next build/);
 });
 
+test('docs Markdown routes share answer-engine discovery headers', () => {
+  const routes = [
+    '../src/app/docs/llms.txt/route.ts',
+    '../src/app/docs/llms-full.txt/route.ts',
+    '../src/app/docs/llms.mdx/docs/[[...slug]]/route.ts',
+  ];
+
+  for (const route of routes) {
+    assert.match(readFileSync(new URL(route, import.meta.url), 'utf8'), /docsLlmHeaders/);
+  }
+});
+
 test('every indexable docs page has a title and meta description', () => {
   const missing = [];
 
