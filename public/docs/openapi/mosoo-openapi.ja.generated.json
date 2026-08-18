@@ -97,7 +97,7 @@
                 "type": "array"
               },
               "requestId": {
-                "description": "Optional caller-supplied request ID echoed back on the matching event result so you can pair responses with the message you sent.",
+                "description": "呼び出し元が任意で指定した request ID。対応するイベント結果でエコーされるため、送信したメッセージとレスポンスを対応付けられます。",
                 "type": [
                   "string",
                   "null"
@@ -402,17 +402,17 @@
             ]
           },
           "toolCallId": {
-            "description": "Opaque, durable ID shared by lifecycle events for one logical tool invocation. Use this value, not the event `id`, to correlate start, confirmation, and terminal events.",
+            "description": "1 つの論理 tool 呼び出しのライフサイクルイベント間で共有される、不透明で永続的な ID。開始、確認、終了イベントを関連付けるには、イベント `id` ではなくこの値を使用します。",
             "minLength": 1,
             "type": "string"
           },
           "toolInput": {
             "additionalProperties": true,
-            "description": "Structured tool arguments when this event carries a complete canonical input object.",
+            "description": "このイベントが完全な正規入力オブジェクトを持つ場合の構造化 tool 引数。",
             "type": "object"
           },
           "toolName": {
-            "description": "Harness-neutral tool name when supplied by the runtime.",
+            "description": "runtime から提供される場合の、harness に依存しない tool 名。",
             "minLength": 1,
             "type": "string"
           },
@@ -481,7 +481,7 @@
         "description": "送信された 1 つのイベントの結果。",
         "properties": {
           "requestId": {
-            "description": "The `requestId` echoed from the submitted user message, or null when none was provided or the event type does not carry one.",
+            "description": "送信されたユーザー メッセージからエコーされた `requestId`。指定されていない場合、またはイベント種別が持たない場合は null。",
             "type": [
               "string",
               "null"
@@ -516,10 +516,10 @@
       },
       "CreateThreadRequest": {
         "additionalProperties": false,
-        "description": "Request body for creating a Thread. `userId` is required. Omit `input` to create an empty IDLE Thread, or include it to queue the initial Run.",
+        "description": "Thread 作成用のリクエストボディ。`userId` は必須です。空の IDLE Thread を作成するには `input` を省略し、最初の Run をキューに入れるには `input` を含めます。",
         "properties": {
           "userId": {
-            "description": "Opaque application-user identifier supplied by the trusted backend. It is immutable for the lifetime of the Thread and is delegated to MCP servers during Runs.",
+            "description": "信頼された backend から提供される不透明なアプリケーションユーザー識別子。Thread の存続期間中は不変で、Runs 中に MCP servers へ委任されます。",
             "maxLength": 255,
             "minLength": 1,
             "type": "string"
@@ -810,7 +810,7 @@
             "type": "string"
           },
           "userId": {
-            "description": "Immutable opaque application-user identifier supplied when the Thread was created.",
+            "description": "Thread 作成時に提供された、不変で不透明なアプリケーションユーザー識別子。",
             "maxLength": 255,
             "minLength": 1,
             "type": "string"
@@ -1435,7 +1435,7 @@
         }
       },
       "post": {
-        "description": "Creates a Thread and the backing AgentSession for the required application `userId`. If input is present, mosoo also queues the initial Run. If input is omitted, the Thread is immediately visible with IDLE status and no run.",
+        "description": "必須のアプリケーション `userId` に対して Thread とその裏側の AgentSession を作成します。input がある場合、mosoo は最初の Run もキューに入れます。input を省略すると、Thread は Run なしの IDLE 状態ですぐに表示されます。",
         "parameters": [
           {
             "description": "Agent の API アクセス パネルからの Agent API Endpoint ID。 v1 ID は裸の ULID です。",
