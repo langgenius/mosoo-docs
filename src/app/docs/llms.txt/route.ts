@@ -1,8 +1,10 @@
-import { source } from '@/lib/source';
-import { llms } from 'fumadocs-core/source';
+import { docsMarkdownResponseHeaders } from '@/lib/discovery';
+import { renderDocsLlmsIndex } from '@/lib/llms';
 
 export const revalidate = false;
 
 export function GET() {
-  return new Response(llms(source).index());
+  return new Response(renderDocsLlmsIndex(), {
+    headers: docsMarkdownResponseHeaders(),
+  });
 }

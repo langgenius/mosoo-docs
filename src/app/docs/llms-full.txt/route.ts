@@ -1,10 +1,10 @@
-import { getLLMText, source } from '@/lib/source';
+import { docsMarkdownResponseHeaders } from '@/lib/discovery';
+import { renderDocsLlmsFull } from '@/lib/llms';
 
 export const revalidate = false;
 
 export async function GET() {
-  const scan = source.getPages().map(getLLMText);
-  const scanned = await Promise.all(scan);
-
-  return new Response(scanned.join('\n\n'));
+  return new Response(await renderDocsLlmsFull(), {
+    headers: docsMarkdownResponseHeaders(),
+  });
 }

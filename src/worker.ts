@@ -1,4 +1,5 @@
 import { getDocumentLanguage } from './lib/seo-core';
+import { contentSignal, docsDiscoveryLinkHeader } from './lib/discovery';
 
 interface AssetBinding {
   fetch(request: Request): Promise<Response>;
@@ -108,7 +109,8 @@ const worker = {
     const language = getDocumentLanguage(url.pathname);
     const headers = new Headers(response.headers);
     headers.set('content-language', language);
-    headers.append('link', '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"');
+    headers.set('content-signal', contentSignal);
+    headers.append('link', docsDiscoveryLinkHeader);
     const localizedResponse = new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
