@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import worker from '../src/worker.ts';
+import { contentSignal, docsDiscoveryLinkHeader } from '../src/lib/agent-discovery.ts';
 
 type ElementHandler = (element: {
   setAttribute(name: string, value: string): void;
@@ -191,6 +192,32 @@ test('worker leaves non-HTML assets untouched', async () => {
   assert.equal(response.headers.get('x-upstream'), 'kept');
 });
 
+test('worker advertises AI search policy on docs markdown discovery assets', async () => {
+  for (const pathname of [
+    '/docs/llms.txt',
+    '/docs/llms-full.txt',
+    '/docs/llms.mdx/docs/quickstart/content.md',
+  ]) {
+    const response = await worker.fetch(
+      new Request(`https://mosoo.ai${pathname}`),
+      {
+        ASSETS: assets(
+          new Response('# Quickstart', {
+            headers: { 'content-type': 'text/plain', 'x-upstream': 'kept' },
+          }),
+        ),
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('x-upstream'), 'kept');
+    assert.equal(response.headers.get('content-signal'), contentSignal);
+    assert.equal(response.headers.get('content-type'), 'text/markdown; charset=utf-8');
+    assert.equal(response.headers.get('link'), docsDiscoveryLinkHeader);
+    assert.equal(await response.text(), '# Quickstart');
+  }
+});
+
 const localizedCases = [
   ['/docs/quickstart/', 'en'],
   ['/docs/zh-Hans/quickstart/', 'zh-Hans'],
@@ -215,11 +242,9 @@ for (const [pathname, language] of localizedCases) {
     assert.equal(response.status, 201);
     assert.equal(response.statusText, 'Created');
     assert.equal(response.headers.get('x-upstream'), 'kept');
+    assert.equal(response.headers.get('content-signal'), contentSignal);
     assert.equal(response.headers.get('content-language'), language);
-    assert.equal(
-      response.headers.get('link'),
-      '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"',
-    );
+    assert.equal(response.headers.get('link'), docsDiscoveryLinkHeader);
     assert.match(await response.text(), new RegExp(`<html lang="${language}">`));
   });
 }
