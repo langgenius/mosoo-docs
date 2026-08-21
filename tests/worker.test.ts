@@ -191,6 +191,25 @@ test('worker leaves non-HTML assets untouched', async () => {
   assert.equal(response.headers.get('x-upstream'), 'kept');
 });
 
+test('worker advertises discovery from docs markdown assets', async () => {
+  const response = await worker.fetch(
+    new Request('https://mosoo.ai/docs/llms.txt'),
+    { ASSETS: assets(new Response('# Docs', { headers: { 'content-type': 'text/plain' } })) },
+  );
+
+  const link = response.headers.get('link') ?? '';
+  assert.equal(response.headers.get('content-type'), 'text/markdown; charset=utf-8');
+  assert.equal(response.headers.get('content-signal'), 'ai-train=no, search=yes, ai-input=yes');
+  assert.match(link, /<\/llms\.txt>; rel="llms-txt"/);
+  assert.match(link, /<\/docs\/llms\.txt>; rel="llms-txt"/);
+  assert.match(link, /<\/docs\/llms-full\.txt>; rel="llms-full-txt"/);
+  assert.match(link, /<\/\.well-known\/api-catalog>; rel="api-catalog"/);
+  assert.match(link, /rel="service-desc"/);
+  assert.match(link, /rel="service-doc"/);
+  assert.match(link, /<\/auth\.md>; rel="describedby"/);
+  assert.equal(await response.text(), '# Docs');
+});
+
 const localizedCases = [
   ['/docs/quickstart/', 'en'],
   ['/docs/zh-Hans/quickstart/', 'zh-Hans'],
@@ -215,11 +234,15 @@ for (const [pathname, language] of localizedCases) {
     assert.equal(response.status, 201);
     assert.equal(response.statusText, 'Created');
     assert.equal(response.headers.get('x-upstream'), 'kept');
+    assert.equal(response.headers.get('content-signal'), 'ai-train=no, search=yes, ai-input=yes');
     assert.equal(response.headers.get('content-language'), language);
-    assert.equal(
-      response.headers.get('link'),
-      '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"',
-    );
+    assert.match(response.headers.get('link') ?? '', /<\/llms\.txt>; rel="llms-txt"/);
+    assert.match(response.headers.get('link') ?? '', /<\/docs\/llms\.txt>; rel="llms-txt"/);
+    assert.match(response.headers.get('link') ?? '', /<\/docs\/llms-full\.txt>; rel="llms-full-txt"/);
+    assert.match(response.headers.get('link') ?? '', /<\/\.well-known\/api-catalog>; rel="api-catalog"/);
+    assert.match(response.headers.get('link') ?? '', /rel="service-desc"/);
+    assert.match(response.headers.get('link') ?? '', /rel="service-doc"/);
+    assert.match(response.headers.get('link') ?? '', /<\/auth\.md>; rel="describedby"/);
     assert.match(await response.text(), new RegExp(`<html lang="${language}">`));
   });
 }

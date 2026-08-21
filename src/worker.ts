@@ -57,6 +57,19 @@ const LEGACY_DOC_REDIRECTS = new Map([
   ['/docs/threads/{threadId}/unarchive', '/docs/api-reference/unarchive-a-thread/'],
   ['/docs/threads/{threadId}/events', '/docs/api-reference/list-thread-events/'],
 ]);
+const CONTENT_SIGNAL = 'ai-train=no, search=yes, ai-input=yes';
+const PUBLIC_API_BASE = 'https://cloud.mosoo.ai/api/v1';
+const PUBLIC_API_DESCRIPTION = `${PUBLIC_API_BASE}/openapi.json`;
+const PUBLIC_API_DOCUMENTATION = 'https://mosoo.ai/docs/api-reference/';
+const DISCOVERY_LINK_HEADER = [
+  '</llms.txt>; rel="llms-txt"',
+  '</docs/llms.txt>; rel="llms-txt"',
+  '</docs/llms-full.txt>; rel="llms-full-txt"',
+  '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"',
+  `<${PUBLIC_API_DESCRIPTION}>; rel="service-desc"; type="application/json"`,
+  `<${PUBLIC_API_DOCUMENTATION}>; rel="service-doc"; type="text/html"`,
+  '</auth.md>; rel="describedby"; type="text/markdown"',
+].join(', ');
 
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -103,12 +116,13 @@ const worker = {
     if (forceHttps) return Response.redirect(url.toString(), 308);
 
     const response = await env.ASSETS.fetch(request);
-    if (!response.headers.get('content-type')?.includes('text/html')) return response;
+    if (!response.headers.get('content-type')?.includes('text/html')) {
+      return withMarkdownDiscoveryHeaders(response, url.pathname);
+    }
 
     const language = getDocumentLanguage(url.pathname);
-    const headers = new Headers(response.headers);
+    const headers = withDiscoveryHeaders(response.headers);
     headers.set('content-language', language);
-    headers.append('link', '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"');
     const localizedResponse = new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
@@ -124,6 +138,33 @@ const worker = {
       .transform(localizedResponse);
   },
 };
+
+function withDiscoveryHeaders(sourceHeaders: Headers) {
+  const headers = new Headers(sourceHeaders);
+  headers.set('content-signal', CONTENT_SIGNAL);
+  headers.append('link', DISCOVERY_LINK_HEADER);
+  return headers;
+}
+
+function withMarkdownDiscoveryHeaders(response: Response, pathname: string) {
+  if (!isMarkdownDiscoveryPath(pathname)) return response;
+
+  const headers = withDiscoveryHeaders(response.headers);
+  headers.set('content-type', 'text/markdown; charset=utf-8');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function isMarkdownDiscoveryPath(pathname: string) {
+  return (
+    pathname === '/docs/llms.txt' ||
+    pathname === '/docs/llms-full.txt' ||
+    (pathname.startsWith('/docs/llms.mdx/docs/') && pathname.endsWith('/content.md'))
+  );
+}
 
 function shouldAddDocsTrailingSlash(pathname: string) {
   return (

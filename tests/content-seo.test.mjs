@@ -43,6 +43,46 @@ test('every indexable docs page has a title and meta description', () => {
   assert.deepEqual(missing, []);
 });
 
+test('localized docs homepages expose answer-first source verification', () => {
+  const pages = [
+    {
+      path: 'en/index.mdx',
+      answerHeading: '## Direct answers',
+      sourceHeading: '## Sources and verification',
+      quickstart: '[API quickstart](/docs/quickstart)',
+      apiReference: '[API reference](/docs/api-reference)',
+    },
+    {
+      path: 'zh-Hans/index.mdx',
+      answerHeading: '## 直接答案',
+      sourceHeading: '## 来源与验证',
+      quickstart: '[API 快速开始](/docs/zh-Hans/quickstart)',
+      apiReference: '[API 参考](/docs/zh-Hans/api-reference)',
+    },
+    {
+      path: 'ja/index.mdx',
+      answerHeading: '## 直接回答',
+      sourceHeading: '## ソースと検証',
+      quickstart: '[API クイックスタート](/docs/ja/quickstart)',
+      apiReference: '[API リファレンス](/docs/ja/api-reference)',
+    },
+  ];
+
+  for (const page of pages) {
+    const content = readFileSync(join(root, page.path), 'utf8');
+
+    assert.match(content, new RegExp(page.answerHeading));
+    assert.match(content, new RegExp(page.sourceHeading));
+    assert.match(content, /Public Thread API/);
+    assert.match(content, /https:\/\/github\.com\/langgenius\/mosoo/);
+    assert.match(content, /https:\/\/cloud\.mosoo\.ai\/api\/v1\/openapi\.json/);
+    assert.match(content, /\/docs\/llms\.txt/);
+    assert.match(content, /\/docs\/llms-full\.txt/);
+    assert.match(content, new RegExp(page.quickstart.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.match(content, new RegExp(page.apiReference.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+});
+
 test('Chinese docs display titles contain Chinese text', () => {
   const missingChinese = [];
   const chineseRoot = join(root, 'zh-Hans');
