@@ -3,16 +3,14 @@ title: "製品ツアー"
 description: "mosoo における Organization、App、Agent、Run の関係を理解します。"
 ---
 
-mosoo は、AI Agent を構築、実行、公開、運用するためのマネージドワークスペースです。Agent を一度設定して console でテストした後、Thread、API endpoint、または App deployment から利用できるようにします。
-
-![App Overview は Agent のセットアップ、CLI のオンボーディング、デプロイを結び付けます。](/docs/images/product/app-overview.png)
+mosoo は、AI Agent を構築、実行、公開、運用するためのマネージドワークスペースです。Agent を一度設定して console でテストした後、Thread または API endpoint から利用できます。
 
 ## 製品モデル
 
 | リソース | 所有するもの |
 | --- | --- |
 | **Organization** | アカウントレベルのコンテナです。現在は単一オーナー向けであり、チームロールや招待は利用できません。 |
-| **App** | Agent、ファイル、設定、使用量、任意のデプロイ済みサイト一つをまとめる開発・提供上の境界です。新しいアカウントには Default App が作成されます。 |
+| **App** | Agent、ファイル、設定、使用量を分離する境界です。新しいアカウントには Default App が作成されます。 |
 | **Agent** | タイプ、runtime、モデル、指示、Skill、MCP connection、Environment を備えた再利用可能なワーカーです。 |
 | **Thread** | 一つの Agent に対する永続的な会話と作業の記録です。返信によって非同期に作業を再開できます。 |
 | **Run** | Thread 内の一回の実行です。Run はイベント、ログ、使用量、ファイルを生成します。 |
@@ -25,7 +23,7 @@ mosoo は、AI Agent を構築、実行、公開、運用するためのマネ�
 4. 識別情報、指示、Skill、MCP server、Environment を設定します。
 5. **Preview** でテストし、必要に応じて **Logs**、**Cost**、**Terminal** を確認します。
 6. Agent を公開します。
-7. mosoo で Thread を開始するか、API access を有効にするか、デプロイ済み App に Agent を紐付けます。
+7. mosoo で Thread を開始するか、API access を有効にします。
 8. Run、ファイル、バージョン、使用量を監視します。
 
 <Callout type="info">

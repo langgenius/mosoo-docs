@@ -3,16 +3,14 @@ title: "Product tour"
 description: "Understand how Organizations, Apps, Agents, and runs fit together in mosoo."
 ---
 
-mosoo is a managed workspace for building, running, publishing, and operating AI Agents. You configure an Agent once, test it in the console, then make it available through a Thread, an API endpoint, or an App deployment.
-
-![The App Overview connects Agent setup, CLI onboarding, and deployment.](/docs/images/product/app-overview.png)
+mosoo is a managed workspace for building, running, publishing, and operating AI Agents. You configure an Agent once, test it in the console, then use it through a Thread or an API endpoint.
 
 ## The product model
 
 | Resource | What it owns |
 | --- | --- |
 | **Organization** | Your account-level container. The current product is a single-owner experience; team roles and invitations are not available. |
-| **App** | The engineering and delivery boundary for Agents, files, configuration, usage, and one optional deployed site. A new account starts with a Default App. |
+| **App** | The isolation boundary for Agents, files, configuration, and usage. A new account starts with a Default App. |
 | **Agent** | A reusable worker with a type, runtime, model, instructions, Skills, MCP connections, and an Environment. |
 | **Thread** | The durable conversation and work record for one Agent. Replies can resume work asynchronously. |
 | **Run** | One execution inside a Thread. Runs produce events, logs, usage, and files. |
@@ -25,7 +23,7 @@ mosoo is a managed workspace for building, running, publishing, and operating AI
 4. Configure its identity, instructions, Skills, MCP servers, and Environment.
 5. Test in **Preview**; inspect **Logs**, **Cost**, and **Terminal** when applicable.
 6. Publish the Agent.
-7. Start Threads in mosoo, enable API access, or bind the Agent to a deployed App.
+7. Start Threads in mosoo or enable API access.
 8. Monitor Runs, files, versions, and usage.
 
 <Callout type="info">
