@@ -38,11 +38,11 @@ test('deployment guides put the non-mutating production preflight before deploy'
   }
 });
 
-test('deployment guides document callback and Cloudflare permission scope', () => {
+test('deployment guides document callback and mosoo deployment permission scope', () => {
   for (const [locale, content] of deploymentGuides) {
     assert.ok(content.includes('/api/auth/callback/google'), `${locale} callback path missing`);
     assert.ok(content.includes('Workers Routes'), `${locale} Workers Routes permission missing`);
-    assert.ok(content.includes('Pages'), `${locale} Pages permission missing`);
+    assert.ok(content.includes('sandbox-state'), `${locale} runtime backup bucket missing`);
     assert.doesNotMatch(content, /\bMosoo\b/, `${locale} uses inconsistent brand capitalization`);
   }
 });

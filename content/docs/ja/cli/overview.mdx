@@ -39,7 +39,7 @@ printf '%s' "$MOSOO_API_TOKEN" | \
 ```bash
 mosoo --help
 mosoo commands --json
-mosoo commands show console apps deploy-app
+mosoo commands show console environments create-environment
 mosoo search "create environment"
 ```
 
@@ -60,12 +60,6 @@ mosoo run \
 
 # project context または明示した flag から Environment を作成
 mosoo console environments create-environment
-
-# public GitHub repository をデプロイ
-mosoo console apps deploy-app \
-  --input-app-id <app-id> \
-  --input-repo-url https://github.com/owner/repository \
-  --wait
 ```
 
 endpoint resolution は `--target local|cloud|custom`、`--base-url`、`--hostname` で制御します。output format は `table`、`json`、`yaml`、`raw` です。

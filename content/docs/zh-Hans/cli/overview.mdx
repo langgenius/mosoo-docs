@@ -39,7 +39,7 @@ printf '%s' "$MOSOO_API_TOKEN" | \
 ```bash
 mosoo --help
 mosoo commands --json
-mosoo commands show console apps deploy-app
+mosoo commands show console environments create-environment
 mosoo search "create environment"
 ```
 
@@ -60,12 +60,6 @@ mosoo run \
 
 # 根据项目上下文或显式参数创建 Environment
 mosoo console environments create-environment
-
-# 部署 public GitHub repository
-mosoo console apps deploy-app \
-  --input-app-id <app-id> \
-  --input-repo-url https://github.com/owner/repository \
-  --wait
 ```
 
 通过 `--target local|cloud|custom`、`--base-url` 或 `--hostname` 控制 endpoint resolution。输出格式包括 `table`、`json`、`yaml` 和 `raw`。
