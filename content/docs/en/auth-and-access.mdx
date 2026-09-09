@@ -3,67 +3,39 @@ title: "Authentication and access"
 description: "How API tokens, Agent API Endpoints, and Thread visibility work together."
 ---
 
-Every mosoo API request uses a Bearer API token:
+Every application API request uses a Project API key:
 
 ```http
-Authorization: Bearer mst_...
-```
-
-JSON requests also use:
-
-```http
+Authorization: Bearer msp_...
 Content-Type: application/json
 ```
 
-mosoo authenticates the API token, resolves the current mosoo account, then checks whether that account can use the selected Agent API Endpoint and resource.
+## Create and protect a key
 
-## API tokens
+Open the target **Project settings → Project API keys** and create a key. Copy it when it is shown: the secret is displayed once and only its hash is stored. Keep it on a trusted backend, never in browser or mobile client code.
 
-An API token is the credential your code uses to call the mosoo API. Create it in mosoo account settings and store it in your app backend, local tools, or automation jobs.
-
-<Callout type="warn">
-  API tokens are not model provider credentials or channel connection credentials. Slack, Lark, Discord, Telegram, WeChat, model provider setup, tool configuration, and channel setup stay in mosoo.
-</Callout>
+A Project can have multiple keys. Every key belongs to exactly one Project and has the same supported Agent configuration, Session, and file access; configurable key scopes are not available. Project keys cannot manage accounts, Projects, or other keys. Provider and MCP credentials are configured separately and are not application API keys.
 
 ## Agent API Endpoint access
 
-API access is available only after an Agent is published and has a live API endpoint version. A valid request must pass these checks:
+The Public Thread API still requires a published Agent with a live API endpoint version. The key must be valid, not revoked, and belong to the Agent's Project. The account owning that Project must also own the Agent. Owning both Projects does not let an application key cross between them.
 
-1. The API token is present, valid, and not revoked.
-2. The `agentId` is a v1 bare ULID for a real Agent.
-3. The Agent is published.
-4. The Agent has a live API endpoint version.
-5. The API token owner owns the App that owns the Agent.
-6. The Agent owner matches the App owner.
-
-If the token is valid but the caller cannot consume the Agent, mosoo returns `403 forbidden`. If the Agent or resource is not visible to the caller, mosoo returns `404 not_found`.
-
-<Card title="Agent API Endpoints" href="/docs/agent-api-endpoints">
-  Read how published Agent state, live endpoint versions, and `agentId` fit together.
-</Card>
+An unpublished Agent returns `409 agent_not_published`; a missing live endpoint version returns `409 service_inactive`. Access denial can return `403 forbidden` or `404 not_found` depending on the resource boundary.
 
 ## Caller identity and execution
 
-Threads created through the public API are attributed to the API token owner. Thread and file reads are visible to that owner when the underlying Agent API Endpoint is still accessible.
+Your backend authenticates its end user and supplies a required opaque `userId` when creating a Thread. mosoo preserves the immutable `(Project, userId)` context for the Thread, Runs, files, and delegated MCP calls; it does not authenticate your end user. Your backend remains responsible for authorizing access to the stored Thread ID.
 
-Runs execute with the published Agent configuration. The API caller does not become the model provider, cannot send provider credentials in the request, and cannot override tools, channels, runtime settings, or Agent configuration through this API.
+Runs use the published Agent configuration. Thread API requests cannot override provider credentials, tools, runtime settings, or Agent configuration.
 
-## Token lifecycle
+## Rotation and migration
 
-Revoking an API token blocks future API requests from that token. It does not delete existing Threads.
+Create a replacement key in the same Project, update the integration, then revoke the old key. Revocation rejects future requests from that key but does not stop admitted work or delete Threads. Another active key in the same Project, or the Project owner, can operate existing Threads.
 
-Use separate API tokens for separate systems when possible:
-
-- One API token for local development.
-- One API token per server-side integration or automation.
-- Clear API token labels for audit and rotation.
+Legacy `mst_` and `grt_pat_` tokens are rejected. They are not assigned to a default Project. Create a new key for each target Project and replace stored integration credentials. CLI users must sign in again with the current CLI; browser/CLI login provides account control-plane access and CLI login credentials use the distinct `mcli_` prefix. A Project key is not an account login replacement.
 
 ## Safe retries
 
-When retrying Thread creation or event submission, send the same `Idempotency-Key`.
+Reuse the same `Idempotency-Key` for a retry of the same operation and body. Project keys share idempotency receipts and rate limits within the Project, so rotating keys neither creates duplicate work nor resets the limit. Use distinct operation IDs for separate integrations in the same Project.
 
-```http
-Idempotency-Key: support-ticket-182-create-thread
-```
-
-The same key with the same request returns the original response. Reusing the key while the first request is still processing, or using it with a different request body, returns `409 idempotency_conflict`.
+The same key and request replay the original response. An in-flight request or different body using that key returns `409 idempotency_conflict`.

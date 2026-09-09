@@ -3,7 +3,7 @@ title: "Skill と MCP server"
 description: "Agent に再利用可能な指示と認証済み外部 tool を追加します。"
 ---
 
-Skill と MCP server は App が所有するリソースであり、選択した Agent に添付できます。
+Skill と MCP server は Project が所有するリソースであり、選択した Agent に添付できます。
 
 ## Skill
 
@@ -16,7 +16,7 @@ Skill は信頼できる指示と補助ファイルを package 化するため�
 
 ![Skill はファイルや folder からアップロードするか、URL から import できます。](/docs/images/product/add-skill.png)
 
-現在の console では Skill の download、fork、uninstall が可能ですが、App 内 editor や update 操作はありません。fork は独立した copy です。uninstall 後も既存の Agent attachment が **Missing** として残る場合があります。
+現在の console では Skill の download、fork、uninstall が可能ですが、Project 内 editor や update 操作はありません。fork は独立した copy です。uninstall 後も既存の Agent attachment が **Missing** として残る場合があります。
 
 ## MCP server
 
@@ -32,4 +32,4 @@ Skill は信頼できる指示と補助ファイルを package 化するため�
   **Connected** は mosoo に credential が保存されていることを示すだけで、remote server やすべての tool が動作する保証ではありません。現在、失敗は Agent が server を使用した時点で表示されます。
 </Callout>
 
-MCP credential は暗号化され、入力後に再表示されることはありません。local-process MCP、App 間共有、connector marketplace、tool 単位の選択は利用できません。
+MCP credential は暗号化され、入力後に再表示されることはありません。local-process MCP、Project 間共有、connector marketplace、tool 単位の選択は利用できません。

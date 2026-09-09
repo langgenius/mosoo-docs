@@ -9,23 +9,23 @@ description: "安全复用 Agent 配置并理解发布历史。"
 
 ## 导入 package
 
-在 Agents 页面选择 **Import package**，选择 `.agent` 文件并检查需要修复的项目。导入结果是当前 App 中可编辑的新 draft。
+在 Agents 页面选择 **Import package**，选择 `.agent` 文件并检查需要修复的项目。导入结果是当前 Project 中可编辑的新 draft。
 
 ![Import 会从可移植的 .agent package 创建新 draft。](/docs/images/product/import-agent-package.png)
 
 ## 复刻 Agent
 
-打开 Agent settings 并选择 **Fork agent**。Fork 会在同一 App 创建独立 draft，原 Agent 不变。可用于修改已发布 Agent 锁定的 type，或测试另一套配置。
+打开 Agent settings 并选择 **Fork agent**。Fork 会在同一 Project 创建独立 draft，原 Agent 不变。可用于修改已发布 Agent 锁定的 type，或测试另一套配置。
 
 ## 不会随 package 携带的内容
 
-`.agent` package 不是 App backup，也不是运行状态快照，不包含：
+`.agent` package 不是 Project backup，也不是运行状态快照，不包含：
 
 - Provider 或 MCP credentials；
 - conversations、logs 或 usage history；
 - live runtime state 或 working files。
 
-请在目标 App 重新连接外部服务，并补选缺失的 Environment 或 secret values。
+请在目标 Project 重新连接外部服务，并补选缺失的 Environment 或 secret values。
 
 ## 版本历史
 

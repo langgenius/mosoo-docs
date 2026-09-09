@@ -23,9 +23,7 @@ description: "Agent を公開し、Thread、API、coding-agent の提供方法�
 
 ## API access を有効にする
 
-Publish menu から **API Access** を選択します。prefix のない ULID 形式の Agent ID をコピーし、**Settings → API tokens** で account API token を作成します。
-
-![API token は公開済み Agent endpoint への呼び出しを認証します。](/docs/images/product/api-tokens.png)
+Publish menu の **API Access** で prefix のない ULID Agent ID をコピーします。その Agent の **Project settings → Project API keys** で Project key（`msp_`）を作成し、表示された秘密値を保存します。別の Project のキーでは呼び出せません。
 
 token は `Authorization: Bearer` header でのみ使用してください。API access は Thread の作成と再開を行います。Agent の作成、編集、公開は行いません。
 

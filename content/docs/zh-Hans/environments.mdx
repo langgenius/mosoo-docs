@@ -25,7 +25,7 @@ mosoo console environments create-environment
 
 ## 分配与修订
 
-可以设为 App default，也可以为特定 Agent 单独选择。新 session 会捕获当时的 Environment revision。后续修改只影响后来创建的 session，in-flight session 不会改变。
+可以设为 Project default，也可以为特定 Agent 单独选择。新 session 会捕获当时的 Environment revision。后续修改只影响后来创建的 session，in-flight session 不会改变。
 
 ## 软件包行为
 
@@ -35,4 +35,4 @@ npm CLI 通过 `PATH` 暴露，CommonJS package 通过 `NODE_PATH`，PyPI module
   Networking control 当前只保存意图，不会限制实际流量，不能视为安全边界。
 </Callout>
 
-App default 或仍被 Agent 使用的 Environment 会受到删除保护。
+Project default 或仍被 Agent 使用的 Environment 会受到删除保护。

@@ -12,10 +12,10 @@ Agent API Endpoint 是已发布 mosoo Agent 的公开 API 入口。你的应用�
 - 真实的 Agent ID。
 - Agent 状态为 `published`。
 - 存在 live API endpoint version。
-- API token 所有者拥有该 Agent 所属的 App。
-- Agent owner 与 App owner 一致。
+- API token 所有者拥有该 Agent 所属的 Project。
+- Agent owner 与 Project owner 一致。
 
-如果 Agent 未发布，mosoo 返回 `409 agent_not_published`。如果 Agent 没有 live API endpoint version，mosoo 返回 `409 service_inactive`。如果 token owner 不拥有该 Agent 所属的 App，mosoo 返回 `403 forbidden`。
+如果 Agent 未发布，mosoo 返回 `409 agent_not_published`。如果 Agent 没有 live API endpoint version，mosoo 返回 `409 service_inactive`。如果 token owner 不拥有该 Agent 所属的 Project，mosoo 返回 `403 forbidden`。
 
 ## `agentId`
 
@@ -35,7 +35,7 @@ Agent API Endpoint 负责 runtime 边界：
 | --- | --- |
 | 已发布 Agent 配置、模型服务商设置、工具执行、sandbox/runtime 行为、Agent memory/runtime state，以及公开事件生成。 | 产品 UI、后端 API、任务、应用侧用户、业务逻辑、存储、`thread.id` 持久化，以及客户端自有 correlation ID。 |
 
-请求不能覆盖模型服务商凭据、工具、渠道、runtime settings 或 Agent 配置。需要修改这些内容时，在 mosoo 中修改并重新发布 Agent。
+请求不能覆盖模型服务商凭据、工具、runtime settings 或 Agent 配置。需要修改这些内容时，在 mosoo 中修改并重新发布 Agent。
 
 ## 第一个 API 调用
 
@@ -58,3 +58,5 @@ POST /api/v1/agents/{agentId}/threads
     Thread 和 Run 的生命周期状态。
   </Card>
 </Cards>
+
+应用密钥必须属于 Agent 所在的 Project。创建和迁移方式见[认证和访问控制](/docs/zh-Hans/auth-and-access)。

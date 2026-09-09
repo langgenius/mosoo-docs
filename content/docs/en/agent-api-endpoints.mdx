@@ -12,10 +12,10 @@ A valid Agent API Endpoint has:
 - A real Agent ID.
 - Agent status `published`.
 - A live API endpoint version.
-- An owning App owned by the API token owner.
-- Matching Agent owner and App owner.
+- An owning Project owned by the API token owner.
+- Matching Agent owner and Project owner.
 
-If the Agent is not published, mosoo returns `409 agent_not_published`. If the Agent has no live API endpoint version, mosoo returns `409 service_inactive`. If the token owner does not own the Agent's App, mosoo returns `403 forbidden`.
+If the Agent is not published, mosoo returns `409 agent_not_published`. If the Agent has no live API endpoint version, mosoo returns `409 service_inactive`. If the token owner does not own the Agent's Project, mosoo returns `403 forbidden`.
 
 ## `agentId`
 
@@ -35,7 +35,7 @@ The Agent API Endpoint owns the runtime boundary:
 | --- | --- |
 | Published Agent configuration, model provider setup, tool execution, sandbox/runtime behavior, Agent memory/runtime state, and public event generation. | Product UI, backend APIs, jobs, app-side users, business logic, storage, `thread.id` persistence, and client-owned correlation IDs. |
 
-Requests cannot override model provider credentials, tools, channels, runtime settings, or Agent configuration. Change those in mosoo, then publish the Agent again.
+Requests cannot override model provider credentials, tools, runtime settings, or Agent configuration. Change those in mosoo, then publish the Agent again.
 
 ## First API call
 
@@ -58,3 +58,5 @@ Use `input` to queue the first Run immediately, or omit `input` to create an emp
     Thread and Run lifecycle state.
   </Card>
 </Cards>
+
+Application keys must belong to the Agent’s Project. See [Authentication and access](/docs/auth-and-access) for key creation and migration.

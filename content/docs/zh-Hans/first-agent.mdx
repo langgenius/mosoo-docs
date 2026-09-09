@@ -3,18 +3,18 @@ title: "创建第一个 Agent"
 description: "在 mosoo 控制台中配置、测试并发布一个 Agent。"
 ---
 
-本指南从空 App 开始，最终得到一个已发布的 Agent。
+本指南从空 Project 开始，最终得到一个已发布的 Agent。
 
-## 1. 打开 App
+## 1. 打开 Project
 
-登录 [cloud.mosoo.ai](https://cloud.mosoo.ai)。新账号会自动创建 **Default App**。当你需要独立的资源与用量边界时，可通过 App switcher 创建或切换 App。
+登录 [cloud.mosoo.ai](https://cloud.mosoo.ai)。新账号会自动创建 **Default Project**。当你需要独立的资源与用量边界时，可通过 Project switcher 创建或切换 Project。
 
 ## 2. 添加模型服务商密钥
 
 打开 **Config → Providers**。为准备使用的 runtime 添加 key，并按需执行连接测试。配置完成后，页面顶部会显示 runtime 已就绪。
 
 <Callout type="warning">
-  Provider 凭据只属于当前 App。保存后的 key 只显示掩码，导出的 Agent package 也不会包含凭据。
+  Provider 凭据只属于当前 Project。保存后的 key 只显示掩码，导出的 Agent package 也不会包含凭据。
 </Callout>
 
 ## 3. 创建 Agent

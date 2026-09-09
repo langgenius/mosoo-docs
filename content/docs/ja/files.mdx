@@ -3,7 +3,7 @@ title: "ファイル"
 description: "ファイルを upload して mosoo API Thread に mount します。"
 ---
 
-public API で upload したファイルは、Agent API Endpoint App を scope とする draft file resource です。Thread の作成時または user message の送信時に mount します。Agent が生成したファイルは artifact です。API token caller から見える場合、どちらも Thread file list に表示されます。
+public API で upload したファイルは、Agent API Endpoint Project を scope とする draft file resource です。Thread の作成時または user message の送信時に mount します。Agent が生成したファイルは artifact です。API token caller から見える場合、どちらも Thread file list に表示されます。
 
 ## Upload flow
 
@@ -44,6 +44,7 @@ curl -X POST "https://cloud.mosoo.ai/api/v1/agents/$MOSOO_AGENT_ID/threads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
+    "userId": "customer-123",
     "resources": [
       {
         "type": "file",
