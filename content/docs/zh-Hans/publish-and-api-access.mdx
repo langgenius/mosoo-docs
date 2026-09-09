@@ -23,9 +23,7 @@ description: "发布 Agent，并选择 Thread、API 或 coding-agent 交付方�
 
 ## 启用 API 访问
 
-从 Publish 菜单选择 **API Access**，复制不带前缀的 ULID Agent ID，然后在 **Settings → API tokens** 创建账号 API token。
-
-![API token 用于授权访问已发布 Agent endpoint。](/docs/images/product/api-tokens.png)
+从 Publish 菜单选择 **API Access** 并复制不带前缀的 ULID Agent ID。打开该 Agent 所属的 **Project settings → Project API keys**，创建 Project key（`msp_`）并在显示时保存密钥。其他 Project 的密钥不能调用该 Agent。
 
 Token 只应放在 `Authorization: Bearer` header 中。API access 用于创建和恢复 Thread，不负责创建、编辑或发布 Agent。
 

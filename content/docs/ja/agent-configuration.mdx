@@ -17,7 +17,7 @@ Agent を開くと、ライブ Preview pane と並べて設定できます。
 
 ## Runtime とモデル
 
-最初に runtime を選択し、解決された Provider key で利用可能なモデルを選びます。モデル一覧が空の場合や runtime に **Needs key** と表示される場合は、現在の App で対応する Provider を設定してください。
+最初に runtime を選択し、解決された Provider key で利用可能なモデルを選びます。モデル一覧が空の場合や runtime に **Needs key** と表示される場合は、現在の Project で対応する Provider を設定してください。
 
 ## System prompt
 
@@ -25,15 +25,15 @@ Agent の役割、境界、回答スタイル、確認が必要な条件を記�
 
 ## Skill
 
-現在の App にある再利用可能な指示 package を添付します。Skill は新しい session に読み込まれ、タスクで必要なときに Agent が参照します。添付した Skill が見つからない場合、別の App から流用されず missing として報告されます。
+現在の Project にある再利用可能な指示 package を添付します。Skill は新しい session に読み込まれ、タスクで必要なときに Agent が参照します。添付した Skill が見つからない場合、別の Project から流用されず missing として報告されます。
 
 ## MCP server
 
-現在の App にある認証済み Remote HTTPS MCP connection を添付します。connection は認証前でも添付できますが、tool を使用できるのは有効化と認証が完了した後だけです。
+現在の Project にある認証済み Remote HTTPS MCP connection を添付します。connection は認証前でも添付できますが、tool を使用できるのは有効化と認証が完了した後だけです。
 
 ## Environment
 
-package、setup script、変数、network-policy intent をまとめた再利用可能な runtime template を選びます。Agent に明示的な Environment がない場合は App default が適用されます。新しい session は選択した Environment revision を固定して使用します。
+package、setup script、変数、network-policy intent をまとめた再利用可能な runtime template を選びます。Agent に明示的な Environment がない場合は Project default が適用されます。新しい session は選択した Environment revision を固定して使用します。
 
 ## 保存と公開の動作
 

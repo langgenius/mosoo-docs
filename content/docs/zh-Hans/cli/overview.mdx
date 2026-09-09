@@ -27,6 +27,8 @@ mosoo auth status --hostname cloud.mosoo.ai
 mosoo doctor --json
 ```
 
+Project key（`msp_`）不能授权账号管理。账号级 Console 操作应使用浏览器登录；密钥迁移后请重新登录，用 `mcli_` 凭据替换旧凭据。详见[认证和访问控制](/docs/zh-Hans/auth-and-access)。
+
 非交互登录应通过标准输入传 token，避免写入 shell history：
 
 ```bash
@@ -48,19 +50,12 @@ mosoo search "create environment"
 ## 常用操作
 
 ```bash
-# 列出 Apps、Agents 和 credential readiness
 mosoo ls -o json
-
-# 启动新的 Agent Run
-mosoo run \
-  --input-app-id <app-id> \
-  --input-agent-id <agent-id> \
-  --input-prompt "Summarize this repository" \
-  --wait -o json
-
-# 根据项目上下文或显式参数创建 Environment
-mosoo console environments create-environment
+mosoo run --help
+mosoo console environments create-environment --help
 ```
+
+CLI 命令由契约生成。先更新 CLI 并检查命令帮助；旧版显示的 `--input-app-id` 不适用于当前 Project 契约。运行示例请参阅 [API quickstart](/docs/zh-Hans/quickstart)。
 
 通过 `--target local|cloud|custom`、`--base-url` 或 `--hostname` 控制 endpoint resolution。输出格式包括 `table`、`json`、`yaml` 和 `raw`。
 

@@ -27,6 +27,8 @@ mosoo auth status --hostname cloud.mosoo.ai
 mosoo doctor --json
 ```
 
+Project key（`msp_`）は account 管理を認可しません。account 全体の Console 操作にはブラウザーログインを使用し、キー移行後は再ログインして旧 credential を `mcli_` credential に置き換えてください。[認証とアクセス](/docs/ja/auth-and-access)を参照してください。
+
 non-interactive login では、token を shell history に残す引数ではなく standard input から渡します。
 
 ```bash
@@ -48,19 +50,12 @@ mosoo search "create environment"
 ## 一般的な操作
 
 ```bash
-# App、Agent、credential readiness を一覧表示
 mosoo ls -o json
-
-# 新しい Agent Run を開始
-mosoo run \
-  --input-app-id <app-id> \
-  --input-agent-id <agent-id> \
-  --input-prompt "Summarize this repository" \
-  --wait -o json
-
-# project context または明示した flag から Environment を作成
-mosoo console environments create-environment
+mosoo run --help
+mosoo console environments create-environment --help
 ```
+
+CLI command は契約から生成されます。CLI を更新して command help を確認してください。旧版の `--input-app-id` は現在の Project 契約には使えません。実行例は [API quickstart](/docs/ja/quickstart) を参照してください。
 
 endpoint resolution は `--target local|cloud|custom`、`--base-url`、`--hostname` で制御します。output format は `table`、`json`、`yaml`、`raw` です。
 

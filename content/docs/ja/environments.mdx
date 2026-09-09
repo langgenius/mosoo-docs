@@ -25,7 +25,7 @@ mosoo console environments create-environment
 
 ## 割り当てと revision
 
-Environment を App default にするか、特定の Agent で選択します。新しい session は選択した Environment revision を取得します。後からの編集は、その後に作成される session にのみ適用され、実行中の session は変わりません。
+Environment を Project default にするか、特定の Agent で選択します。新しい session は選択した Environment revision を取得します。後からの編集は、その後に作成される session にのみ適用され、実行中の session は変わりません。
 
 ## Package の動作
 
@@ -35,4 +35,4 @@ npm package の CLI は `PATH`、CommonJS package は `NODE_PATH`、PyPI module 
   Networking control は現在 intent を保存するだけで、通信を制限しません。security boundary として扱わないでください。
 </Callout>
 
-App default、および Agent が選択中の Environment は削除できません。
+Project default、および Agent が選択中の Environment は削除できません。

@@ -41,7 +41,7 @@ Branch on `error.code`, not `error.message`. The message is for developers and s
 
 Rules:
 
-- The key is scoped to the API token, method, route, and request body.
+- For Project keys, the idempotency key is scoped to the Project, method, and route; the body is checked for conflicts. Keys in the same Project share receipts and rate limits, including after rotation. Account CLI credentials use their own credential boundary.
 - Reusing the same key with the same request replays the stored response.
 - Reusing the same key with a different request returns `409 idempotency_conflict`.
 - Reusing the key while the first request is still processing returns `409 idempotency_conflict`.

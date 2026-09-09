@@ -41,7 +41,7 @@ description: "mosoo API のエラー、再試行、idempotency、public API limi
 
 ルール:
 
-- key の scope は API token、method、route、request body です。
+- Project key の冪等性 scope は Project、method、route で、body の不一致を検出します。同じ Project のキーは更新後も記録と rate limit を共有します。account CLI credential は自身の credential 境界を使用します。
 - 同じ request に同じ key を再使用すると、保存済み response が replay されます。
 - 異なる request に同じ key を使用すると `409 idempotency_conflict` が返ります。
 - 最初の request が処理中に key を再使用すると `409 idempotency_conflict` が返ります。
