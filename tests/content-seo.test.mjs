@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 const root = fileURLToPath(new URL('../content/docs', import.meta.url));
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 
 function walk(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -41,6 +42,21 @@ test('every indexable docs page has a title and meta description', () => {
   }
 
   assert.deepEqual(missing, []);
+});
+
+test('localized OpenAPI create-thread descriptions do not fall back to English', () => {
+  const englishFallback = 'Creates a Thread and the backing AgentSession';
+  const localizedFiles = [
+    'content/docs/zh-Hans/api-reference/create-a-thread-for-an-agent-api-endpoint.mdx',
+    'content/docs/ja/api-reference/create-a-thread-for-an-agent-api-endpoint.mdx',
+    'public/docs/openapi/mosoo-openapi.zh-Hans.generated.json',
+    'public/docs/openapi/mosoo-openapi.ja.generated.json',
+  ];
+
+  for (const relativePath of localizedFiles) {
+    const content = readFileSync(join(repoRoot, relativePath), 'utf8');
+    assert.doesNotMatch(content, new RegExp(englishFallback), relativePath);
+  }
 });
 
 test('Chinese docs display titles contain Chinese text', () => {
