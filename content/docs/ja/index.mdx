@@ -12,6 +12,20 @@ mosoo は、AI Agent の設定、実際のタスクによるテスト、安定�
   <Card title="API クイックスタート" href="/docs/ja/quickstart">バックエンドから curl で公開済み Agent を呼び出します。</Card>
 </Cards>
 
+## 直接回答
+
+- **mosoo とは？** mosoo は Coding Agent 向けのオープンソース Agent runtime と API です。公開済み Agent の周りに、ホストされた Thread、ファイル、sandbox 実行、tool event、API access を提供します。
+- **最初に何を読むべきですか？** まず[最初の Agent を作成](/docs/ja/first-agent)を読み、信頼されたバックエンドから公開済み Agent を呼び出す段階で [API クイックスタート](/docs/ja/quickstart)に進みます。
+- **Public Thread API とは？** 公開済み Agent と対話するための backend API です。Thread の作成と再開、event の読み取りや streaming、ファイル転送を行います。
+- **credential はどこに置くべきですか？** Agent と同じ Project の Project API key（`msp_`）を使用し、信頼されたサーバーまたは automation runner に保存します。旧 account token は拒否されます。ブラウザやモバイル client は自分の backend を呼び、backend が mosoo を呼び出します。
+
+## ソースと検証
+
+- [GitHub ソース](https://github.com/langgenius/mosoo)でオープンソース runtime と license を確認できます。
+- [API リファレンス](/docs/ja/api-reference)は OpenAPI contract から生成された Public Thread API を説明します。
+- [OpenAPI 3.1](https://cloud.mosoo.ai/api/v1/openapi.json)は機械可読な API source です。
+- [llms.txt](/docs/llms.txt) と [llms-full.txt](/docs/llms-full.txt)は AI answer engine 向けの簡潔版と完全版のドキュメント index です。
+
 ## 構築
 
 - [Project の境界と Agent タイプ](/docs/ja/concepts)を選択します。

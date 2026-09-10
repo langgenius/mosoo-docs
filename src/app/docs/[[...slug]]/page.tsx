@@ -99,6 +99,7 @@ export async function generateMetadata(props: PageProps<'/docs/[[...slug]]'>): P
     authors: [{ name: 'mosoo', url: 'https://mosoo.ai/' }],
     alternates: {
       canonical,
+      types: { 'text/markdown': getPageMarkdownUrl(page).url },
       ...(languages ? { languages } : {}),
     },
     openGraph: {

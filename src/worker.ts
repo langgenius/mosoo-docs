@@ -1,4 +1,5 @@
 import { getDocumentLanguage } from './lib/seo-core';
+import { docsDiscoveryHeaders, isDocsMarkdownPath } from './lib/agent-discovery';
 
 interface AssetBinding {
   fetch(request: Request): Promise<Response>;
@@ -103,12 +104,22 @@ const worker = {
     if (forceHttps) return Response.redirect(url.toString(), 308);
 
     const response = await env.ASSETS.fetch(request);
-    if (!response.headers.get('content-type')?.includes('text/html')) return response;
+    if (!response.ok || !url.pathname.startsWith('/docs/')) return response;
+
+    const contentType = response.headers.get('content-type') ?? '';
+    if (isDocsMarkdownPath(url.pathname)) {
+      if (!/^text\/(?:plain|markdown)(?:;|$)/i.test(contentType)) return response;
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: docsDiscoveryHeaders(url.pathname, response.headers),
+      });
+    }
+    if (!contentType.includes('text/html')) return response;
 
     const language = getDocumentLanguage(url.pathname);
-    const headers = new Headers(response.headers);
+    const headers = docsDiscoveryHeaders(url.pathname, response.headers);
     headers.set('content-language', language);
-    headers.append('link', '</docs/llms.txt>; rel="llms-txt", </docs/llms-full.txt>; rel="llms-full-txt"');
     const localizedResponse = new Response(response.body, {
       status: response.status,
       statusText: response.statusText,

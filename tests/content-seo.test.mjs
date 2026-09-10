@@ -86,6 +86,18 @@ test('Chinese docs display titles contain Chinese text', () => {
   assert.deepEqual(missingChinese, []);
 });
 
+test('localized homepages explain current Project keys and point to their API reference', () => {
+  for (const language of ['en', 'zh-Hans', 'ja']) {
+    const content = readFileSync(join(root, language, 'index.mdx'), 'utf8');
+    assert.match(content, /Project API key/);
+    assert.match(content, /`msp_`/);
+    assert.doesNotMatch(content, /App.owner token|Personal Access Token/);
+    assert.ok(content.includes(language === 'en' ? '/docs/api-reference' : `/docs/${language}/api-reference`));
+    assert.match(content, /https:\/\/cloud\.mosoo\.ai\/api\/v1\/openapi\.json/);
+    assert.match(content, /\/docs\/llms-full\.txt/);
+  }
+});
+
 test('Japanese docs mirror the translated page set and contain Japanese copy', () => {
   const chineseRoot = join(root, 'zh-Hans');
   const japaneseRoot = join(root, 'ja');
