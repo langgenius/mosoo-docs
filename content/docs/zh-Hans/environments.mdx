@@ -5,7 +5,7 @@ description: "为 Agent session 创建可复用 runtime template。"
 
 Environment 让 Agent session 以一致的 package、setup script 和 variable 启动。
 
-![Environment editor 用于配置 packages、setup、variables 和网络意图。](/docs/images/product/create-environment.png)
+![Environment editor 用于配置 packages、setup、variables 和网络策略。](/docs/images/product/create-environment.png)
 
 ## 创建 Environment
 
@@ -15,7 +15,7 @@ Environment 让 Agent session 以一致的 package、setup script 和 variable �
 - **Packages**：来自公共 npm 或 PyPI，必须指定精确版本。
 - **Setup script**：prepared packages 恢复后执行。
 - **Environment variables**：保存后 value 会加密。
-- **Networking intent**：当前 Sandbox runtime 会显示并保存，但尚不执行限制。
+- **Network policy**：Full 允许访问互联网，Limited 为 Task Agent 提供基于域名白名单的访问限制。
 
 也可以根据项目依赖文件从终端创建：
 
@@ -27,12 +27,21 @@ mosoo console environments create-environment
 
 可以设为 Project default，也可以为特定 Agent 单独选择。新 session 会捕获当时的 Environment revision。后续修改只影响后来创建的 session，in-flight session 不会改变。
 
+## 网络策略
+
+- **Full**：保持直接访问互联网的能力。
+- **Limited**：关闭直接联网，通过域名白名单过滤出站 HTTP/HTTPS 流量。白名单包含 Environment 配置的允许域名，以及 mosoo 运行时控制和 artifact 存储所需的端点。
+
+Limited 仅支持使用 session 独立沙箱的 **Task Agent**。**Assistant Agent** 在 session 间共享沙箱，必须使用 Full。运行时会在沙箱启动前应用策略，并在该 session 内保持不变；更换策略需要创建新 session。
+
+如果无法执行 Limited 限制，运行时会拒绝启动沙箱，不会回退到无限制访问。禁用 HTTPS 拦截的本地开发环境也会被拒绝。Limited 还会拒绝 `HTTP_PROXY`、`HTTPS_PROXY` 和 `ALL_PROXY` 环境变量，包括小写形式。
+
+<Callout type="warning">
+  网络白名单控制访问目标，不会让已允许的 API 或 MCP 工具自动变成只读。访问生产系统时，仍需配置适当的工具权限和只读凭据。
+</Callout>
+
 ## 软件包行为
 
 npm CLI 通过 `PATH` 暴露，CommonJS package 通过 `NODE_PATH`，PyPI module 通过 `PYTHONPATH`。Node ESM bare import 仍需在项目内安装依赖。OS package、Cargo、RubyGems 和 Go module 不是 Environment package 选项。
-
-<Callout type="warning">
-  Networking control 当前只保存意图，不会限制实际流量，不能视为安全边界。
-</Callout>
 
 Project default 或仍被 Agent 使用的 Environment 会受到删除保护。

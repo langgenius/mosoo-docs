@@ -5,7 +5,7 @@ description: "Agent session 向けの再利用可能な runtime template を作�
 
 Environment を使うと、Agent session を一貫した package set、setup script、変数で開始できます。
 
-![Environment editor では package、setup、変数、network intent を定義します。](/docs/images/product/create-environment.png)
+![Environment editor では package、setup、変数、network policy を定義します。](/docs/images/product/create-environment.png)
 
 ## Environment を作成する
 
@@ -15,7 +15,7 @@ Environment を使うと、Agent session を一貫した package set、setup scr
 - public npm または PyPI の、正確な version を指定した **Packages**。
 - 準備済み package の復元後に実行される **Setup script**。
 - 保存後に値が暗号化される **Environment variables**。
-- 表示はされるものの、現在の Sandbox runtime では強制されない **Networking intent**。
+- インターネットアクセスを許可する Full、または Task Agent の接続先をドメイン許可リストで制限する Limited を選ぶ **Network policy**。
 
 project の dependency file から作成することもできます。
 
@@ -27,12 +27,21 @@ mosoo console environments create-environment
 
 Environment を Project default にするか、特定の Agent で選択します。新しい session は選択した Environment revision を取得します。後からの編集は、その後に作成される session にのみ適用され、実行中の session は変わりません。
 
+## ネットワークポリシー
+
+- **Full** はインターネットへの直接アクセスを許可します。
+- **Limited** はインターネットへの直接アクセスを無効にし、ドメイン許可リストで送信 HTTP/HTTPS 通信を制限します。許可リストには Environment で指定したドメインに加え、mosoo の runtime 制御と artifact 保存に必要な接続先が含まれます。
+
+Limited は session ごとに独立した sandbox を使う **Task Agent** のみで利用できます。**Assistant Agent** は session 間で sandbox を共有するため、Full が必要です。runtime は sandbox の起動前にポリシーを適用し、その session 中は変更しません。別のポリシーを使うには新しい session を作成してください。
+
+Limited の制限を適用できない場合、runtime は無制限のアクセスに切り替えず、sandbox の起動を拒否します。HTTPS interception を無効にしたローカル開発環境も対象です。Limited は `HTTP_PROXY`、`HTTPS_PROXY`、`ALL_PROXY` 環境変数も拒否します。小文字の形式も同様です。
+
+<Callout type="warning">
+  ネットワーク許可リストは接続先を制御します。許可された API や MCP tool が読み取り専用になるわけではありません。本番システムにアクセスする場合は、適切な tool 権限と読み取り専用の認証情報を設定してください。
+</Callout>
+
 ## Package の動作
 
 npm package の CLI は `PATH`、CommonJS package は `NODE_PATH`、PyPI module は `PYTHONPATH` から利用できます。Node ESM の bare import には project-local install が必要です。OS package、Cargo、RubyGems、Go module は Environment package として選択できません。
-
-<Callout type="warning">
-  Networking control は現在 intent を保存するだけで、通信を制限しません。security boundary として扱わないでください。
-</Callout>
 
 Project default、および Agent が選択中の Environment は削除できません。
