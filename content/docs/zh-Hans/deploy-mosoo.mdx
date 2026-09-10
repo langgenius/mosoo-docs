@@ -3,7 +3,7 @@ title: "在 Cloudflare 上部署 mosoo"
 description: "通过 GitHub Actions 云端部署，或在本地使用 Wrangler 工具链部署 mosoo。"
 ---
 
-mosoo 由两个 Cloudflare Workers 组成：API Worker 使用 D1、R2、Queues、Durable Objects 和 Containers；Web Worker 提供控制台，并通过服务绑定连接 API。mosoo 不是一个可以单独部署的 Cloudflare Pages 静态站点。
+mosoo 由两个 Cloudflare Workers 组成：API Worker 使用 D1、R2、Queues、Durable Objects 和 Containers；Web Worker 提供控制台，并通过服务绑定连接 API。
 
 本指南介绍参考部署所采用的两种发布方式：
 
@@ -15,17 +15,17 @@ mosoo 由两个 Cloudflare Workers 组成：API Worker 使用 D1、R2、Queues�
 ## 前置要求
 
 - Cloudflare 账号已开通 Workers、D1、R2、Queues、Durable Objects 和 Containers。
-- 一个由 Cloudflare DNS 托管的域名，例如 `console.example.com`；如需启用 App 部署，还需准备 `apps.example.com` 这类部署子域名。
+- 一个由 Cloudflare DNS 托管的域名，例如 `console.example.com`。
 - 已安装 Git、Docker、[Bun](https://bun.sh/)、[just](https://just.systems/)，并能拉取仓库子模块。
 - 一个具备上述账号资源和域名区域部署权限的 Cloudflare API 令牌。令牌和密钥不得提交到 Git，并应按以下操作范围配置最小权限。
 
 | 范围 | 必需操作 |
 | --- | --- |
-| 账号 | Workers 脚本、版本、部署、自定义域名与 Containers；D1 迁移；R2；Queues；启用 App 部署时还包括 Pages 项目与域名 |
-| `CLOUDFLARE_ZONE_ID` 指定的域名区域 | 修改 App 部署域名的 Workers Routes |
-| R2 S3 凭据 | 读写已部署应用使用的 sandbox-state 存储桶 |
+| 账号 | Workers 脚本、版本、部署、自定义域名与 Containers；D1 迁移；R2；Queues |
+| 控制台域名所在的域名区域 | 修改 `<控制台域名>/api/*` API 路由使用的 Workers Routes |
+| R2 S3 凭据 | 读写 Agent runtime 备份使用的 sandbox-state 存储桶 |
 
-`CLOUDFLARE_ZONE_ID` 必须对应 `MOSOO_APP_DEPLOYMENT_DOMAIN` 所在的域名区域。Cloudflare 控制台中的权限名称可能调整，应核对令牌是否允许这些具体 API 操作，而不是直接授予账号管理员权限。
+Cloudflare 控制台中的权限名称可能调整，应核对令牌是否允许这些具体 API 操作，而不是直接授予账号管理员权限。
 
 克隆你的 fork，并安装仓库锁定的依赖：
 
@@ -80,7 +80,6 @@ done
 
 1. 在 `apps/api/wrangler.toml` 中：
    - 将 `WEB_ORIGIN` 设为公开的 HTTPS 控制台地址；
-   - 将 `MOSOO_APP_DEPLOYMENT_DOMAIN` 设为应用部署域名；
    - 将 API 路由改为 `<控制台域名>/api/*`，并设置对应的 `zone_name`；
    - 填入 `wrangler d1 create` 返回的 D1 `database_id`；
    - 如果没有采用默认名称，同步更新 D1、R2 和 Queue 名称；
@@ -94,7 +93,6 @@ done
 ```text
 https://console.example.com/*      -> Web Worker
 https://console.example.com/api/*  -> API Worker
-https://*.apps.example.com/*       -> mosoo 发布的应用（启用时）
 ```
 
 请分别按照 Cloudflare 各类资源的命名空间选择尚未使用的名称；Workers、D1 数据库、Queues、R2 存储桶和域名的命名与唯一性规则并不相同。不要复制其他部署的数据库 ID、账号 ID、区域 ID 或域名。
@@ -109,12 +107,10 @@ https://*.apps.example.com/*       -> mosoo 发布的应用（启用时）
 - `R2_ACCESS_KEY_ID`
 - `R2_SECRET_ACCESS_KEY`
 - `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ZONE_ID`
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
 
-前三项应分别生成独立的随机值。在 Cloudflare 控制台创建 R2 S3 凭据和 Cloudflare API 令牌；为 Google OAuth 客户端配置公开的 mosoo 来源地址，并将回调地址精确设置为 `https://console.example.com/api/auth/callback/google`，其中示例域名应替换为 `WEB_ORIGIN`。
+前三项应分别生成独立的随机值。在 Cloudflare 控制台复制账号 ID 并创建 R2 S3 凭据；为 Google OAuth 客户端配置公开的 mosoo 来源地址，并将回调地址精确设置为 `https://console.example.com/api/auth/callback/google`，其中示例域名应替换为 `WEB_ORIGIN`。
 
 通过 Wrangler 保存每一项，不要把密钥写入 `wrangler.toml` 或提交到仓库的 `.env` 文件：
 

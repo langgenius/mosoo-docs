@@ -1,0 +1,18 @@
+---
+title: Public Thread API contract safety and runtime recovery
+description: The generated OpenAPI artifact and the release gate enforce Public Thread API v1 compatibility, and cattle sessions are reclaimed after remote cleanup errors.
+date: "2026-08-17"
+version: v0.2.2
+tags: [fixes]
+---
+
+A patch release focused on Public Thread API contract safety and production runtime reliability. It contains no D1 migration and no data rewrite.
+
+### Fixes
+
+- Public Thread API v1 stays backward compatible: the generated OpenAPI artifact and the release gate now enforce that contract, and the contract check fetches `main` before comparing.
+- Cattle sessions are reclaimed after remote cleanup errors.
+- Activation attribution in analytics is corrected.
+- The deploy workflow matches Cloudflare's HTTPS redirect status.
+
+Full notes: [v0.2.2 on GitHub](https://github.com/langgenius/mosoo/releases/tag/v0.2.2).

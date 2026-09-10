@@ -16,7 +16,6 @@
     "test-and-debug",
     "---Publish and operate---",
     "publish-and-api-access",
-    "deploy-app",
     "operations",
     "import-export-versions",
     "use-cases",
@@ -30,6 +29,7 @@
     "---Reference---",
     "api-reference",
     "errors-and-limits",
-    "coding-agents"
+    "coding-agents",
+    "[Changelog](/docs/changelog)"
   ]
 }

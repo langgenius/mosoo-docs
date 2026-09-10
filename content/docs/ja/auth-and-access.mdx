@@ -3,67 +3,39 @@ title: "認証とアクセス"
 description: "API token、Agent API Endpoint、Thread visibility の連携を説明します。"
 ---
 
-すべての mosoo API request は Bearer API token を使用します。
+アプリケーションの API request には Project API key を使用します。
 
 ```http
-Authorization: Bearer mst_...
-```
-
-JSON request では次も使用します。
-
-```http
+Authorization: Bearer msp_...
 Content-Type: application/json
 ```
 
-mosoo は API token を認証し、現在の mosoo account を解決してから、その account が選択した Agent API Endpoint と resource を利用できるか確認します。
+## キーの作成と保管
 
-## API token
+対象の **Project settings → Project API keys** でキーを作成します。秘密値は一度だけ表示され、サーバーにはハッシュのみ保存されます。信頼できる backend に保管し、ブラウザーやモバイルのクライアントコードには含めないでください。
 
-API token は code から mosoo API を呼び出すための credential です。mosoo account settings で作成し、App backend、local tool、automation job に保存します。
+一つの Project に複数のキーを作成できます。各キーは一つの Project にのみ属し、同じ Agent 設定、Session、ファイルのアクセス権を持ちます。キーごとの scope 設定はありません。Project key では account、Project、他のキーを管理できません。Provider と MCP の credential は別途設定します。
 
-<Callout type="warn">
-  API token は model provider credential や channel connection credential ではありません。Slack、Lark、Discord、Telegram、WeChat、model provider setup、tool configuration、channel setup は mosoo で管理します。
-</Callout>
+## Agent API Endpoint へのアクセス
 
-## Agent API Endpoint access
+Public Thread API では引き続き公開済み Agent と live API endpoint version が必要です。キーが有効かつ未失効で、Agent と同じ Project に属する必要があります。Project owner と Agent owner も一致する必要があります。同じ account が複数の Project を所有していても、アプリケーションキーは Project を越えてアクセスできません。
 
-API access は Agent が公開済みで、live API endpoint version がある場合にのみ利用できます。有効な request は次の check をすべて通過する必要があります。
+未公開の Agent は `409 agent_not_published`、live endpoint version がない場合は `409 service_inactive` を返します。アクセス拒否は resource の境界に応じて `403 forbidden` または `404 not_found` になります。
 
-1. API token が存在し、有効で、revoke されていない。
-2. `agentId` が実在する Agent の v1 bare ULID である。
-3. Agent が公開済みである。
-4. Agent に live API endpoint version がある。
-5. API token owner が Agent を所有する App を所有している。
-6. Agent owner と App owner が一致している。
+## ユーザーの識別と実行
 
-token が有効でも caller が Agent を利用できない場合、mosoo は `403 forbidden` を返します。Agent または resource が caller から見えない場合は `404 not_found` を返します。
+backend がエンドユーザーを認証し、Thread 作成時に必須の opaque `userId` を渡します。mosoo は Thread、Run、ファイル、委任 MCP 呼び出しに不変の `(Project, userId)` context を保持しますが、エンドユーザーの認証は行いません。保存した Thread ID へのアクセス認可も backend の責任です。
 
-<Card title="Agent API Endpoint" href="/docs/ja/agent-api-endpoints">
-  公開済み Agent state、live endpoint version、`agentId` の関係を確認します。
-</Card>
+Run は公開済み Agent 設定を使用します。Thread API request で provider credential、tool、runtime settings、Agent 設定を上書きすることはできません。
 
-## Caller identity と実行
+## キーの更新と移行
 
-public API で作成した Thread は API token owner に帰属します。underlying Agent API Endpoint に引き続き access できる場合、その owner は Thread と file を読み取れます。
+同じ Project で新しいキーを作成し、連携設定を更新してから古いキーを失効させます。失効後の新規 request は拒否されますが、受理済みの処理は停止せず、Thread も削除されません。同じ Project の別の有効なキー、または Project owner が既存の Thread を操作できます。
 
-Run は公開済み Agent 設定で実行されます。API caller が model provider になることはなく、request に provider credential を含めたり、この API から tool、channel、runtime setting、Agent configuration を上書きしたりすることはできません。
-
-## Token lifecycle
-
-API token を revoke すると、その token からの今後の API request は拒否されます。既存の Thread は削除されません。
-
-可能であれば system ごとに別の API token を使用してください。
-
-- local development 用に一つ。
-- server-side integration または automation ごとに一つ。
-- audit と rotation のために明確な API token label を付ける。
+旧 `mst_` と `grt_pat_` token は拒否され、default Project に自動で割り当てられることはありません。対象 Project ごとにキーを作成し、連携先の credential を更新してください。CLI ユーザーは現在の CLI で再ログインが必要です。ブラウザーと CLI のログインは account control plane へのアクセスを提供し、CLI credential は別の `mcli_` prefix を使用します。Project key は account ログインの代わりにはなりません。
 
 ## 安全な再試行
 
-Thread の作成または event submission を retry するときは、同じ `Idempotency-Key` を送信します。
+同じ操作と request body の再試行には同じ `Idempotency-Key` を使用します。Project のキーは冪等性記録と rate limit を共有するため、キーを更新しても処理は重複せず、制限もリセットされません。同じ Project の異なる連携には別の操作 ID を使用してください。
 
-```http
-Idempotency-Key: support-ticket-182-create-thread
-```
-
-同じ request に同じ key を使用すると元の response が返ります。最初の request が処理中に key を再使用した場合、または異なる request body に同じ key を使用した場合は `409 idempotency_conflict` が返ります。
+同じ key と request では元の response が返ります。処理中、または異なる body に同じ key を使用すると `409 idempotency_conflict` が返ります。

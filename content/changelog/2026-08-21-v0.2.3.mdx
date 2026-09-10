@@ -1,0 +1,27 @@
+---
+title: Durable Thread continuation and Driver protocol v2
+description: Task Agent Threads keep their complete workspace checkpoint across cold continuation, the API and Driver adopt protocol v2, and runtime performance and reliability improve.
+date: "2026-08-21"
+version: v0.2.3
+tags: [improvements, fixes]
+---
+
+A patch release focused on durable Task Agent Thread continuation, Driver protocol v2 compatibility, and runtime performance and reliability.
+
+### Improvements
+
+- Task Agent cold continuation preserves the complete Thread workspace checkpoint, restoring continuation artifacts and history. Follow-ups may return a retryable 409 while checkpointing is pending.
+- Driver protocol v2 is adopted across the API and Driver compatibility paths, switched atomically at deploy time, with V2 OpenAI and attachment compatibility updates in the Driver.
+- Session event virtualization is faster, session attachment validation is batched, thread lookups by id and runtime catalog lookups are indexed, and idle gaps are excluded from process durations.
+- Long-running containers raise an operations alert, and the deployment-scoped identity replaces App Secrets.
+
+### Fixes
+
+- The agent list scrolls inside the app shell, the MCP disable / enable menu item has its icon, and single-brace i18n placeholders are guarded by a test.
+- Terminal event reconciliation lookups are indexed.
+
+### Compatibility notes
+
+- Append-only D1 migrations 0009 through 0011 are added. No established migration is modified, and there is no destructive or data-rewrite migration.
+
+Full notes: [v0.2.3 on GitHub](https://github.com/langgenius/mosoo/releases/tag/v0.2.3).

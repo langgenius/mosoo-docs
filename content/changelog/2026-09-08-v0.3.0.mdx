@@ -1,0 +1,25 @@
+---
+title: Projects replace Apps, project-scoped API keys, and a refreshed console
+description: Projects become the primary boundary with project-scoped application API keys, the console gains a clearer sidebar and shared design recipes, and runtime fixes land for stranded pets and OpenCode routing.
+date: "2026-09-08"
+version: v0.3.0
+tags: [new-release]
+---
+
+A minor release that moves the product boundary from Apps to Projects, introduces project-scoped application API keys, and refreshes the console experience.
+
+### Highlights
+
+- Projects are the primary organizational boundary, with project-scoped application API keys and Run key attribution.
+- The console gains a clearer sidebar hierarchy, a black "Create agent" call to action, an original glyph family for the resource rows, and the console design contract with its shared recipes.
+- Runtime fixes address stranded pets after Driver loss, OpenCode provider and model routing, and transient Driver acknowledgement timeouts.
+
+### Breaking changes and upgrade notes
+
+- App terminology and related API and schema boundaries are renamed to Project. Review integrations that use the previous App boundary before upgrading.
+- Application API key management is now project-scoped. Review key provisioning and project access in existing integrations.
+- The former App Deployment functionality and the Channels subsystem are removed.
+- D1 migrations 0012 through 0014 are added: App-to-Project renames and index updates, project API key association, and Run key attribution. The rename migration retains retired channel tables rather than dropping them.
+- Apply migrations only through the documented deployment process, with backup and recovery planning. Schema renames mean that rolling back application code alone must not be assumed safe.
+
+Full notes: [v0.3.0 on GitHub](https://github.com/langgenius/mosoo/releases/tag/v0.3.0).

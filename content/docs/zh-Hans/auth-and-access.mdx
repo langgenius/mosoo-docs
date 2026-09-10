@@ -3,67 +3,39 @@ title: "认证和访问控制"
 description: "API token、Agent API Endpoint 和 Thread 可见性如何配合。"
 ---
 
-每个 mosoo API 请求都使用 Bearer API token：
+应用 API 请求使用所属 Project 的 API key：
 
 ```http
-Authorization: Bearer mst_...
-```
-
-JSON 请求还需要：
-
-```http
+Authorization: Bearer msp_...
 Content-Type: application/json
 ```
 
-mosoo 会用 API token 认证当前 mosoo 账号，然后检查该账号是否可以使用选定的 Agent API Endpoint 和资源。
+## 创建和保管密钥
 
-## API 令牌
+打开目标 **Project settings → Project API keys** 创建密钥。密钥只显示一次，服务端只存储哈希；请保存到可信后端，不要放入浏览器或移动客户端代码。
 
-API token 是调用 mosoo API 的身份凭证。你可以在 mosoo 账号设置中创建它，并把它保存到应用后端、本地工具或自动化任务中。
-
-<Callout type="warn">
-  API token 不是模型服务商凭据，也不是渠道连接凭据。Slack、Lark、Discord、Telegram、WeChat、模型服务商设置、工具配置和渠道设置仍然在 mosoo 中管理。
-</Callout>
+一个 Project 可有多个密钥，每个密钥只属于一个 Project。所有密钥具有相同的 Agent 配置、Session 和文件访问能力，不提供可配置权限范围。Project key 不能管理账号、Project 或其他密钥。模型服务商和 MCP 凭据需要单独配置，不是应用 API key。
 
 ## Agent API 端点访问
 
-只有 Agent 已发布且存在 live API endpoint version 时，API 才可调用。一个有效请求必须通过这些检查：
+Public Thread API 仍要求 Agent 已发布且存在 live API endpoint version。密钥必须有效、未撤销，并属于 Agent 所在的 Project；Project 所有者也必须是 Agent 所有者。即使同一个账号拥有两个 Project，应用密钥也不能跨 Project 访问。
 
-1. API token 存在、有效且未被撤销。
-2. `agentId` 是 v1 裸 ULID，并且对应真实 Agent。
-3. Agent 已发布。
-4. Agent 有 live API endpoint version。
-5. API token 所有者拥有该 Agent 所属的 App。
-6. Agent owner 与 App owner 一致。
+Agent 未发布时返回 `409 agent_not_published`，缺少 live endpoint version 时返回 `409 service_inactive`。根据资源边界，拒绝访问可能返回 `403 forbidden` 或 `404 not_found`。
 
-如果 token 有效但调用方不能使用该 Agent，mosoo 返回 `403 forbidden`。如果 Agent 或资源对调用方不可见，mosoo 返回 `404 not_found`。
+## 用户身份和执行
 
-<Card title="Agent API 端点" href="/docs/zh-Hans/agent-api-endpoints">
-  了解已发布 Agent 状态、live endpoint version 和 `agentId` 如何配合。
-</Card>
+你的后端负责认证终端用户，并在创建 Thread 时传入必填的不透明 `userId`。mosoo 为 Thread、Run、文件和委托 MCP 调用保留不可变的 `(Project, userId)` 上下文，但不认证终端用户。后端仍需检查用户是否有权访问保存的 Thread ID。
 
-## 调用方身份和执行
+Run 使用已发布的 Agent 配置。Thread API 请求不能覆盖服务商凭据、工具、runtime settings 或 Agent 配置。
 
-通过公开 API 创建的 Thread 会归属于 API token 所有者。当底层 Agent API Endpoint 仍可访问时，该所有者可以读取对应 Thread 和文件。
+## 密钥轮换和迁移
 
-Run 使用已发布的 Agent 配置执行。API 调用方不会变成模型服务商，不能在请求里发送服务商凭据，也不能通过这个 API 覆盖工具、渠道、runtime settings 或 Agent 配置。
+在同一 Project 创建替代密钥、更新集成，然后撤销旧密钥。撤销会拒绝旧密钥的新请求，但不会停止已接收的工作或删除 Thread。同一 Project 的其他有效密钥或 Project 所有者可以继续操作已有 Thread。
 
-## 令牌生命周期
-
-撤销 API token 会阻止该 token 发起新的 API 请求；它不会删除已经存在的 Threads。
-
-建议为不同系统使用不同 API token：
-
-- 本地开发使用一个 API token。
-- 每个服务端集成或自动化任务使用一个 API token。
-- 使用清晰的 API token 标签支持审计和轮换。
+旧 `mst_` 和 `grt_pat_` token 已被拒绝，不会自动归入默认 Project。请为每个目标 Project 创建新密钥并替换集成配置。CLI 用户需使用当前 CLI 重新登录；浏览器和 CLI 登录提供账号级控制面访问，CLI 登录凭据使用独立的 `mcli_` 前缀。Project key 不能替代账号登录。
 
 ## 安全重试
 
-创建 Thread 或提交事件时，如果需要重试，请发送同一个 `Idempotency-Key`。
+重试同一操作和请求体时复用 `Idempotency-Key`。同一 Project 的密钥共享幂等记录和限流范围，因此轮换密钥不会重复创建工作或重置限额。同一 Project 的不同集成应使用不同的操作标识。
 
-```http
-Idempotency-Key: support-ticket-182-create-thread
-```
-
-同一个 key 搭配同一个请求会返回原始响应。如果原请求还在处理中，或同一个 key 被用于不同请求 body，会返回 `409 idempotency_conflict`。
+同一个 key 和请求返回原始响应。原请求仍在处理，或相同 key 对应不同请求体时，返回 `409 idempotency_conflict`。

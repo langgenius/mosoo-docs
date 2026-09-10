@@ -1015,7 +1015,7 @@
     "securitySchemes": {
       "publicApiBearer": {
         "bearerFormat": "mosoo API token",
-        "description": "Authorization: Bearer mst_... を使用します。 API token はアカウントを識別しますが、スコープは持ちません。",
+        "description": "Authorization: Bearer msp_... を使用します。Project API key は同じ Project の Agent 設定、Session 実行、ファイルアクセスに限定されます。キーと account の管理には console または CLI ログインが必要です。旧 account token は拒否されます。",
         "scheme": "bearer",
         "type": "http"
       }
@@ -1030,7 +1030,7 @@
   "paths": {
     "/agents/{agentId}/files": {
       "post": {
-        "description": "Thread が存在する前に、Agent API Endpoint の App ドラフト スコープにファイルをアップロードします。返されたファイル ID は、create-thread リソースまたは send-events リソースで使用します。",
+        "description": "Thread 作成前に Agent API Endpoint の Project draft scope にファイルをアップロードします。返された file ID を create-thread または send-events の resources で使用します。",
         "parameters": [
           {
             "description": "Agent の API アクセス パネルからの Agent API Endpoint ID。 v1 ID は裸の ULID です。",

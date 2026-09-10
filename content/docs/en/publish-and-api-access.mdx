@@ -23,9 +23,7 @@ Choose **Thread** or open **Runs → New thread**, select the Agent, enter the t
 
 ## Enable API access
 
-Choose **API Access** from the Publish menu. Copy the bare ULID Agent ID, then create an account API token under **Settings → API tokens**.
-
-![API tokens authorize calls to published Agent endpoints.](/docs/images/product/api-tokens.png)
+Choose **API Access** from the Publish menu and copy the bare ULID Agent ID. Open that Agent’s **Project settings → Project API keys**, create a Project key (`msp_`), and copy its secret when shown. A key from another Project cannot call this Agent.
 
 Use the token only in an `Authorization: Bearer` header. API access creates and resumes Threads; it does not create, edit, or publish Agents.
 

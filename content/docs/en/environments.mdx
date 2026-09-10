@@ -5,7 +5,7 @@ description: "Create reusable runtime templates for Agent sessions."
 
 An Environment makes Agent sessions start with a consistent package set, setup script, and variables.
 
-![The Environment editor defines packages, setup, variables, and network intent.](/docs/images/product/create-environment.png)
+![The Environment editor defines packages, setup, variables, and network policy.](/docs/images/product/create-environment.png)
 
 ## Create an Environment
 
@@ -15,7 +15,7 @@ Open **Config → Environments → Create environment**, then configure:
 - **Packages** from public npm or PyPI with exact versions.
 - **Setup script** that runs after prepared packages are restored.
 - **Environment variables**, whose values are encrypted after save.
-- **Networking intent**, which is visible but not enforced by the current Sandbox runtime.
+- **Network policy**: Full internet access or Limited access with a domain allowlist for Task Agents.
 
 You can also create one from project dependency files with:
 
@@ -25,14 +25,23 @@ mosoo console environments create-environment
 
 ## Assign and revise
 
-Make an Environment the App default or select one on a specific Agent. A new session captures the selected Environment revision. Later edits apply only to sessions created afterward; in-flight sessions are unchanged.
+Make an Environment the Project default or select one on a specific Agent. A new session captures the selected Environment revision. Later edits apply only to sessions created afterward; in-flight sessions are unchanged.
+
+## Network policies
+
+- **Full** keeps direct internet access enabled.
+- **Limited** disables direct internet access and filters outbound HTTP/HTTPS traffic through a domain allowlist. The allowlist includes the Environment's allowed domains and the endpoints mosoo needs for runtime control and artifact storage.
+
+Limited is supported only for **Task Agents** with session-scoped sandboxes. **Assistant Agents** share a sandbox across sessions and require Full. The runtime applies the policy before starting the sandbox and keeps it fixed for that session; start a new session to use a different policy.
+
+If Limited cannot be enforced, the runtime rejects sandbox startup rather than falling back to unrestricted access. This includes local development with HTTPS interception disabled. Limited also rejects `HTTP_PROXY`, `HTTPS_PROXY`, and `ALL_PROXY` environment variables, including lowercase variants.
+
+<Callout type="warning">
+  A network allowlist controls destinations. It does not make allowed APIs or MCP tools read-only; use appropriate tool permissions and read-only credentials when accessing production systems.
+</Callout>
 
 ## Package behavior
 
 npm package CLIs are exposed through `PATH`, CommonJS packages through `NODE_PATH`, and PyPI modules through `PYTHONPATH`. Node ESM bare imports require a project-local install. OS packages, Cargo, RubyGems, and Go modules are not Environment package options.
 
-<Callout type="warning">
-  Networking controls currently save intent only; they do not restrict traffic and must not be treated as a security boundary.
-</Callout>
-
-The App default and any Environment still selected by an Agent are protected from deletion.
+The Project default and any Environment still selected by an Agent are protected from deletion.

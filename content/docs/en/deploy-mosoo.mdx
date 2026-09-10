@@ -3,7 +3,7 @@ title: "Deploy mosoo on Cloudflare"
 description: "Deploy mosoo with Cloudflare Workers from GitHub Actions or a local Wrangler toolchain."
 ---
 
-mosoo runs as two Cloudflare Workers: an API Worker backed by D1, R2, Queues, Durable Objects, and Containers, plus a Web Worker that serves the console and binds to the API service. It is not a standalone Cloudflare Pages site.
+mosoo runs as two Cloudflare Workers: an API Worker backed by D1, R2, Queues, Durable Objects, and Containers, plus a Web Worker that serves the console and binds to the API service.
 
 This guide covers the two deployment paths used by the reference deployment:
 
@@ -15,17 +15,17 @@ Both paths use `apps/api/wrangler.toml`, `apps/web/wrangler.toml`, and the repos
 ## Prerequisites
 
 - A Cloudflare account with Workers, D1, R2, Queues, Durable Objects, and Containers available.
-- A domain in Cloudflare DNS, such as `console.example.com`, plus a deployment subdomain such as `apps.example.com` if you enable App Deployment.
+- A domain in Cloudflare DNS, such as `console.example.com`.
 - Git, Docker, [Bun](https://bun.sh/), [just](https://just.systems/), and the repository submodules.
 - A Cloudflare API token with the account and zone permissions required to deploy the resources above. Keep tokens and secret values outside Git. Use the least privilege that covers the operations below.
 
 | Scope | Required operations |
 | --- | --- |
-| Account | Workers scripts, versions, deployments, custom domains, and Containers; D1 migrations; R2; Queues; and, when App Deployment is enabled, Pages projects and domains |
-| Zone selected by `CLOUDFLARE_ZONE_ID` | Workers Routes changes for the App Deployment domain |
-| R2 S3 credentials | Read and write the sandbox-state bucket used by deployed apps |
+| Account | Workers scripts, versions, deployments, custom domains, and Containers; D1 migrations; R2; Queues |
+| Zone that owns the console domain | Workers Routes changes for the `<console-domain>/api/*` API route |
+| R2 S3 credentials | Read and write the sandbox-state bucket used for Agent runtime backups |
 
-`CLOUDFLARE_ZONE_ID` must identify the zone that owns `MOSOO_APP_DEPLOYMENT_DOMAIN`. Cloudflare's token labels can change; verify that the token permits these exact API operations rather than granting account-wide administrator access.
+Cloudflare's token labels can change; verify that the token permits these exact API operations rather than granting account-wide administrator access.
 
 Clone your fork and install the pinned dependencies:
 
@@ -80,7 +80,6 @@ Edit the `[env.prod]` sections in both Wrangler files. At minimum:
 
 1. In `apps/api/wrangler.toml`:
    - set `WEB_ORIGIN` to the public HTTPS console URL;
-   - set `MOSOO_APP_DEPLOYMENT_DOMAIN` to the deployment domain;
    - set the API route to `<console-domain>/api/*` and its `zone_name`;
    - set the D1 `database_id` returned by `wrangler d1 create`;
    - update D1, R2, and Queue names if you did not use the defaults;
@@ -94,7 +93,6 @@ For example, the routing shape is:
 ```text
 https://console.example.com/*      -> Web Worker
 https://console.example.com/api/*  -> API Worker
-https://*.apps.example.com/*       -> Apps published by mosoo, when enabled
 ```
 
 Choose names that are unused in each resource's Cloudflare namespace. Workers, D1 databases, Queues, R2 buckets, and hostnames have different naming and uniqueness rules. Do not copy database IDs, account IDs, zone IDs, or hostnames from another deployment.
@@ -109,12 +107,10 @@ The current production configuration requires these API Worker secrets:
 - `R2_ACCESS_KEY_ID`
 - `R2_SECRET_ACCESS_KEY`
 - `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ZONE_ID`
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
 
-Generate independent random values for the first three secrets. Create R2 S3 credentials and the Cloudflare API token in the Cloudflare dashboard. Configure the Google OAuth client with the public mosoo origin and the exact callback URL `https://console.example.com/api/auth/callback/google`, replacing the example domain with `WEB_ORIGIN`.
+Generate independent random values for the first three secrets. Copy the account ID and create the R2 S3 credentials in the Cloudflare dashboard. Configure the Google OAuth client with the public mosoo origin and the exact callback URL `https://console.example.com/api/auth/callback/google`, replacing the example domain with `WEB_ORIGIN`.
 
 Store each value with Wrangler; do not add it to `wrangler.toml` or a committed `.env` file:
 
