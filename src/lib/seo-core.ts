@@ -21,6 +21,8 @@ interface StructuredDataInput {
   title: string;
   description: string;
   pathname: string;
+  sourceUrl?: string;
+  markdownUrl?: string;
 }
 
 function normalizePathname(pathname: string) {
@@ -105,7 +107,13 @@ export function buildSitemapEntries(pages: SitemapPage[]) {
     .sort((left, right) => left.url.localeCompare(right.url));
 }
 
-export function buildDocsStructuredData({ title, description, pathname }: StructuredDataInput) {
+export function buildDocsStructuredData({
+  title,
+  description,
+  pathname,
+  sourceUrl,
+  markdownUrl,
+}: StructuredDataInput) {
   const url = toCanonicalDocsUrl(pathname);
   const language = getDocumentLanguage(pathname);
   const localizedRoot = toLanguagePath(docsRoot, language);
@@ -147,6 +155,18 @@ export function buildDocsStructuredData({ title, description, pathname }: Struct
     },
     author: { '@id': 'https://mosoo.ai/#organization' },
     publisher: { '@id': 'https://mosoo.ai/#organization' },
+    ...(sourceUrl ? { citation: [sourceUrl], isBasedOn: sourceUrl } : {}),
+    ...(markdownUrl
+      ? {
+          encoding: [
+            {
+              '@type': 'MediaObject',
+              contentUrl: markdownUrl,
+              encodingFormat: 'text/markdown',
+            },
+          ],
+        }
+      : {}),
     breadcrumb: {
       '@type': 'BreadcrumbList',
       itemListElement: breadcrumbItems,
