@@ -1,0 +1,26 @@
+---
+title: Files, Skills, Environments, and a hardened runtime
+description: Mosoo centres on the coding-agent runtime and Agent API, with file previews, Skill catalog installs, reusable Environment artifacts, live reasoning in sessions, idempotent Agent calls, and deny-by-default sandbox egress.
+date: "2026-07-31"
+version: v0.2.0
+tags: [new-release]
+---
+
+The second alpha release of the open-source agent runtime and control plane for coding agents. Mosoo is now centred on the coding-agent runtime and the Agent API.
+
+### Highlights
+
+- Files and Skills: Agent and Thread filtering, in-console file previews, linked output artifact previews, local Skill folder upload, and skills.sh catalog installation make generated work easier to inspect and reuse.
+- Environments and providers: pinned npm and PyPI packages can be prepared as reusable Environment artifacts, and custom OpenAI-compatible Responses providers run through the OpenAI Runtime.
+- Sessions: live reasoning, optimistic sends, paced streaming, stable user messages, complete final snapshots, and clearer failure details make long-running Agent work easier to follow.
+- Runtime and API reliability: bound Agent calls are idempotent, Run provenance is recorded, Run admission is atomic, and the queue, resume, and terminal recovery paths are more robust.
+- Security: Limited Task sandboxes use deny-by-default egress controls, while managed provider credentials stay outside containers.
+- Usage integrity: usage records are persisted atomically, retained when token counts are unavailable, and protected against duplicate detail rollups.
+- Operations: session prewarming, larger production Sandbox instances, deep health probes, a runtime canary policy, and the cloud.mosoo.ai console domain.
+
+### Compatibility notes
+
+- Four new append-only migration files, including one idempotent Sandbox status data migration.
+- The Docker self-hosting deployment explored during this cycle was reverted before release and is not part of v0.2.0.
+
+Full notes: [v0.2.0 on GitHub](https://github.com/langgenius/mosoo/releases/tag/v0.2.0).
