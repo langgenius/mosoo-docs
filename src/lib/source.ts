@@ -1,6 +1,6 @@
 import { docs } from 'collections/server';
 import { loader } from 'fumadocs-core/source';
-import { docsContentRoute, docsImageRoute, docsRoute } from './shared';
+import { docsContentRoute, docsImageRoute, docsRoute, gitConfig } from './shared';
 import { i18n } from './i18n';
 
 // See https://fumadocs.dev/docs/headless/source-api for more info
@@ -46,6 +46,10 @@ export function getPageMarkdownUrl(page: (typeof source)['$inferPage']) {
     segments,
     url: `${docsContentRoute}/${segments.join('/')}`,
   };
+}
+
+export function getPageSourceUrl(page: (typeof source)['$inferPage']) {
+  return `https://github.com/${gitConfig.user}/${gitConfig.repo}/blob/${gitConfig.branch}/content/docs/${page.path}`;
 }
 
 export async function getLLMText(page: (typeof source)['$inferPage']) {
