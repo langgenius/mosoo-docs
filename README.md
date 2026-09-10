@@ -22,6 +22,11 @@ npm run openapi:check
 npm run build
 ```
 
+The build also runs `npm run test:assets`: it starts a local Worker with the
+exported assets and verifies every article's Markdown alternate, discovery
+headers, LLM indexes, and error/HEAD responses. This keeps static-export header
+regressions from passing a build that only tested Next route handlers.
+
 ## Deployment
 
 Pushes to `main` are verified and deployed to the `mosoo-docs` Cloudflare Worker by GitHub Actions. The production environment is [mosoo.ai/docs](https://mosoo.ai/docs/); `docs.mosoo.ai` redirects to that canonical URL.

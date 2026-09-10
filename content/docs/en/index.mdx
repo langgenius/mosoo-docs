@@ -12,6 +12,20 @@ mosoo gives you one workspace to configure AI Agents, test them against real tas
   <Card title="API quickstart" href="/docs/quickstart">Call a published Agent from your backend with curl.</Card>
 </Cards>
 
+## Direct answers
+
+- **What is mosoo?** mosoo is an open-source Agent runtime and API for coding agents. It gives product teams hosted Threads, files, sandboxed execution, tool events, and API access around published Agents.
+- **What should I read first?** Start with [Create your first Agent](/docs/first-agent), then use the [API quickstart](/docs/quickstart) when you are ready to call a published Agent from a trusted backend.
+- **What is the Public Thread API?** It is the backend API for interacting with an already published Agent. It creates and resumes Threads, reads or streams events, and transfers files.
+- **Where should credentials live?** Use a Project API key (`msp_`) from the same Project as the Agent. Keep it on a trusted server or automation runner; legacy account tokens are rejected. Browser and mobile clients should call your backend, which then calls Mosoo.
+
+## Sources and verification
+
+- [GitHub source](https://github.com/langgenius/mosoo) shows the open-source runtime and license.
+- [API reference](/docs/api-reference) documents the Public Thread API generated from the OpenAPI contract.
+- [OpenAPI 3.1](https://cloud.mosoo.ai/api/v1/openapi.json) is the machine-readable API source.
+- [llms.txt](/docs/llms.txt) and [llms-full.txt](/docs/llms-full.txt) expose concise and complete documentation indexes for AI answer engines.
+
 ## Build
 
 - Choose an [Project boundary and Agent type](/docs/concepts).

@@ -1,11 +1,12 @@
 import { source } from '@/lib/source';
 import { llms } from 'fumadocs-core/source';
-import { docsMarkdownHeaders } from '@/lib/agent-discovery';
+import { docsDiscoveryHeaders } from '@/lib/agent-discovery';
+import { buildDocsLlmsIndex } from '@/lib/llms';
 
 export const revalidate = false;
 
 export function GET() {
-  return new Response(llms(source).index(), {
-    headers: docsMarkdownHeaders(),
+  return new Response(buildDocsLlmsIndex(llms(source).index()), {
+    headers: docsDiscoveryHeaders('/docs/llms.txt'),
   });
 }

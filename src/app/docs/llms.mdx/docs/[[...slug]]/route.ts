@@ -1,6 +1,6 @@
 import { getLLMText, getPageMarkdownUrl, source } from '@/lib/source';
 import { getDocsLanguage, getLocalizedSlugs } from '@/lib/i18n';
-import { docsMarkdownHeaders } from '@/lib/agent-discovery';
+import { docsDiscoveryHeaders } from '@/lib/agent-discovery';
 import { notFound } from 'next/navigation';
 
 export const revalidate = false;
@@ -16,7 +16,7 @@ export async function GET(
   if (!page) notFound();
 
   return new Response(await getLLMText(page), {
-    headers: docsMarkdownHeaders(),
+    headers: docsDiscoveryHeaders(getPageMarkdownUrl(page).url),
   });
 }
 

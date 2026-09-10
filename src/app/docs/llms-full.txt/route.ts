@@ -1,5 +1,5 @@
 import { getLLMText, source } from '@/lib/source';
-import { docsMarkdownHeaders } from '@/lib/agent-discovery';
+import { docsDiscoveryHeaders } from '@/lib/agent-discovery';
 
 export const revalidate = false;
 
@@ -8,6 +8,6 @@ export async function GET() {
   const scanned = await Promise.all(scan);
 
   return new Response(scanned.join('\n\n'), {
-    headers: docsMarkdownHeaders(),
+    headers: docsDiscoveryHeaders('/docs/llms-full.txt'),
   });
 }

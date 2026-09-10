@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import worker from '../src/worker.ts';
-import { contentSignal, docsDiscoveryLinkHeader } from '../src/lib/agent-discovery.ts';
+import { contentSignal } from '../src/lib/agent-discovery.ts';
 
 type ElementHandler = (element: {
   setAttribute(name: string, value: string): void;
@@ -197,13 +197,19 @@ test('worker advertises AI search policy on docs markdown discovery assets', asy
     '/docs/llms.txt',
     '/docs/llms-full.txt',
     '/docs/llms.mdx/docs/quickstart/content.md',
+    '/docs/llms.mdx/docs/zh-Hans/content.md',
+    '/docs/llms.mdx/docs/ja/quickstart/content.md',
   ]) {
     const response = await worker.fetch(
       new Request(`https://mosoo.ai${pathname}`),
       {
         ASSETS: assets(
           new Response('# Quickstart', {
-            headers: { 'content-type': 'text/plain', 'x-upstream': 'kept' },
+            headers: {
+              'content-type': 'text/plain', 'x-upstream': 'kept',
+              link: '</docs/style.css>; rel="preload"; as="style"',
+              etag: '"test"',
+            },
           }),
         ),
       },
@@ -213,7 +219,18 @@ test('worker advertises AI search policy on docs markdown discovery assets', asy
     assert.equal(response.headers.get('x-upstream'), 'kept');
     assert.equal(response.headers.get('content-signal'), contentSignal);
     assert.equal(response.headers.get('content-type'), 'text/markdown; charset=utf-8');
-    assert.equal(response.headers.get('link'), docsDiscoveryLinkHeader);
+    const links = response.headers.get('link') ?? '';
+    assert.match(links, /<\/docs\/style\.css>; rel="preload"/);
+    assert.equal(response.headers.get('etag'), '"test"');
+    assert.doesNotMatch(links, /rel="llms-(?:full-)?txt"|<\/auth\.md>|<\/llms\.txt>/);
+    assert.match(links, /rel="service-desc"; type="application\/json"/);
+    if (pathname !== '/docs/llms.txt') {
+      assert.match(links, /<\/docs\/llms\.txt>; rel="describedby"; type="text\/markdown"/);
+    }
+    if (pathname.startsWith('/docs/llms.mdx/docs/')) {
+      const html = pathname.replace('/llms.mdx/docs', '').replace('/content.md', '/');
+      assert.ok(links.includes(`<${html}>; rel="alternate"; type="text/html"`));
+    }
     assert.equal(await response.text(), '# Quickstart');
   }
 });
@@ -244,7 +261,37 @@ for (const [pathname, language] of localizedCases) {
     assert.equal(response.headers.get('x-upstream'), 'kept');
     assert.equal(response.headers.get('content-signal'), contentSignal);
     assert.equal(response.headers.get('content-language'), language);
-    assert.equal(response.headers.get('link'), docsDiscoveryLinkHeader);
+    assert.match(response.headers.get('link') ?? '', /<\/docs\/llms\.txt>; rel="describedby"/);
+    assert.doesNotMatch(response.headers.get('link') ?? '', /rel="llms-(?:full-)?txt"/);
     assert.match(await response.text(), new RegExp(`<html lang="${language}">`));
   });
 }
+
+test('worker preserves error and redirect responses without advertising them as Markdown', async () => {
+  for (const status of [302, 404, 500]) {
+    for (const path of ['/docs/missing/', '/docs/llms.txt', '/docs/llms.mdx/docs/missing/content.md']) {
+      const upstream = new Response('Unavailable', { status, headers: { 'content-type': 'text/html' } });
+      const response = await worker.fetch(new Request(`https://mosoo.ai${path}`), { ASSETS: assets(upstream) });
+      assert.equal(response, upstream);
+      assert.equal(response.headers.get('content-signal'), null);
+      assert.equal(response.headers.get('link'), null);
+    }
+  }
+});
+
+test('worker preserves HEAD semantics for Markdown assets', async () => {
+  const response = await worker.fetch(new Request('https://mosoo.ai/docs/llms.txt', { method: 'HEAD' }), {
+    ASSETS: assets(new Response(null, { headers: { 'content-type': 'text/plain', 'content-length': '100' } })),
+  });
+  assert.equal(response.body, null);
+  assert.equal(response.headers.get('content-length'), '100');
+  assert.equal(response.headers.get('content-type'), 'text/markdown; charset=utf-8');
+});
+
+test('worker does not relabel an unexpected HTML fallback as Markdown', async () => {
+  const upstream = new Response('<html>Fallback</html>', { headers: { 'content-type': 'text/html' } });
+  const response = await worker.fetch(new Request('https://mosoo.ai/docs/llms.txt'), { ASSETS: assets(upstream) });
+  assert.equal(response, upstream);
+  assert.equal(response.headers.get('content-type'), 'text/html');
+  assert.equal(response.headers.get('link'), null);
+});

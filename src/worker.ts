@@ -1,9 +1,5 @@
 import { getDocumentLanguage } from './lib/seo-core';
-import {
-  contentSignal,
-  docsDiscoveryLinkHeader,
-  docsMarkdownHeaders,
-} from './lib/agent-discovery';
+import { docsDiscoveryHeaders, isDocsMarkdownPath } from './lib/agent-discovery';
 
 interface AssetBinding {
   fetch(request: Request): Promise<Response>;
@@ -108,16 +104,22 @@ const worker = {
     if (forceHttps) return Response.redirect(url.toString(), 308);
 
     const response = await env.ASSETS.fetch(request);
-    if (response.status !== 404 && isDocsMarkdownDiscoveryPath(url.pathname)) {
-      return withDocsMarkdownHeaders(response);
+    if (!response.ok || !url.pathname.startsWith('/docs/')) return response;
+
+    const contentType = response.headers.get('content-type') ?? '';
+    if (isDocsMarkdownPath(url.pathname)) {
+      if (!/^text\/(?:plain|markdown)(?:;|$)/i.test(contentType)) return response;
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: docsDiscoveryHeaders(url.pathname, response.headers),
+      });
     }
-    if (!response.headers.get('content-type')?.includes('text/html')) return response;
+    if (!contentType.includes('text/html')) return response;
 
     const language = getDocumentLanguage(url.pathname);
-    const headers = new Headers(response.headers);
-    headers.set('content-signal', contentSignal);
+    const headers = docsDiscoveryHeaders(url.pathname, response.headers);
     headers.set('content-language', language);
-    headers.append('link', docsDiscoveryLinkHeader);
     const localizedResponse = new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
@@ -150,28 +152,6 @@ function getLegacyDocRedirect(pathname: string) {
   } catch {
     return undefined;
   }
-}
-
-function isDocsMarkdownDiscoveryPath(pathname: string) {
-  return (
-    pathname === '/docs/llms.txt' ||
-    pathname === '/docs/llms-full.txt' ||
-    (pathname.startsWith('/docs/llms.mdx/docs/') && pathname.endsWith('/content.md'))
-  );
-}
-
-function withDocsMarkdownHeaders(response: Response) {
-  const headers = new Headers(response.headers);
-  const markdownHeaders = new Headers(docsMarkdownHeaders());
-  for (const [name, value] of markdownHeaders) {
-    headers.set(name, value);
-  }
-
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
 }
 
 export default worker;
