@@ -47,6 +47,9 @@ const MOSOO_OPENAPI_SOURCES = [
   },
 ];
 const COPY_PASTE_GUIDES = [
+  "content/docs/en/files.mdx",
+  "content/docs/zh-Hans/files.mdx",
+  "content/docs/ja/files.mdx",
   "content/docs/en/quickstart.mdx",
   "content/docs/zh-Hans/quickstart.mdx",
   "content/docs/ja/quickstart.mdx",

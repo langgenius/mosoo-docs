@@ -3,7 +3,7 @@ title: "Cloudflare に mosoo をデプロイ"
 description: "GitHub Actions またはローカルの Wrangler toolchain から Cloudflare Workers に mosoo をデプロイします。"
 ---
 
-mosoo は二つの Cloudflare Worker として動作します。一つは D1、R2、Queues、Durable Objects、Containers を使用する API Worker、もう一つは console を配信し API service に binding する Web Worker です。単体の Cloudflare Pages site ではありません。
+mosoo は二つの Cloudflare Worker として動作します。一つは D1、R2、Queues、Durable Objects、Containers を使用する API Worker、もう一つは console を配信し API service に binding する Web Worker です。
 
 このガイドでは、reference deployment で使用する二つの方法を説明します。
 
@@ -15,17 +15,17 @@ mosoo は二つの Cloudflare Worker として動作します。一つは D1、R
 ## 前提条件
 
 - Workers、D1、R2、Queues、Durable Objects、Containers が利用可能な Cloudflare account。
-- Cloudflare DNS にある `console.example.com` などの domain。App Deployment を有効にする場合は `apps.example.com` などの deployment subdomain も必要です。
+- Cloudflare DNS にある `console.example.com` などの domain。
 - Git、Docker、[Bun](https://bun.sh/)、[just](https://just.systems/)、repository submodule。
 - 上記 resource のデプロイに必要な account と zone permission を持つ Cloudflare API token。token と secret value は Git の外に保管し、以下の操作に必要な最小権限を使用してください。
 
 | Scope | 必要な操作 |
 | --- | --- |
-| Account | Workers script、version、deployment、custom domain、Containers、D1 migration、R2、Queues。App Deployment を有効にする場合は Pages project と domain も必要です。 |
-| `CLOUDFLARE_ZONE_ID` で選択する Zone | App Deployment domain に対する Workers Routes の変更。 |
-| R2 S3 credential | deployed app が使用する sandbox-state bucket の読み書き。 |
+| Account | Workers script、version、deployment、custom domain、Containers、D1 migration、R2、Queues。 |
+| Console domain を所有する Zone | `<console-domain>/api/*` API route に対する Workers Routes の変更。 |
+| R2 S3 credential | Agent runtime backup が使用する sandbox-state bucket の読み書き。 |
 
-`CLOUDFLARE_ZONE_ID` は `MOSOO_APP_DEPLOYMENT_DOMAIN` を所有する zone を指定する必要があります。Cloudflare の token label は変わることがあるため、account 全体の administrator 権限を付与するのではなく、上記の API operation が許可されていることを確認してください。
+Cloudflare の token label は変わることがあるため、account 全体の administrator 権限を付与するのではなく、上記の API operation が許可されていることを確認してください。
 
 fork を clone し、固定された dependency を install します。
 
@@ -80,7 +80,6 @@ resource 名を変更した場合は、`apps/api/wrangler.toml` にある対応�
 
 1. `apps/api/wrangler.toml`:
    - `WEB_ORIGIN` を公開 HTTPS console URL に設定。
-   - `MOSOO_APP_DEPLOYMENT_DOMAIN` を deployment domain に設定。
    - API route を `<console-domain>/api/*` に設定し、その `zone_name` を指定。
    - `wrangler d1 create` が返した D1 `database_id` を設定。
    - default を使用しなかった場合は D1、R2、Queue 名を更新。
@@ -94,7 +93,6 @@ resource 名を変更した場合は、`apps/api/wrangler.toml` にある対応�
 ```text
 https://console.example.com/*      -> Web Worker
 https://console.example.com/api/*  -> API Worker
-https://*.apps.example.com/*       -> Apps published by mosoo, when enabled
 ```
 
 Cloudflare の各 resource namespace で未使用の名前を選びます。Workers、D1 database、Queue、R2 bucket、hostname にはそれぞれ異なる命名規則と一意性の要件があります。別の deployment の database ID、account ID、zone ID、hostname をコピーしないでください。
@@ -109,12 +107,10 @@ Cloudflare の各 resource namespace で未使用の名前を選びます。Work
 - `R2_ACCESS_KEY_ID`
 - `R2_SECRET_ACCESS_KEY`
 - `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ZONE_ID`
 - `GOOGLE_OAUTH_CLIENT_ID`
 - `GOOGLE_OAUTH_CLIENT_SECRET`
 
-最初の三つにはそれぞれ独立した random value を生成します。R2 S3 credential と Cloudflare API token は Cloudflare dashboard で作成します。Google OAuth client には公開 mosoo origin と正確な callback URL `https://console.example.com/api/auth/callback/google` を設定し、example domain は `WEB_ORIGIN` に置き換えてください。
+最初の三つにはそれぞれ独立した random value を生成します。Cloudflare dashboard で account ID を確認し、R2 S3 credential を作成します。Google OAuth client には公開 mosoo origin と正確な callback URL `https://console.example.com/api/auth/callback/google` を設定し、example domain は `WEB_ORIGIN` に置き換えてください。
 
 各 value は Wrangler で保存し、`wrangler.toml` や commit 対象の `.env` file には追加しないでください。
 

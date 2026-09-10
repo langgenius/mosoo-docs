@@ -1,11 +1,11 @@
 ---
 title: "Provider とモデル"
-description: "App レベルのモデル認証情報を追加し、runtime を利用可能にします。"
+description: "Project レベルのモデル認証情報を追加し、runtime を利用可能にします。"
 ---
 
-Provider credential は現在の App に保存され、Agent の起動時に解決されます。
+Provider credential は現在の Project に保存され、Agent の起動時に解決されます。
 
-![Providers ページには runtime の準備状態と App レベルの credential が表示されます。](/docs/images/product/providers.png)
+![Providers ページには runtime の準備状態と Project レベルの credential が表示されます。](/docs/images/product/providers.png)
 
 ## Provider key を追加する
 
@@ -19,7 +19,7 @@ key は名前付け、編集、テスト、default 指定、削除ができま�
 
 ## Runtime の準備状態
 
-**Runtime availability** card には、runtime が解決する credential が表示されます。対応する key がない場合、セットアップまたは Run は設定エラーで停止します。mosoo が別の App の credential を流用することはありません。
+**Runtime availability** card には、runtime が解決する credential が表示されます。対応する key がない場合、セットアップまたは Run は設定エラーで停止します。mosoo が別の Project の credential を流用することはありません。
 
 ## Custom endpoint
 
@@ -29,5 +29,5 @@ custom OpenAI-compatible credential は OpenCode で実行できます。OpenAI 
 
 - 保存済み key は暗号化され、マスクされた形式でのみ表示されます。
 - raw value は Agent settings、ログ、診断、`.agent` export に含まれません。
-- Provider credential は App 間で継承されません。
+- Provider credential は Project 間で継承されません。
 - key を削除すると依存する Agent が起動できなくなる場合があります。削除前に影響を受ける runtime の準備状態を確認してください。

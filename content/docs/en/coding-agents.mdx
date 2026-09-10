@@ -14,8 +14,8 @@ This document only covers API calls between application code and an existing mos
 It does not cover:
 
 - Creating, configuring, or publishing Agents.
-- Managing mosoo Apps.
-- Managing Agent lifecycle, versions, readiness, runtime settings, model providers, tools, or channels.
+- Managing mosoo Projects.
+- Managing Agent lifecycle, versions, readiness, runtime settings, model providers, or tools.
 - Any other mosoo product surface outside the public API used to pass input to an Agent and read output from it.
 
 This document is also not the source for secrets or live resource IDs. Do not invent API tokens, `agentId`, `threadId`, `fileId`, or `runId` values. Use values supplied by the user, environment variables, mosoo UI, or mosoo CLI when available.
@@ -45,7 +45,7 @@ mosoo exposes published Agents through Thread-based HTTP APIs. If required crede
 | --- | --- |
 | Agent | A configured mosoo Agent. It must be published and have API access enabled before the API can call it. |
 | `agentId` | The published Agent ID shown in the Agent API Access panel |
-| API token | Bearer credential used by your code. It authenticates the mosoo account that owns the Agent API Endpoint App and public Thread resources. |
+| API token | Bearer credential used by your code. It authenticates one Project and its owner. Application keys cannot cross Projects. |
 | Thread | The API conversation container. It records messages, files, run status, and public event history. |
 | Run | One execution pass of the Agent on a Thread. A user message can create or resume a Run. |
 | Event | A public timeline entry for Thread inputs, Agent output deltas, tool updates, file changes, status changes, and usage updates. |
@@ -55,10 +55,12 @@ Resource IDs in v1 are bare ULIDs, not prefixed IDs.
 
 ## Authentication and access
 
+Create a `msp_` key under the Agent’s Project settings → Project API keys. Legacy `mst_` and `grt_pat_` tokens are rejected; replace them per Project. CLI users must sign in again to obtain a distinct `mcli_` account credential. Rotation within one Project preserves Thread access, idempotency receipts, and rate limits.
+
 All API requests require an API token:
 
 ```http
-Authorization: Bearer mst_...
+Authorization: Bearer msp_...
 ```
 
 JSON requests also require:
@@ -73,10 +75,10 @@ A valid request must pass all of these checks:
 2. The Agent is published and has API access enabled.
 3. The API token is valid and not revoked.
 4. The Agent has a live API endpoint version.
-5. The API token owner owns the App that owns the Agent.
+5. The Project key belongs to the Agent’s Project, whose owner also owns the Agent.
 6. The requested Thread or file is visible to the API token owner.
 
-The API token does not switch users, create a multi-user access context, or let a request override model provider, channel, tool, or runtime settings. Configure and publish the Agent in mosoo before calling the API.
+The API token does not switch users, create a multi-user access context, or let a request override model provider, tool, or runtime settings. Configure and publish the Agent in mosoo before calling the API.
 
 ## Responsibility boundary
 
@@ -100,10 +102,10 @@ Implementation rules:
 
 - Build the app-side integration layer around the published mosoo Agent running in mosoo's sandbox; do not implement a local Agent runtime or replacement sandbox.
 - Do not call model providers directly for this mosoo Agent integration.
-- Do not send provider credentials, model configuration, channel credentials, tool configuration, or Agent configuration through this public API.
+- Do not send provider credentials, model configuration, tool configuration, or Agent configuration through this public API.
 - Use `Idempotency-Key` for Thread creation and event submission.
 - Treat Thread events as the integration contract and `GET /threads/{threadId}/events` as the stable source for results.
-- Keep Agent creation, App management, and Agent lifecycle operations outside this workflow.
+- Keep Agent creation, Project management, and Agent lifecycle operations outside this workflow.
 - On failure, branch on `error.code` and follow the error handling table below.
 
 ## Minimal call sequence
@@ -111,7 +113,7 @@ Implementation rules:
 Set credentials:
 
 ```bash
-export MOSOO_API_TOKEN="mst_..."
+export MOSOO_API_TOKEN="msp_..."
 export MOSOO_AGENT_ID="01J00000000000000000000001"
 ```
 
@@ -169,7 +171,7 @@ curl "https://cloud.mosoo.ai/api/v1/threads/$MOSOO_THREAD_ID/events?limit=100" \
 
 ## File upload flow
 
-Use this flow when a Thread or user message needs a file attachment. Uploads are scoped to the Agent API Endpoint App, so the file can be uploaded before the Thread exists. Public uploads use `multipart/form-data` and accept files up to 67108864 bytes.
+Use this flow when a Thread or user message needs a file attachment. Uploads are scoped to the Agent API Endpoint Project, so the file can be uploaded before the Thread exists. Public uploads use `multipart/form-data` and accept files up to 67108864 bytes.
 
 Upload the file:
 
@@ -247,7 +249,7 @@ After a file is mounted into a Thread, `GET /threads/{threadId}/files` lists it 
 
 Rules:
 
-- The key is scoped to the API token, method, route, and request body.
+- For Project keys, the idempotency key is scoped to the Project, method, and route; the body is checked for conflicts. Keys in the same Project share receipts and rate limits, including after rotation. Account CLI credentials use their own credential boundary.
 - Reusing the same key with the same request replays the stored response.
 - Reusing the same key with a different request returns `409 idempotency_conflict`.
 - Reusing the key while the first request is still processing returns `409 idempotency_conflict`.
@@ -340,7 +342,7 @@ Branch on `error.code`, not `error.message`. The message is for developers and s
 | 409 | `service_inactive` | Published API service has no live published version. | Ask the user to republish or repair the Agent in mosoo. |
 | 409 | `readiness_blocked` | Agent is not ready to run. | Do not blindly retry; ask the user to fix Agent readiness or configuration in mosoo. |
 | 409 | `idempotency_conflict` | Same `Idempotency-Key` is processing or was used for a different request. | If still processing, wait for `Retry-After`; if body differs, use a new key. |
-| 429 | `rate_limited` | API token exceeded public API rate limits. | Back off and retry after `Retry-After`. |
+| 429 | `rate_limited` | Project exceeded shared public API rate limits (account CLI credentials have a separate boundary). | Back off and retry after `Retry-After`. |
 | 500 | `internal_error` | mosoo failed internally. | Retry briefly with backoff; persist failure details if it repeats. |
 
 Retry policy:
@@ -631,7 +633,7 @@ Error responses:
 
 ### `POST /agents/{agentId}/files`
 
-Purpose: Uploads a file into the Agent API Endpoint's App draft scope before a Thread exists. Use the returned file ID in create-thread or send-events resources.
+Purpose: Uploads a file into the Agent API Endpoint's Project draft scope before a Thread exists. Use the returned file ID in create-thread or send-events resources.
 
 Path params:
 
@@ -1147,7 +1149,7 @@ Fields:
 - Use `Idempotency-Key` for create-thread and send-events retries.
 - Use event log APIs as the source for public results.
 - Do not assume raw model output, private runtime payloads, or internal diagnostics are exposed.
-- Do not send provider credentials, model configuration, channel credentials, or Agent configuration through this public API.
+- Do not send provider credentials, model configuration, or Agent configuration through this public API.
 - Do not retry invalid requests unchanged.
 - Do not treat `403` as an authentication problem; `403` means the token was understood but the operation is not allowed for that resource.
 - Do not treat a published Agent as ready unless create-thread succeeds or the user confirms Agent readiness in mosoo.

@@ -1,3 +1,4 @@
+import { changelogRoute } from './changelog';
 import { getPageUrl, source } from './source';
 import {
   buildSitemapEntries,
@@ -24,5 +25,8 @@ export function getDocsLanguageAlternates(page: Page) {
 }
 
 export function getDocsSitemapEntries() {
-  return buildSitemapEntries(source.getPages().map((page) => ({ url: getPageUrl(page) })));
+  return buildSitemapEntries([
+    ...source.getPages().map((page) => ({ url: getPageUrl(page) })),
+    { url: `${changelogRoute}/` },
+  ]);
 }

@@ -27,6 +27,8 @@ mosoo auth status --hostname cloud.mosoo.ai
 mosoo doctor --json
 ```
 
+Project keys (`msp_`) do not authorize account management. Use browser login for account-wide Console operations and sign in again after the key cutover to replace legacy credentials with `mcli_` credentials. See [Authentication and access](/docs/auth-and-access).
+
 For non-interactive login, pipe a token through standard input instead of placing it in shell history:
 
 ```bash
@@ -39,7 +41,7 @@ printf '%s' "$MOSOO_API_TOKEN" | \
 ```bash
 mosoo --help
 mosoo commands --json
-mosoo commands show console apps deploy-app
+mosoo commands show console environments create-environment
 mosoo search "create environment"
 ```
 
@@ -48,25 +50,12 @@ mosoo search "create environment"
 ## Common operations
 
 ```bash
-# List Apps, Agents, and credential readiness
 mosoo ls -o json
-
-# Start a new Agent Run
-mosoo run \
-  --input-app-id <app-id> \
-  --input-agent-id <agent-id> \
-  --input-prompt "Summarize this repository" \
-  --wait -o json
-
-# Create an Environment from the project context or explicit flags
-mosoo console environments create-environment
-
-# Deploy a public GitHub repository
-mosoo console apps deploy-app \
-  --input-app-id <app-id> \
-  --input-repo-url https://github.com/owner/repository \
-  --wait
+mosoo run --help
+mosoo console environments create-environment --help
 ```
+
+CLI commands are generated from the contract. Update the CLI and inspect its command help first; an older CLI exposing `--input-app-id` does not match the current Project contract. Use the [API quickstart](/docs/quickstart) for a complete execution example.
 
 Use `--target local|cloud|custom`, `--base-url`, or `--hostname` to control endpoint resolution. Output formats are `table`, `json`, `yaml`, and `raw`.
 

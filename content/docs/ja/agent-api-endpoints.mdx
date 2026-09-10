@@ -12,10 +12,10 @@ Agent API Endpoint は、公開済み mosoo Agent の public API entry point で
 - 実在する Agent ID。
 - Agent status が `published`。
 - live API endpoint version。
-- API token owner が所有する App。
-- Agent owner と App owner が一致していること。
+- API token owner が所有する Project。
+- Agent owner と Project owner が一致していること。
 
-Agent が公開されていない場合、mosoo は `409 agent_not_published` を返します。live API endpoint version がない場合は `409 service_inactive`、token owner が Agent の App を所有していない場合は `403 forbidden` を返します。
+Agent が公開されていない場合、mosoo は `409 agent_not_published` を返します。live API endpoint version がない場合は `409 service_inactive`、token owner が Agent の Project を所有していない場合は `403 forbidden` を返します。
 
 ## `agentId`
 
@@ -35,7 +35,7 @@ Agent API Endpoint は runtime boundary を所有します。
 | --- | --- |
 | 公開済み Agent 設定、model provider setup、tool execution、sandbox/runtime behavior、Agent memory/runtime state、public event generation。 | Product UI、backend API、job、app-side user、business logic、storage、`thread.id` persistence、client-owned correlation ID。 |
 
-request から model provider credential、tool、channel、runtime setting、Agent configuration を上書きすることはできません。mosoo で変更し、Agent を再度公開してください。
+request から model provider credential、tool、runtime setting、Agent configuration を上書きすることはできません。mosoo で変更し、Agent を再度公開してください。
 
 ## 最初の API call
 
@@ -58,3 +58,5 @@ POST /api/v1/agents/{agentId}/threads
     Thread と Run の lifecycle state を理解します。
   </Card>
 </Cards>
+
+アプリケーションキーは Agent と同じ Project に属する必要があります。作成と移行は[認証とアクセス](/docs/ja/auth-and-access)を参照してください。

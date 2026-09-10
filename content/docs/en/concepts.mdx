@@ -1,20 +1,22 @@
 ---
-title: "Apps, Agents, and runtimes"
-description: "Learn how mosoo's open-source agent runtime uses Apps, Agents, Threads, Runs, and sandbox drivers for coding agents."
+title: "Projects, Agents, and runtimes"
+description: "Learn how mosoo's open-source agent runtime uses Projects, Agents, Threads, Runs, and sandbox drivers for coding agents."
 ---
 
 mosoo is an open-source agent runtime for coding agents. It runs Claude Agent SDK, OpenAI Runtime, and OpenCode agents behind one product model, then exposes durable Threads, Runs, events, files, and API access so applications do not rebuild their own sandbox, lifecycle, or provider layer.
 
-## Apps are isolation boundaries
+## Projects are isolation boundaries
 
-An App keeps its Agents, files, configuration resources, deployment, and usage separate. Switching Apps changes the resources visible in the console. The current Alpha is single-owner: organization team roles, invitations, and ownership transfer are not available.
+A Project keeps its Agents, files, configuration resources, and usage separate. Switching Projects changes the resources visible in the console. The current Alpha is single-owner: organization team roles, invitations, and ownership transfer are not available.
 
 ## Agent types control continuity
 
 | Type | Runtime state | Best for |
 | --- | --- | --- |
 | **Assistant Agent** | Keeps a stable working environment across sessions. Rebuilds preserve selected workspace and memory, but may lose local sign-ins or caches. | Ongoing assistants, copilots, and repeated work that benefits from continuity. |
-| **Task Agent** | Starts clean for each Run and releases temporary state afterward. Conversation records remain. | Reviews, triage, webhooks, and isolated batch tasks. |
+| **Task Agent** | Isolates state by Thread. Successful Runs checkpoint the working directory and provider resume state; later Runs in the same Thread restore that committed state. | Reviews, triage, webhooks, and isolated batch tasks. |
+
+A new Thread starts with isolated state. A successful Task Run commits its complete Thread working directory and provider resume state before a follow-up can start. Cold continuation restores that checkpoint; a failed commit blocks follow-up rather than silently starting empty. Checkpoints remain restorable for at least 20 days, survive archive, and are removed on permanent Thread deletion. Live processes, sockets, temporary credentials, and attachment mounts are not checkpointed. Threads predating the checkpoint rollout can restore recorded artifacts until their first successful checkpointed turn.
 
 New Agents start as Assistant Agents. You can switch type while the Agent is a draft; the first publish locks it. Fork the Agent to change type later without changing the original.
 

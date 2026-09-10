@@ -1,20 +1,22 @@
 ---
-title: "App、Agent 与运行时"
-description: "了解 mosoo 开源 Agent runtime 如何用 App、Agent、Thread、Run 和 sandbox driver 支撑 Coding Agent。"
+title: "Project、Agent 与运行时"
+description: "了解 mosoo 开源 Agent runtime 如何用 Project、Agent、Thread、Run 和 sandbox driver 支撑 Coding Agent。"
 ---
 
 mosoo 是面向 Coding Agent 的开源 Agent runtime。它把 Claude Agent SDK、OpenAI Runtime 和 OpenCode Agent 放进同一个产品模型中运行，并通过持久 Thread、Run、事件、文件和 API 访问，让应用无需自行重建 sandbox、生命周期或模型服务商层。
 
-## App 是隔离边界
+## Project 是隔离边界
 
-App 将自己的 Agents、文件、配置资源、部署和用量保持独立。切换 App 会改变控制台中可见的资源。当前 Alpha 是单所有者模式，暂不提供组织团队角色、邀请或所有权转移。
+Project 将自己的 Agents、文件、配置资源和用量保持独立。切换 Project 会改变控制台中可见的资源。当前 Alpha 是单所有者模式，暂不提供组织团队角色、邀请或所有权转移。
 
 ## Agent 类型决定连续性
 
 | 类型 | Runtime state | 适合场景 |
 | --- | --- | --- |
 | **Assistant Agent** | 在 session 之间保留稳定工作环境。重建会保留选定 workspace 与 memory，但本地登录或缓存可能丢失。 | 持续助手、copilot，以及受益于连续状态的重复工作。 |
-| **Task Agent** | 每次 Run 都从干净环境开始，结束后释放临时状态；对话记录仍会保留。 | Review、分流、webhook 和相互隔离的批处理任务。 |
+| **Task Agent** | 按 Thread 隔离状态。成功的 Run 会保存工作目录和服务商续接状态；同一 Thread 的后续 Run 恢复已提交的检查点。 | Review、分流、webhook 和相互隔离的批处理任务。 |
+
+新 Thread 使用隔离状态。Task Run 成功后，必须先提交完整的 Thread 工作目录和服务商续接状态，才能开始下一轮。冷启动会恢复检查点；提交失败会阻止后续轮次，不会静默启动空环境。检查点至少可恢复 20 天，归档不删除，永久删除 Thread 时一并删除。运行中的进程、socket、临时凭据和附件挂载不包含在检查点中。检查点功能上线前的 Thread 可先恢复已记录的产物，直到首次成功提交检查点。
 
 新 Agent 默认为 Assistant Agent。在 draft 阶段可以切换类型；首次发布后类型锁定。之后如需改类型，请 fork 出新的 Agent，原 Agent 不受影响。
 

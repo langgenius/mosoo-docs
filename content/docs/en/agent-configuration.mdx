@@ -17,7 +17,7 @@ You can change type only before the first publish.
 
 ## Runtime and model
 
-Choose a runtime first, then select a model available through its resolved Provider key. If the model list is empty or a runtime shows **Needs key**, configure the matching Provider in the active App.
+Choose a runtime first, then select a model available through its resolved Provider key. If the model list is empty or a runtime shows **Needs key**, configure the matching Provider in the active Project.
 
 ## System prompt
 
@@ -25,15 +25,15 @@ Describe the Agent's role, boundaries, answer style, and when it should ask for 
 
 ## Skills
 
-Attach reusable instruction packages from the active App. Skills are loaded for new sessions and read by the Agent when the task calls for them. A missing Skill attachment is reported rather than borrowed from another App.
+Attach reusable instruction packages from the active Project. Skills are loaded for new sessions and read by the Agent when the task calls for them. A missing Skill attachment is reported rather than borrowed from another Project.
 
 ## MCP servers
 
-Attach authorized Remote HTTPS MCP connections from the active App. A connection can be attached before authorization, but its tools are usable only when the connection is enabled and authorized.
+Attach authorized Remote HTTPS MCP connections from the active Project. A connection can be attached before authorization, but its tools are usable only when the connection is enabled and authorized.
 
 ## Environment
 
-Choose the reusable runtime template for packages, setup script, variables, and network-policy intent. If the Agent has no explicit Environment, the App default applies. A new session freezes the selected Environment revision.
+Choose the reusable runtime template for packages, setup script, variables, and network policy. If the Agent has no explicit Environment, the Project default applies. A new session freezes the selected Environment revision. Task Agents support Full or Limited network access; Assistant Agents require Full. See [Environment network policies](/docs/environments#network-policies).
 
 ## Save and publish behavior
 

@@ -87,6 +87,8 @@ test('docs structured data identifies the page, language, and breadcrumb trail',
     title: 'Quickstart',
     description: 'Create a Thread with curl.',
     pathname: '/docs/ja/quickstart',
+    markdownUrl: 'https://mosoo.ai/docs/llms.mdx/docs/ja/quickstart/content.md',
+    sourceUrl: 'https://github.com/langgenius/mosoo-docs/blob/main/content/docs/ja/quickstart.mdx',
   });
 
   assert.equal(data['@type'], 'TechArticle');
@@ -94,6 +96,20 @@ test('docs structured data identifies the page, language, and breadcrumb trail',
   assert.equal(data.url, 'https://mosoo.ai/docs/ja/quickstart/');
   assert.deepEqual(data.author, { '@id': 'https://mosoo.ai/#organization' });
   assert.deepEqual(data.publisher, { '@id': 'https://mosoo.ai/#organization' });
+  assert.deepEqual(data.citation, [
+    'https://github.com/langgenius/mosoo-docs/blob/main/content/docs/ja/quickstart.mdx',
+  ]);
+  assert.equal(
+    data.isBasedOn,
+    'https://github.com/langgenius/mosoo-docs/blob/main/content/docs/ja/quickstart.mdx',
+  );
+  assert.deepEqual(data.encoding, [
+    {
+      '@type': 'MediaObject',
+      contentUrl: 'https://mosoo.ai/docs/llms.mdx/docs/ja/quickstart/content.md',
+      encodingFormat: 'text/markdown',
+    },
+  ]);
   assert.equal(data.breadcrumb.itemListElement.at(-1)?.name, 'Quickstart');
 });
 

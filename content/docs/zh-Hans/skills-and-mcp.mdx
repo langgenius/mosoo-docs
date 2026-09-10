@@ -3,7 +3,7 @@ title: "技能与 MCP 服务器"
 description: "为 Agent 添加可复用指令和已授权外部工具。"
 ---
 
-Skills 和 MCP servers 都是 App-owned 资源，可绑定到选定的 Agents。
+Skills 和 MCP servers 都是 Project-owned 资源，可绑定到选定的 Agents。
 
 ## 技能
 
@@ -32,4 +32,4 @@ Skill 将可信指令与配套文件打包，避免把同一内容手工复制�
   **Connected** 只表示 mosoo 已保存有效凭据，不代表远端 server 及其所有工具一定可用。目前错误会在 Agent 首次调用时暴露。
 </Callout>
 
-MCP credential 会加密，保存后不再显示。当前不支持 local-process MCP、跨 App 共享、connector marketplace 或按 tool 选择。
+MCP credential 会加密，保存后不再显示。当前不支持 local-process MCP、跨 Project 共享、connector marketplace 或按 tool 选择。

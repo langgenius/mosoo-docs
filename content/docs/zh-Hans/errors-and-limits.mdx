@@ -41,7 +41,7 @@ description: "处理 mosoo API 错误、重试、幂等和公开 API 限制。"
 
 规则：
 
-- key 按 API token、method、route 和 request body 作用域隔离。
+- 使用 Project key 时，幂等 key 按 Project、method 和 route 隔离，并检查请求体冲突。同一 Project 的密钥共享幂等记录和限流范围，轮换后仍然如此。账号 CLI 凭据使用自身的凭据边界。
 - 同一个 key 搭配同一个请求会 replay 已存响应。
 - 同一个 key 搭配不同请求会返回 `409 idempotency_conflict`。
 - 第一个请求仍在处理时复用同一个 key 会返回 `409 idempotency_conflict`。
