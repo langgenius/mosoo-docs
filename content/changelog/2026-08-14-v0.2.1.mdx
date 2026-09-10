@@ -1,0 +1,31 @@
+---
+title: Console localization, durable tool identity, and sandbox limits
+description: The web console speaks four languages, Public API events carry durable tool call identity, Public Thread creation requires an end-user identity, and sandbox concurrency is capped per account.
+date: "2026-08-14"
+version: v0.2.1
+tags: [improvements, fixes]
+---
+
+A patch release focused on runtime reliability, Public API event identity, console localization, and deployment safety.
+
+### Improvements
+
+- The web console is localized, with English, Japanese, Simplified Chinese, and Traditional Chinese.
+- Public API events expose durable tool call identity, and streamed tool identity is stable across reconnects.
+- The console publishes OAuth protected resource metadata and personal access token agent auth metadata, with a declared PAT scope model.
+- Sandbox usage metrics are tracked, pet checkpoint metadata is batched, and Environment package writes support npm and pip.
+- App secrets persist across redeploys, and MCP sidecars round-trip through agent packages.
+
+### Fixes
+
+- Terminal Run projections are repaired atomically, legacy pet idle deadlines are re-armed, and the login load's critical path is shorter.
+- Concurrent sandboxes are capped per account, and the free-tier sandbox quota no longer hard-rejects work.
+- Thread translation variables interpolate correctly.
+
+### Compatibility notes
+
+- Public Thread creation requires a non-empty `userId`.
+- Legacy Environment package manager values remain readable but must be migrated before revision writes.
+- Append-only D1 migrations 0005 through 0008 are added, with no destructive or data-rewrite migration.
+
+Full notes: [v0.2.1 on GitHub](https://github.com/langgenius/mosoo/releases/tag/v0.2.1).

@@ -1,0 +1,24 @@
+---
+title: Console review pass and two-family typography
+description: The sidebar opens with one identity row, the console ships Geist and Geist Mono only, and surfaces move to a 6 px radius with flat resting cards.
+date: "2026-09-09"
+version: v0.3.1
+tags: [improvements, fixes]
+---
+
+A patch release focused on the web console. There are no API, runtime, Driver, or database changes.
+
+### Improvements
+
+- The sidebar opens with one identity row: the brand tile, the active Project name, and a chevron on the header line. In the icon rail the tile alone switches Projects. The account card at the foot is the sidebar's one bordered surface, group labels are sentence case, and the divider above the persistent zone is gone.
+- The console ships two font families, Geist and Geist Mono, instead of five. Each page now fetches 100 KB of fonts in two files instead of 457 KB in four, a metric-matched local fallback prevents reflow during the swap, and CJK text uses the platform sans.
+- Surface tokens follow the owner's rules: a 6 / 4 / 2 px radius ladder, flat resting surfaces, 24 px information cards, text tones as alphas of the ink with AA contrast in both themes, and tracking that scales with size. The Overview moves onto the shared page header.
+- Gates for all of the above: a boundary test that fails on a third font family, a resting shadow in a shared recipe, a radius past 6 px, or tracked-capital group labels, plus browser cases that measure the sidebar, the design contract, and the fonts each page fetches.
+
+### Fixes
+
+- The Agents list drops the per-row ID chip and reads "Published" / "Draft" in every locale instead of a raw translation key.
+- The Files toolbar sits on one row, and its Agent and Thread filters are only disabled when their options fail to load.
+- Skills and Providers state their status in words instead of coloured lights.
+
+Full notes: [v0.3.1 on GitHub](https://github.com/langgenius/mosoo/releases/tag/v0.3.1).
