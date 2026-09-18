@@ -56,5 +56,5 @@ Mosoo commit; provenance records a separate normalized digest for each.
 Synchronization and CI default to the commit in the provenance file. To update
 the contract intentionally, set `MOSOO_REPO_REF` to a full upstream commit SHA
 and run `npm run openapi:sync`. A local source may be passed as `MOSOO_REPO_DIR`.
-The durable-sessions-v2 guides distinguish staging acceptance from production
-availability and retain the v1 migration path.
+The durable-sessions-v2 guides describe target deployment requirements and
+retain the v1 migration path.

@@ -202,10 +202,10 @@ function groupedIndexContent(spec, files) {
 
   if (version === 'v2') {
     const note = spec.language === 'zh-Hans'
-      ? 'v2 正在 staging 验收。使用前确认目标部署提供 /api/v2/openapi.json；尚不代表 Cloud 生产可用。'
+      ? '使用前确认目标部署提供 /api/v2/openapi.json，并检查其预算策略。预算尚未正式发布，不代表 Cloud 生产可用或平台承诺模型额度。'
       : spec.language === 'ja'
-        ? 'v2 は staging で検証中です。利用前に対象環境の /api/v2/openapi.json を確認してください。Cloud 本番での提供を保証するものではありません。'
-        : 'v2 is undergoing staging acceptance. Confirm /api/v2/openapi.json on your target deployment before use; this does not promise Cloud production availability.';
+        ? '利用前に対象環境の /api/v2/openapi.json と予算ポリシーを確認してください。予算制御は正式リリース前で、Cloud 本番での提供やプラットフォームのモデル利用枠を保証しません。'
+        : 'Check /api/v2/openapi.json and the budget policy on your target deployment before use. Budgets are not formally released; this does not promise Cloud production availability or platform-funded model access.';
     lines.push('', note);
   }
   for (const group of apiReferenceGroups) {

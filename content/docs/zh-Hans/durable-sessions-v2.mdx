@@ -3,9 +3,9 @@ title: "v2 持久会话"
 description: "调用已保存的私有 Agent，并通过同一个 Session 持续推进任务。"
 ---
 
-v2 正在 staging 验收。使用前确认目标部署提供 `/api/v2/openapi.json`。
+使用前确认目标部署提供 `/api/v2/openapi.json`。
 本文不代表 Cloud 生产已开放，也不承诺平台赠送模型额度。
-下述逐轮预算控制尚未发布，也尚未完成 staging 验收。
+下述逐轮预算控制尚未正式发布；使用前检查目标部署的 v2 schema 与预算策略。
 
 **Thread** 是持久 **Session** 的公开 API 名称，**Run** 使用该会话接纳的运行时与工作区执行一轮任务。
 v1 保持已发布 Agent 的接口行为，现有集成继续参考 [v1 快速开始](/docs/zh-Hans/quickstart)。
