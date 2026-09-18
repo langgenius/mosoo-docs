@@ -1,0 +1,79 @@
+---
+title: "v2 持久会话"
+description: "调用已保存的私有 Agent，并通过同一个 Session 持续推进任务。"
+---
+
+v2 正在 staging 验收。使用前确认目标部署提供 `/api/v2/openapi.json`。
+本文不代表 Cloud 生产已开放，也不承诺平台赠送模型额度。
+
+**Thread** 是持久 **Session** 的公开 API 名称，**Run** 使用该会话接纳的运行时与工作区执行一轮任务。
+v1 保持已发布 Agent 的接口行为，现有集成继续参考 [v1 快速开始](/docs/zh-Hans/quickstart)。
+
+| 约定 | v1 | v2 |
+| --- | --- | --- |
+| Agent 配置 | 已发布且启用 API 的版本 | 最新保存的私有配置 |
+| 新 Thread 身份 | 必填非空 `userId` | 可以省略，响应仍为 `null` |
+| 现有 Thread | 保留接纳时的配置 | 保留接纳时的配置 |
+| 用量记录 | 此接口不提供 | `GET /threads/{threadId}/usage` |
+
+准备同一 Project 的 API key，以及配置好可用 provider 凭据的 Agent。
+v2 调用不需要发布。Project key 不能越权访问其他 Project，必须放在后端；应用仍负责自身用户认证。
+
+## 创建并继续任务
+
+将 `MOSOO_API_BASE` 指向已验证部署的 `/api/v2`，在后端安全配置
+`MOSOO_AGENT_ID` 和 `MOSOO_API_TOKEN`。不带 input 的创建请求只返回空闲 Thread，不发起模型调用。
+将响应中的 `thread.id` 保存为 `MOSOO_THREAD_ID`，后续任务始终沿用这个 ID。
+
+```bash
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: durable-create-1" \
+  -d '{}'
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: durable-turn-1" \
+  -d '{"events":[{"type":"user_message","text":"Read the inputs and write outputs/report.md."}]}'
+```
+
+```bash
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+```
+
+## 恢复、文件和用量
+
+上传不是前提。有本地输入时沿用 multipart 文件接口；分析公开仓库时可以提供 URL 和确切 commit SHA，
+由 Agent 在环境允许时通过工具读取。记录实际使用的 commit，确保分析输入可复现。
+
+Run 成功后提交工作区文件与原生运行时的续接状态。容器被回收后，同一个 Session 从已提交状态恢复。
+恢复失败必须明确报错，不能用新空工作区冒充续接。`outputs/` 之外的文件也可以作为私有工作区状态保存；
+失败或取消的工作不会成为新的成功检查点。
+
+新建且采用已保存配置的 Session 记录 30 天恢复窗口，从最后一次成功 Run 开始计算。
+再次成功会续期，失败或取消不会。到期后新任务返回 `readiness_blocked`，历史和已提交文件仍可读取。
+没有记录该策略的存量会话不会被追溯设置期限。这是执行恢复策略，不是文件自动删除承诺。
+真实跨多天恢复仍待验收，短时间内的强制冷启动测试不能替代这项证据。
+
+用量按 ID 分页，把 `nextCursor` 作为 `after`，直到返回 `null`。
+未上报的 token 或费用为 `null`，不能当作零；`reportedCostUsd` 是运行时估算，不是结算账单。
+汇总缓存与 token 前先看 `usageContract`，进行中的记录可能在后续轮询时更新。
+
+同一请求的重试沿用 `Idempotency-Key`；新一轮任务使用新 key。同 key 配不同内容会冲突。
+同一个 Session 同时只接纳一轮任务；另一轮需等待或先中断当前 Run。
+
+CLI 的 v2 模块为 `public-thread-api-v2`，v1 仍为 `public-thread-api`，都支持上传、等待和 transcript。
+升级后为选定目标重新登录以配置 v2；已登出的凭据不会被静默恢复。
+查看 [v2 API 参考](/docs/zh-Hans/api-reference-v2)。
+
+平台默认模型供给、首发额度与预算仍是发布前待决项。统一 Session 隔离分配与 Pet/Cattle 旧行为移除仍待发布前完成。以上接口不会迁移存量 Cloud 会话，
+也不会伪造历史配置；客户迁移需要单独审阅的方案。

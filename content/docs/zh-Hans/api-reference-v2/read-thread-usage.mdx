@@ -1,0 +1,31 @@
+---
+title: 读取 Thread 用量
+description: "通过同一个 Thread 读取持久化模型用量。只要 Session 记录存在，用量仍可读取；缺失指标为 null。运行时费用是估算而非账单。重新读取较早页面以更新进行中的观测。"
+full: true
+_openapi:
+  preload:
+    - zh-Hans-v2
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          通过同一个 Thread 读取持久化模型用量。只要 Session 记录存在，用量仍可读取；缺失指标为
+          null。运行时费用是估算而非账单。重新读取较早页面以更新进行中的观测。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans-v2" operations={[{"path":"/threads/{threadId}/usage","method":"get"}]} showDescription />
+    </>
+  );
+}

@@ -47,3 +47,14 @@ npm run deploy
 - [mosoo source](https://github.com/langgenius/mosoo)
 - [mosoo website](https://mosoo.ai/)
 - [mosoo Cloud](https://cloud.mosoo.ai/)
+
+## Versioned Agent API contracts
+
+OpenAPI synchronization preserves v1 links and generates v2 snapshots and API
+pages in sibling `api-reference-v2` directories. Both versions come from one
+Mosoo commit; provenance records a separate normalized digest for each.
+Synchronization and CI default to the commit in the provenance file. To update
+the contract intentionally, set `MOSOO_REPO_REF` to a full upstream commit SHA
+and run `npm run openapi:sync`. A local source may be passed as `MOSOO_REPO_DIR`.
+The durable-sessions-v2 guides distinguish staging acceptance from production
+availability and retain the v1 migration path.

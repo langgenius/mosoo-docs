@@ -1,0 +1,83 @@
+---
+title: "v2 の永続セッション"
+description: "保存済みの非公開 Agent を呼び出し、同じ Session で作業を続けます。"
+---
+
+v2 は staging で検証中です。利用前に対象環境が `/api/v2/openapi.json` を提供することを確認してください。
+Cloud 本番での提供や、プラットフォーム負担のモデル利用枠を保証するものではありません。
+
+**Thread** は永続的な **Session** の公開 API 名です。**Run** は受付時の実行環境とワークスペースで一回の処理を実行します。
+v1 の公開済み Agent 向け動作は維持されます。[v1 クイックスタート](/docs/ja/quickstart) も引き続き利用できます。
+
+| 契約 | v1 | v2 |
+| --- | --- | --- |
+| Agent 設定 | API が有効な公開済みバージョン | 最新の保存済み非公開設定 |
+| 新しい Thread の識別子 | 空でない `userId` が必須 | 省略可能、応答は `null` |
+| 既存 Thread | 受付時の設定を維持 | 受付時の設定を維持 |
+| 利用量の記録 | この API にはなし | `GET /threads/{threadId}/usage` |
+
+同じ Project の API キーと、利用可能な provider 認証情報を設定した Agent を用意します。
+v2 の呼び出しに公開操作は不要です。キーをバックエンドに保管し、アプリ自身でユーザーを認証してください。
+Project キーは他の Project にはアクセスできません。
+
+## 作成と継続
+
+`MOSOO_API_BASE` を検証済み環境の `/api/v2` に設定し、バックエンドで
+`MOSOO_AGENT_ID` と `MOSOO_API_TOKEN` を安全に設定します。input を省略するとモデルを呼ばずに待機中の Thread を作成します。
+応答の `thread.id` を `MOSOO_THREAD_ID` として保存し、以降も同じ ID を使用します。
+
+```bash
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: durable-create-1" \
+  -d '{}'
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: durable-turn-1" \
+  -d '{"events":[{"type":"user_message","text":"Read the inputs and write outputs/report.md."}]}'
+```
+
+```bash
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+```
+
+## 復旧、ファイル、利用量
+
+アップロードは必須ではありません。ローカル入力には既存の multipart API を使います。
+公開リポジトリでは URL と正確な commit SHA を入力し、環境が許可する場合に Agent がツールで取得できます。
+入力を再現できるよう、実際の commit を記録してください。
+
+Run が成功するとワークスペースとネイティブ実行環境の継続状態を確定します。
+コンテナ回収後は同じ Session が確定済み状態を復元します。復元できなければ明示的に失敗し、
+新しい空のワークスペースで継続を装いません。`outputs/` 外のファイルも非公開の状態として保持できます。
+失敗やキャンセルは新しい成功チェックポイントになりません。
+
+新しい保存済み設定の Session には、最後に成功した Run から 30 日の復旧期間を記録します。
+次の成功で更新し、失敗やキャンセルでは更新しません。期限後の新規処理は `readiness_blocked` で拒否されますが、
+履歴と確定済みファイルは読めます。このポリシーを持たない既存 Session に期限を後付けしません。
+これは実行状態の復旧ポリシーであり、保存ファイルの自動削除を約束するものではありません。
+実際に数日経過した後の復旧検証は未完了です。短時間の強制コールドテストでは代替できません。
+
+利用量は ID 順です。`nextCursor` を `after` に渡し、`null` で終了します。
+未報告の値は `null` で、ゼロではありません。`reportedCostUsd` は実行環境の推定値であり請求額ではありません。
+キャッシュと token の集計前に `usageContract` を確認してください。実行中の観測値は再取得で更新されることがあります。
+
+同一リクエストの再試行では同じ `Idempotency-Key` を使い、新しい処理には新しいキーを使います。
+同じキーで内容を変更すると競合します。同じ Session の並行処理は拒否されるため、現在の Run を待つか中断してください。
+
+CLI では `public-thread-api-v2` を選択します。v1 は `public-thread-api` のままです。
+両方でアップロード、待機、transcript を利用できます。更新後は対象環境にログインして v2 を設定します。
+ログアウト済みの認証情報が自動復元されることはありません。[v2 API リファレンス](/docs/ja/api-reference-v2)。
+
+標準モデル供給と利用枠・予算はリリース前の決定事項です。Session 単位への割り当て統一と Pet/Cattle の旧動作の廃止はリリース前の残作業です。これらのエンドポイントは既存 Cloud セッションを移行せず、
+過去の設定を捏造しません。顧客移行は別途レビューした計画が必要です。

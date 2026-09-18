@@ -1,0 +1,95 @@
+---
+title: "Durable sessions with v2"
+description: "Invoke saved private Agents and continue work through the same Session."
+---
+
+v2 is undergoing staging acceptance. Confirm that your target deployment serves
+`/api/v2/openapi.json` before use. This guide does not promise current Cloud
+production availability or platform-funded model access.
+
+A **Thread** is the public API name for a durable **Session**. A **Run** executes
+one turn using its admitted runtime and workspace. The v1 published-Agent API keeps its name
+and behavior; [the v1 quickstart](/docs/quickstart) still applies.
+
+| Contract | v1 | v2 |
+| --- | --- | --- |
+| Agent configuration | Published version with API enabled | Latest saved private configuration |
+| New Thread identity | Required non-blank `userId` | May be omitted; response remains `null` |
+| Existing Thread | Keeps admitted configuration | Keeps admitted configuration |
+| Recorded usage | Not exposed here | `GET /threads/{threadId}/usage` |
+
+Prepare a Project API key and a saved Agent with working provider credentials.
+Publishing is not required for v2. A Project key cannot access another
+Project. Keep it on your backend; your app still authenticates its own users.
+
+## Create and continue
+
+Set `MOSOO_API_BASE` to the verified deployment's `/api/v2` URL and provide
+`MOSOO_AGENT_ID` and `MOSOO_API_TOKEN` through backend secret storage. Creation
+without input returns an idle Thread and queues no model work. Copy the returned
+`thread.id` into `MOSOO_THREAD_ID`; all later turns use this same ID.
+
+```bash
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: durable-create-1" \
+  -d '{}'
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: durable-turn-1" \
+  -d '{"events":[{"type":"user_message","text":"Read the inputs and write outputs/report.md."}]}'
+```
+
+```bash
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+```
+
+## Recovery, files and usage
+
+Uploads are optional. For uploaded inputs use the existing multipart file flow;
+for public repositories an exact URL and commit SHA can be supplied as input.
+The Agent may fetch that content with tools when its environment permits it.
+Persist the commit used so the analysis is reproducible.
+
+A successful Run commits workspace files and the native runtime continuation.
+After container reclamation, the same Session restores that committed state.
+Recovery failure is explicit; a new empty workspace is not a substitute for
+continuing previous work. Files outside `outputs/` can be workspace state without
+being public artifacts. Failed or cancelled work is not a new successful
+checkpoint.
+
+New saved-config Sessions record a 30-day recovery window after the last
+successful Run. Another success renews it; failed or cancelled Runs do not.
+At expiry, new work is rejected with `readiness_blocked`, while history and
+committed files remain readable. Existing Sessions without that recorded policy
+are not assigned a retrospective deadline. This is an execution recovery policy,
+not a promise to erase stored files. Actual multi-day recovery acceptance is
+still pending; short forced-cold tests do not prove elapsed-day retention.
+
+Usage is paginated in ID order. Pass `nextCursor` as `after` and stop at `null`.
+Null token or cost fields mean unreported, never zero. `reportedCostUsd` is a
+runtime estimate, not settled billing. Inspect `usageContract` before combining
+cache/token buckets; in-progress observations can change when polled again.
+
+Use a stable `Idempotency-Key` when retrying the identical request; use a new key
+for a new turn. Changed content with the same key is a conflict. A second
+concurrent turn is rejected; wait for the current Run or interrupt it.
+
+The v2 CLI module is `public-thread-api-v2`; v1 remains `public-thread-api`.
+Both support file upload, wait and transcript helpers. After upgrading, sign in
+for the selected target to configure v2; logged-out credentials are not silently
+restored. [Read the v2 API reference](/docs/api-reference-v2).
+
+Default platform inference allowances and budgets remain release decisions.
+Session-only allocation and removal of legacy Pet/Cattle behavior remain release work. Existing Cloud sessions are not migrated or given reconstructed configuration
+by these endpoints; customer migration requires its own reviewed plan.

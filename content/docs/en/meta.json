@@ -20,6 +20,7 @@
     "import-export-versions",
     "use-cases",
     "---API integration---",
+    "durable-sessions-v2",
     "quickstart",
     "agent-api-endpoints",
     "threads-and-runs",
@@ -28,6 +29,7 @@
     "auth-and-access",
     "---Reference---",
     "api-reference",
+    "api-reference-v2",
     "errors-and-limits",
     "coding-agents",
     "[Changelog](/docs/changelog)"

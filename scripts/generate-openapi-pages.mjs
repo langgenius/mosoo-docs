@@ -33,8 +33,18 @@ const specs = [
   },
 ];
 
+async function generateVersion(version) {
+  const versionSpecs = specs.map((spec) => version === 'v1' ? { ...spec, language: spec.id } : {
+    ...spec,
+    language: spec.id,
+    id: `${spec.id}-v2`,
+    input: spec.input.replace('mosoo-openapi.', 'mosoo-openapi.v2.'),
+    output: `${spec.output}-v2`,
+    baseUrl: `${spec.baseUrl}-v2`,
+    title: `${spec.title} v2`,
+  });
 const englishSpec = JSON.parse(
-  await readFile('./public/docs/openapi/mosoo-openapi.en.generated.json', 'utf8'),
+  await readFile(versionSpecs[0].input, 'utf8'),
 );
 
 const englishOperationTitles = new Map();
@@ -61,6 +71,7 @@ const apiReferenceGroups = [
       'POST /agents/{agentId}/threads',
       'GET /agents/{agentId}/threads',
       'GET /threads/{threadId}',
+      'GET /threads/{threadId}/usage',
       'POST /threads/{threadId}/archive',
       'POST /threads/{threadId}/unarchive',
       'DELETE /threads/{threadId}',
@@ -189,10 +200,18 @@ function groupedIndexContent(spec, files) {
     '{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}',
   ];
 
+  if (version === 'v2') {
+    const note = spec.language === 'zh-Hans'
+      ? 'v2 正在 staging 验收。使用前确认目标部署提供 /api/v2/openapi.json；尚不代表 Cloud 生产可用。'
+      : spec.language === 'ja'
+        ? 'v2 は staging で検証中です。利用前に対象環境の /api/v2/openapi.json を確認してください。Cloud 本番での提供を保証するものではありません。'
+        : 'v2 is undergoing staging acceptance. Confirm /api/v2/openapi.json on your target deployment before use; this does not promise Cloud production availability.';
+    lines.push('', note);
+  }
   for (const group of apiReferenceGroups) {
-    const groupTitle = spec.id === 'zh-Hans'
+    const groupTitle = spec.language === 'zh-Hans'
       ? group.zhHansTitle
-      : spec.id === 'ja'
+      : spec.language === 'ja'
         ? group.jaTitle
         : group.enTitle;
     lines.push('', `## ${groupTitle}`, '', '<Cards>');
@@ -283,6 +302,10 @@ async function generateSpecPages(spec) {
   });
 }
 
-for (const spec of specs) {
+for (const spec of versionSpecs) {
   await generateSpecPages(spec);
 }
+}
+
+await generateVersion('v1');
+await generateVersion('v2');
