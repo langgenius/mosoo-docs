@@ -188,6 +188,11 @@
             },
             "minItems": 1,
             "type": "array"
+          },
+          "maxCostUsd": {
+            "type": "number",
+            "minimum": 0.000001,
+            "description": "本请求中 user_message 一轮的可选模型费用估算阈值。需要已配置的部署预算策略，不会更改历史任务或该 Session 后续任务的默认值。"
           }
         },
         "required": [
@@ -571,6 +576,11 @@
               "content"
             ],
             "type": "object"
+          },
+          "maxCostUsd": {
+            "type": "number",
+            "minimum": 0.000001,
+            "description": "初始一轮的可选模型费用估算阈值，以美元计，最多六位小数。需要 input 和已配置的部署预算策略，且不能超过平台最大值。执行中的用量可能超额。省略时使用已配置的默认值（若有）。"
           }
         },
         "required": [],
@@ -909,6 +919,33 @@
             "description": "Run 最近一次变更的时间戳（RFC 3339）。",
             "format": "date-time",
             "type": "string"
+          },
+          "budget": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "capUsd",
+              "estimatedCostUsd",
+              "state"
+            ],
+            "description": "仅当本轮接纳了模型预算时存在。estimatedCostUsd 依据 provider 计数和 Mosoo 价格表估算，不是结算账单。在 budget_usage_unavailable 状态下，只包含已能确认用量的请求。",
+            "properties": {
+              "capUsd": {
+                "type": "number"
+              },
+              "estimatedCostUsd": {
+                "type": "number"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "available",
+                  "settling",
+                  "budget_exhausted",
+                  "budget_usage_unavailable"
+                ]
+              }
+            }
           }
         },
         "required": [

@@ -324,7 +324,7 @@ for (const example of examples) {
         },
       }, example.version);
     } else {
-      await readSendEventsRequest({ req: { json: async () => example.body } });
+      await readSendEventsRequest({ req: { json: async () => example.body } }, example.version);
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

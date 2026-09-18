@@ -82,3 +82,30 @@ test('v2 snapshots retain optional identity, usage semantics and independent doc
   const provenance = JSON.parse(read('public/docs/openapi/mosoo-openapi.provenance.json'));
   assert.equal(provenance.normalizedOpenApiV2Sha256, createHash('sha256').update(read('public/docs/openapi/mosoo-openapi.v2.en.generated.json')).digest('hex'));
 });
+
+test('per-turn budgets are optional in v2 and do not widen the v1 contract', () => {
+  for (const language of ['en', 'zh-Hans', 'ja']) {
+    const v1 = JSON.parse(read(`public/docs/openapi/mosoo-openapi.${language}.generated.json`));
+    const v2 = JSON.parse(read(`public/docs/openapi/mosoo-openapi.v2.${language}.generated.json`));
+    for (const schemaName of ['CreateThreadRequest', 'SendEventsRequest']) {
+      assert.equal(Object.hasOwn(v1.components.schemas[schemaName].properties, 'maxCostUsd'), false);
+      const request = v2.components.schemas[schemaName];
+      assert.equal(request.properties.maxCostUsd.type, 'number');
+      assert.equal(request.properties.maxCostUsd.minimum, 0.000001);
+      assert.equal(request.required.includes('maxCostUsd'), false);
+      assert.equal(Object.hasOwn(request.properties.maxCostUsd, 'default'), false);
+    }
+    assert.equal(Object.hasOwn(v1.components.schemas.RunSummary.properties, 'budget'), false);
+    const run = v2.components.schemas.RunSummary;
+    assert.equal(run.required.includes('budget'), false);
+    const budget = run.properties.budget;
+    assert.equal(budget.type, 'object');
+    assert.equal(budget.additionalProperties, false);
+    assert.deepEqual(budget.required, ['capUsd', 'estimatedCostUsd', 'state']);
+    assert.equal(budget.properties.capUsd.type, 'number');
+    assert.equal(budget.properties.estimatedCostUsd.type, 'number');
+    assert.deepEqual(budget.properties.state.enum, [
+      'available', 'settling', 'budget_exhausted', 'budget_usage_unavailable',
+    ]);
+  }
+});

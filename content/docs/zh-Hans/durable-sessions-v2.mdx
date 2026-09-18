@@ -5,6 +5,7 @@ description: "调用已保存的私有 Agent，并通过同一个 Session 持续
 
 v2 正在 staging 验收。使用前确认目标部署提供 `/api/v2/openapi.json`。
 本文不代表 Cloud 生产已开放，也不承诺平台赠送模型额度。
+下述逐轮预算控制尚未发布，也尚未完成 staging 验收。
 
 **Thread** 是持久 **Session** 的公开 API 名称，**Run** 使用该会话接纳的运行时与工作区执行一轮任务。
 v1 保持已发布 Agent 的接口行为，现有集成继续参考 [v1 快速开始](/docs/zh-Hans/quickstart)。
@@ -50,6 +51,47 @@ curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN"
 ```
 
+## 逐轮模型预算（未发布）
+
+`maxCostUsd` 是可选的正数美元估算阈值，最多保留六位小数。
+把它放在带 `input` 的创建请求顶层，或包含 `user_message` 的 events 请求顶层。
+它只作用于这一轮，不会修改历史任务或后续任务的默认预算。
+创建空闲会话、仅提交权限决定或中断时不能设置预算。同一幂等 key 的重试必须保持金额一致。
+
+以下示例为单轮选择 0.02 美元，不代表默认预算或赠送额度；实际金额须符合目标部署的策略：
+
+```bash
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: budget-create-1" \
+  -d '{"maxCostUsd":0.02,"input":{"type":"user.message","content":[{"type":"text","text":"Read the inputs and write outputs/report.md."}]}}'
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: budget-turn-1" \
+  -d '{"maxCostUsd":0.02,"events":[{"type":"user_message","text":"Continue the report."}]}'
+```
+
+可选的部署策略提供 `defaultUsd` 和 `maxUsd`。省略金额时使用策略默认值；
+超过策略最大值返回 `400 invalid_request`。未配置策略时，显式传入金额会返回
+`409 readiness_blocked`；省略金额则接纳不受此预算机制约束的任务。
+这份实现没有设定生产默认金额、平台赠送额度或 provider 资金来源。
+
+接纳了预算的 Run 会包含 `run.budget`，字段为 `capUsd`、`estimatedCostUsd` 和 `state`；
+没有预算的 Run 不包含该字段。状态包括 `available`、`settling`、`budget_exhausted` 和
+`budget_usage_unavailable`，它们描述预算控制，不代表 Run 已成功完成。
+费用依据 provider token 计数和 Mosoo 价格表估算，并非结算账单。达到或超过阈值后拒绝新的模型请求，
+已在执行的请求仍可能超额。用量缺失或截断、价格未知或协议不受支持时，预算任务以
+`budget_usage_unavailable` 停止；此时估算只覆盖已能确认用量的请求。
+预算推理目前支持原生 Claude Messages 和 OpenAI Responses，保持各自协议不变。
+
+预算失败仍会作为失败上报，即使运行时声称已完成。可用输出文件会被收集，
+但失败任务不会创建新的成功恢复检查点。
+
 ## 恢复、文件和用量
 
 上传不是前提。有本地输入时沿用 multipart 文件接口；分析公开仓库时可以提供 URL 和确切 commit SHA，
@@ -78,5 +120,5 @@ CLI 的 v2 模块为 `public-thread-api-v2`，v1 仍为 `public-thread-api`，�
 升级后为选定目标重新登录以配置 v2；已登出的凭据不会被静默恢复。
 查看 [v2 API 参考](/docs/zh-Hans/api-reference-v2)。
 
-平台默认模型供给、首发额度与预算仍是发布前待决项。存量 Cloud 会话迁移，以及 Pet/Cattle 双类型与旧行为的完整移除，仍待发布前完成。
+生产预算策略、平台模型供给额度与 provider 资金来源仍是发布前待决项。存量 Cloud 会话迁移，以及 Pet/Cattle 双类型与旧行为的完整移除，仍待发布前完成。
 以上接口不会重建历史配置；客户迁移需要单独审阅的方案。

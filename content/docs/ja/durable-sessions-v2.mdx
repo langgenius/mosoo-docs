@@ -5,6 +5,7 @@ description: "保存済みの非公開 Agent を呼び出し、同じ Session �
 
 v2 は staging で検証中です。利用前に対象環境が `/api/v2/openapi.json` を提供することを確認してください。
 Cloud 本番での提供や、プラットフォーム負担のモデル利用枠を保証するものではありません。
+以下のターン別予算制御は未リリースで、staging での受け入れ検証も完了していません。
 
 **Thread** は永続的な **Session** の公開 API 名です。**Run** は受付時の実行環境とワークスペースで一回の処理を実行します。
 v1 の公開済み Agent 向け動作は維持されます。[v1 クイックスタート](/docs/ja/quickstart) も引き続き利用できます。
@@ -51,6 +52,50 @@ curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN"
 ```
 
+## ターン別モデル予算（未リリース）
+
+`maxCostUsd` は任意の正の USD 推定額しきい値で、小数点以下六桁まで指定できます。
+`input` を伴う作成リクエスト、または `user_message` を含む events リクエストのトップレベルに指定します。
+対象はそのターンだけで、過去のターンや後続ターンの既定値は変更しません。
+待機中の Session の作成や、権限への回答・中断だけのリクエストには設定できません。
+同じ冪等キーで再試行するときは金額も同じにします。
+
+以下の例では一回のターンに 0.02 USD を選びます。既定額や提供される利用枠ではありません。
+対象環境のポリシーで許可された金額を使用してください。
+
+```bash
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: budget-create-1" \
+  -d '{"maxCostUsd":0.02,"input":{"type":"user.message","content":[{"type":"text","text":"Read the inputs and write outputs/report.md."}]}}'
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: budget-turn-1" \
+  -d '{"maxCostUsd":0.02,"events":[{"type":"user_message","text":"Continue the report."}]}'
+```
+
+任意のデプロイポリシーが `defaultUsd` と `maxUsd` を定めます。金額を省略すると設定済みの既定値を使い、
+上限を超える指定は `400 invalid_request` になります。ポリシー未設定の場合、明示的な金額の指定は
+`409 readiness_blocked` になります。省略すると、この予算制御を伴わないターンを受け付けます。
+本実装は本番の既定額、無償利用枠、provider の費用負担元を設定していません。
+
+予算を伴う Run には `run.budget` があり、`capUsd`、`estimatedCostUsd`、`state` を返します。
+予算なしで受け付けた Run にはこの項目はありません。状態は `available`、`settling`、
+`budget_exhausted`、`budget_usage_unavailable` で、予算制御の状態を表し、Run の成功を意味しません。
+費用は provider の token 計数と Mosoo の価格表に基づく推定値であり、確定請求額ではありません。
+しきい値以上になると次のモデルリクエストを拒否しますが、実行中のリクエストは超過する場合があります。
+利用量の欠落・途切れ、価格不明、非対応プロトコルの場合は `budget_usage_unavailable` で停止し、
+推定額は利用量を確認できたリクエストだけを含みます。予算制御は現在、ネイティブの Claude Messages と
+OpenAI Responses に対応し、それぞれの通信プロトコルを変更しません。
+
+実行環境が完了を報告しても、予算による失敗は失敗として扱います。利用可能な出力ファイルは収集しますが、
+失敗したターンの新しい成功復旧チェックポイントは作成しません。
+
 ## 復旧、ファイル、利用量
 
 アップロードは必須ではありません。ローカル入力には既存の multipart API を使います。
@@ -83,5 +128,5 @@ CLI では `public-thread-api-v2` を選択します。v1 は `public-thread-api
 両方でアップロード、待機、transcript を利用できます。更新後は対象環境にログインして v2 を設定します。
 ログアウト済みの認証情報が自動復元されることはありません。[v2 API リファレンス](/docs/ja/api-reference-v2)。
 
-標準モデル供給と利用枠・予算はリリース前の決定事項です。既存 Cloud Session の移行と、Pet/Cattle の二種類および旧動作の完全な廃止はリリース前の残作業です。
+本番の予算ポリシー、プラットフォームのモデル利用枠、provider の費用負担元はリリース前の決定事項です。既存 Cloud Session の移行と、Pet/Cattle の二種類および旧動作の完全な廃止はリリース前の残作業です。
 これらのエンドポイントは過去の設定を再構成しません。顧客移行は別途レビューした計画が必要です。
