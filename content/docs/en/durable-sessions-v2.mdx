@@ -61,6 +61,11 @@ for public repositories an exact URL and commit SHA can be supplied as input.
 The Agent may fetch that content with tools when its environment permits it.
 Persist the commit used so the analysis is reproducible.
 
+In the v2 version documented here, every newly created Session has its own
+execution workspace, even if the saved Agent is still labelled Pet. These new
+Sessions use the checkpoint and recovery policy below. Existing shared Sessions
+keep their admitted runtime and workspace; these endpoints do not migrate them.
+
 A successful Run commits workspace files and the native runtime continuation.
 After container reclamation, the same Session restores that committed state.
 Recovery failure is explicit; a new empty workspace is not a substitute for
@@ -68,8 +73,9 @@ continuing previous work. Files outside `outputs/` can be workspace state withou
 being public artifacts. Failed or cancelled work is not a new successful
 checkpoint.
 
-New saved-config Sessions record a 30-day recovery window after the last
-successful Run. Another success renews it; failed or cancelled Runs do not.
+Every new v2 Session records a 30-day recovery window after the last successful
+Run, including those created from Agents labelled Pet. Another success renews
+it; failed or cancelled Runs do not.
 At expiry, new work is rejected with `readiness_blocked`, while history and
 committed files remain readable. Existing Sessions without that recorded policy
 are not assigned a retrospective deadline. This is an execution recovery policy,
@@ -91,5 +97,7 @@ for the selected target to configure v2; logged-out credentials are not silently
 restored. [Read the v2 API reference](/docs/api-reference-v2).
 
 Default platform inference allowances and budgets remain release decisions.
-Session-only allocation and removal of legacy Pet/Cattle behavior remain release work. Existing Cloud sessions are not migrated or given reconstructed configuration
-by these endpoints; customer migration requires its own reviewed plan.
+Migration of existing Cloud Sessions and complete removal of the legacy
+Pet/Cattle types and behavior remain release work. These endpoints do not
+reconstruct historical configuration; customer migration requires its own
+reviewed plan.
