@@ -1,0 +1,132 @@
+---
+title: "v2 の永続セッション"
+description: "保存済みの非公開 Agent を呼び出し、同じ Session で作業を続けます。"
+---
+
+利用前に対象環境が `/api/v2/openapi.json` を提供することを確認してください。
+Cloud 本番での提供や、プラットフォーム負担のモデル利用枠を保証するものではありません。
+以下のターン別予算制御は正式リリース前です。利用前に対象環境の v2 スキーマと予算ポリシーを確認してください。
+
+**Thread** は永続的な **Session** の公開 API 名です。**Run** は受付時の実行環境とワークスペースで一回の処理を実行します。
+v1 の公開済み Agent 向け動作は維持されます。[v1 クイックスタート](/docs/ja/quickstart) も引き続き利用できます。
+
+| 契約 | v1 | v2 |
+| --- | --- | --- |
+| Agent 設定 | API が有効な公開済みバージョン | 最新の保存済み非公開設定 |
+| 新しい Thread の識別子 | 空でない `userId` が必須 | 省略可能、応答は `null` |
+| 既存 Thread | 受付時の設定を維持 | 受付時の設定を維持 |
+| 利用量の記録 | この API にはなし | `GET /threads/{threadId}/usage` |
+
+同じ Project の API キーと、利用可能な provider 認証情報を設定した Agent を用意します。
+v2 の呼び出しに公開操作は不要です。キーをバックエンドに保管し、アプリ自身でユーザーを認証してください。
+Project キーは他の Project にはアクセスできません。
+
+## 作成と継続
+
+`MOSOO_API_BASE` を検証済み環境の `/api/v2` に設定し、バックエンドで
+`MOSOO_AGENT_ID` と `MOSOO_API_TOKEN` を安全に設定します。input を省略するとモデルを呼ばずに待機中の Thread を作成します。
+応答の `thread.id` を `MOSOO_THREAD_ID` として保存し、以降も同じ ID を使用します。
+
+```bash
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: durable-create-1" \
+  -d '{}'
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: durable-turn-1" \
+  -d '{"events":[{"type":"user_message","text":"Read the inputs and write outputs/report.md."}]}'
+```
+
+```bash
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+```
+
+## ターン別モデル予算（未リリース）
+
+`maxCostUsd` は任意の正の USD 推定額しきい値で、小数点以下六桁まで指定できます。
+`input` を伴う作成リクエスト、または `user_message` を含む events リクエストのトップレベルに指定します。
+対象はそのターンだけで、過去のターンや後続ターンの既定値は変更しません。
+待機中の Session の作成や、権限への回答・中断だけのリクエストには設定できません。
+同じ冪等キーで再試行するときは金額も同じにします。
+
+以下の例では一回のターンに 0.02 USD を選びます。既定額や提供される利用枠ではありません。
+対象環境のポリシーで許可された金額を使用してください。
+
+```bash
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: budget-create-1" \
+  -d '{"maxCostUsd":0.02,"input":{"type":"user.message","content":[{"type":"text","text":"Read the inputs and write outputs/report.md."}]}}'
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: budget-turn-1" \
+  -d '{"maxCostUsd":0.02,"events":[{"type":"user_message","text":"Continue the report."}]}'
+```
+
+任意のデプロイポリシーが `defaultUsd` と `maxUsd` を定めます。金額を省略すると設定済みの既定値を使い、
+上限を超える指定は `400 invalid_request` になります。ポリシー未設定の場合、明示的な金額の指定は
+`409 readiness_blocked` になります。省略すると、この予算制御を伴わないターンを受け付けます。
+本実装は本番の既定額、無償利用枠、provider の費用負担元を設定していません。
+
+予算を伴う Run には `run.budget` があり、`capUsd`、`estimatedCostUsd`、`state` を返します。
+予算なしで受け付けた Run にはこの項目はありません。状態は `available`、`settling`、
+`budget_exhausted`、`budget_usage_unavailable` で、予算制御の状態を表し、Run の成功を意味しません。
+費用は provider の token 計数と Mosoo の価格表に基づく推定値であり、確定請求額ではありません。
+しきい値以上になると次のモデルリクエストを拒否しますが、実行中のリクエストは超過する場合があります。
+利用量の欠落・途切れ、価格不明、非対応プロトコルの場合は `budget_usage_unavailable` で停止し、
+推定額は利用量を確認できたリクエストだけを含みます。予算制御は現在、ネイティブの Claude Messages と
+OpenAI Responses に対応し、それぞれの通信プロトコルを変更しません。
+
+実行環境が完了を報告しても、予算による失敗は失敗として扱います。利用可能な出力ファイルは収集しますが、
+失敗したターンの新しい成功復旧チェックポイントは作成しません。
+
+## 復旧、ファイル、利用量
+
+アップロードは必須ではありません。ローカル入力には既存の multipart API を使います。
+公開リポジトリでは URL と正確な commit SHA を入力し、環境が許可する場合に Agent がツールで取得できます。
+入力を再現できるよう、実際の commit を記録してください。
+
+このガイドが対象とする v2 では、新しく作成した各 Session が独立した実行ワークスペースを持ちます。
+保存済み Agent が Pet と表示されていても同じです。これらの新しい Session には以下のチェックポイントと復旧ポリシーが適用されます。
+既存の共有 Session は受付時の実行環境とワークスペースを維持し、これらのエンドポイントでは移行されません。
+
+Run が成功するとワークスペースとネイティブ実行環境の継続状態を確定します。
+コンテナ回収後は同じ Session が確定済み状態を復元します。復元できなければ明示的に失敗し、
+新しい空のワークスペースで継続を装いません。`outputs/` 外のファイルも非公開の状態として保持できます。
+失敗やキャンセルは新しい成功チェックポイントになりません。
+
+新しく作成したすべての v2 Session に、最後に成功した Run から 30 日の復旧期間を記録します。Pet と表示された Agent から作成した場合も同じです。
+次の成功で更新し、失敗やキャンセルでは更新しません。期限後の新規処理は `readiness_blocked` で拒否されますが、
+履歴と確定済みファイルは読めます。このポリシーを持たない既存 Session に期限を後付けしません。
+これは実行状態の復旧ポリシーであり、保存ファイルの自動削除を約束するものではありません。
+実際に数日経過した後の復旧検証は未完了です。短時間の強制コールドテストでは代替できません。
+
+利用量は ID 順です。`nextCursor` を `after` に渡し、`null` で終了します。
+未報告の値は `null` で、ゼロではありません。`reportedCostUsd` は実行環境の推定値であり請求額ではありません。
+キャッシュと token の集計前に `usageContract` を確認してください。実行中の観測値は再取得で更新されることがあります。
+
+同一リクエストの再試行では同じ `Idempotency-Key` を使い、新しい処理には新しいキーを使います。
+同じキーで内容を変更すると競合します。同じ Session の並行処理は拒否されるため、現在の Run を待つか中断してください。
+
+CLI では `public-thread-api-v2` を選択します。v1 は `public-thread-api` のままです。
+両方でアップロード、待機、transcript を利用できます。更新後は対象環境にログインして v2 を設定します。
+ログアウト済みの認証情報が自動復元されることはありません。[v2 API リファレンス](/docs/ja/api-reference-v2)。
+
+このリリースは Project に設定した利用者自身のモデルアカウント（BYOK）を使い、モデル提供元がそのアカウントに課金します。本番のターン予算ポリシーはリリース前に設定します。この予算は実行費用の制限であり、プリペイド残高ではありません。プラットフォームによるモデル提供、チャージ、商用の従量課金は別の将来スコープであり、今回の Session API リリースの前提ではありません。既存 Cloud Session の移行と、Pet/Cattle の二種類および旧動作の完全な廃止はリリース前の残作業です。
+これらのエンドポイントは過去の設定を再構成しません。顧客移行は別途レビューした計画が必要です。

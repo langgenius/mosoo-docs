@@ -20,6 +20,7 @@
     "import-export-versions",
     "use-cases",
     "---API 集成---",
+    "durable-sessions-v2",
     "quickstart",
     "agent-api-endpoints",
     "threads-and-runs",
@@ -28,6 +29,7 @@
     "auth-and-access",
     "---参考---",
     "api-reference",
+    "api-reference-v2",
     "errors-and-limits"
   ]
 }

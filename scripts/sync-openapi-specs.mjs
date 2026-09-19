@@ -34,7 +34,7 @@ const LEGACY_CODING_AGENTS_GENERATED_BEGIN = "<!-- BEGIN GENERATED OPENAPI REFER
 const LEGACY_CODING_AGENTS_GENERATED_END = "<!-- END GENERATED OPENAPI REFERENCE -->";
 const DEFAULT_API_ORIGIN = "https://cloud.mosoo.ai";
 const DEFAULT_DOCS_ORIGIN = "https://mosoo.ai/docs";
-const DEFAULT_MOSOO_REPO_REF = "main";
+const DEFAULT_MOSOO_REPO_REF = JSON.parse(readFileSync(path.join(REPO_ROOT, GENERATED_FILES.provenance), "utf8")).upstreamSha;
 const DEFAULT_MOSOO_REPO_URL = "https://github.com/langgenius/mosoo.git";
 const GIT_COMMAND_MAX_BUFFER = 64 * 1024 * 1024;
 const MODE = process.argv[2] ?? "write";
@@ -57,6 +57,7 @@ const COPY_PASTE_GUIDES = [
   "content/docs/zh-Hans/events-and-streaming.mdx",
   "content/docs/ja/events-and-streaming.mdx",
   "content/docs/en/coding-agents.mdx",
+  ...["en", "zh-Hans", "ja"].map((language) => `content/docs/${language}/durable-sessions-v2.mdx`),
 ];
 
 if (!["check", "write"].includes(MODE)) {
@@ -222,10 +223,10 @@ function resolveMosooOpenApiSource() {
   return findOpenApiSourceInRepo(checkoutMosooRepoFromGit());
 }
 
-function generateSourceOpenApi(mosooRepo, source) {
+function generateSourceOpenApi(mosooRepo, source, version = "v1") {
   const evalSource = `
 import { ${source.exportName} as createOpenApiDocument } from ${JSON.stringify(source.importPath)};
-console.log(JSON.stringify(createOpenApiDocument(${JSON.stringify(DEFAULT_API_ORIGIN)}), null, 2));
+console.log(JSON.stringify(createOpenApiDocument(${JSON.stringify(DEFAULT_API_ORIGIN)}, ${JSON.stringify(version)}), null, 2));
 `;
   const result = spawnSync("bun", ["--eval", evalSource], {
     cwd: mosooRepo,
@@ -285,7 +286,7 @@ function collectCopyPasteRequestExamples() {
         );
       }
 
-      examples.push({ body, kind, source: relativePath });
+      examples.push({ body, kind, source: relativePath, version: relativePath.endsWith("/durable-sessions-v2.mdx") ? "v2" : "v1" });
     }
   }
 
@@ -321,9 +322,9 @@ for (const example of examples) {
             method: "POST",
           }),
         },
-      });
+      }, example.version);
     } else {
-      await readSendEventsRequest({ req: { json: async () => example.body } });
+      await readSendEventsRequest({ req: { json: async () => example.body } }, example.version);
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -1111,7 +1112,23 @@ function buildOutputs() {
     seedMissingTranslationPlaceholders("ja", jaTranslations, ja.missing);
   }
 
+  const v2English = normalizeEnglishSpec(generateSourceOpenApi(mosooRepo, source, "v2"));
+  const v2Outputs = {};
+  for (const language of ["en", "zh-Hans", "ja"]) {
+    let document = v2English;
+    if (language !== "en") {
+      const translations = loadTranslations(language);
+      const localized = createLocalizedSpec(v2English, translations, { allowMissingFallback: true, language });
+      document = localized.document;
+      if (MODE === "write" && localized.missing.length > 0) {
+        seedMissingTranslationPlaceholders(language, translations, localized.missing);
+      }
+    }
+    v2Outputs[`public/docs/openapi/mosoo-openapi.v2.${language}.generated.json`] = formatJson(document);
+  }
+
   return {
+    ...v2Outputs,
     [GENERATED_FILES.codingAgents]: buildCodingAgentsOutput(englishDocument),
     [GENERATED_FILES.en]: formatJson(englishDocument),
     [GENERATED_FILES.legacy]: formatJson(englishDocument),
@@ -1119,6 +1136,7 @@ function buildOutputs() {
     [GENERATED_FILES.ja]: formatJson(ja.document),
     [GENERATED_FILES.provenance]: formatJson({
       normalizedOpenApiSha256: sha256(formatJson(englishDocument)),
+      normalizedOpenApiV2Sha256: sha256(formatJson(v2English)),
       ...provenance,
     }),
   };

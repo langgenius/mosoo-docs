@@ -1,0 +1,160 @@
+---
+title: "Durable sessions with v2"
+description: "Invoke saved private Agents and continue work through the same Session."
+---
+
+Confirm that your target deployment serves
+`/api/v2/openapi.json` before use. This guide does not promise current Cloud
+production availability or platform-funded model access.
+The per-turn budget controls below are not formally released. Check the target
+deployment's v2 schema and budget policy before using them.
+
+A **Thread** is the public API name for a durable **Session**. A **Run** executes
+one turn using its admitted runtime and workspace. The v1 published-Agent API keeps its name
+and behavior; [the v1 quickstart](/docs/quickstart) still applies.
+
+| Contract | v1 | v2 |
+| --- | --- | --- |
+| Agent configuration | Published version with API enabled | Latest saved private configuration |
+| New Thread identity | Required non-blank `userId` | May be omitted; response remains `null` |
+| Existing Thread | Keeps admitted configuration | Keeps admitted configuration |
+| Recorded usage | Not exposed here | `GET /threads/{threadId}/usage` |
+
+Prepare a Project API key and a saved Agent with working provider credentials.
+Publishing is not required for v2. A Project key cannot access another
+Project. Keep it on your backend; your app still authenticates its own users.
+
+## Create and continue
+
+Set `MOSOO_API_BASE` to the verified deployment's `/api/v2` URL and provide
+`MOSOO_AGENT_ID` and `MOSOO_API_TOKEN` through backend secret storage. Creation
+without input returns an idle Thread and queues no model work. Copy the returned
+`thread.id` into `MOSOO_THREAD_ID`; all later turns use this same ID.
+
+```bash
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: durable-create-1" \
+  -d '{}'
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: durable-turn-1" \
+  -d '{"events":[{"type":"user_message","text":"Read the inputs and write outputs/report.md."}]}'
+```
+
+```bash
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+```
+
+## Per-turn model budgets (unreleased)
+
+`maxCostUsd` is an optional, positive USD estimate threshold with up to six
+decimal places. Put it at the top level of a create request with `input`, or an
+events request containing a `user_message`. It applies only to that turn;
+it does not change earlier turns or the defaults for later turns. An idle
+creation or a request containing only permission decisions or interrupts cannot
+set a budget. Retrying with the same idempotency key must keep the same amount.
+
+These examples choose USD 0.02 for one turn, not a default or a model allowance.
+Use an amount permitted by your deployment's policy:
+
+```bash
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: budget-create-1" \
+  -d '{"maxCostUsd":0.02,"input":{"type":"user.message","content":[{"type":"text","text":"Read the inputs and write outputs/report.md."}]}}'
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: budget-turn-1" \
+  -d '{"maxCostUsd":0.02,"events":[{"type":"user_message","text":"Continue the report."}]}'
+```
+
+The optional deployment policy sets `defaultUsd` and `maxUsd`. Omission uses
+that policy's default; requesting more than its maximum returns `400
+invalid_request`. Without a configured policy, an explicit `maxCostUsd` returns
+`409 readiness_blocked`; omission admits a turn without this budget mechanism.
+No production default, funded allowance or source of provider funding has been
+set by this implementation.
+
+A budgeted Run includes `run.budget` with `capUsd`, `estimatedCostUsd` and
+`state`. It is absent for turns admitted without a budget. States are
+`available`, `settling`, `budget_exhausted` and `budget_usage_unavailable`;
+they describe budget enforcement, not the Run's completion status.
+Estimates use provider token counters and Mosoo's price schedule, not settled
+bills. At or above the threshold, further model requests are rejected; an
+already running request can exceed it. Missing or truncated usage, unknown
+pricing, or an unsupported protocol stops budgeted work with
+`budget_usage_unavailable`. Its estimate covers only requests whose usage
+could be established. Budgeted inference currently supports native Claude
+Messages and OpenAI Responses; their wire protocols are unchanged.
+
+Budget failures remain failures even if the runtime reports completion.
+Available output files are collected, but a failed turn does not create a new
+successful recovery checkpoint.
+
+## Recovery, files and usage
+
+Uploads are optional. For uploaded inputs use the existing multipart file flow;
+for public repositories an exact URL and commit SHA can be supplied as input.
+The Agent may fetch that content with tools when its environment permits it.
+Persist the commit used so the analysis is reproducible.
+
+In the v2 version documented here, every newly created Session has its own
+execution workspace, even if the saved Agent is still labelled Pet. These new
+Sessions use the checkpoint and recovery policy below. Existing shared Sessions
+keep their admitted runtime and workspace; these endpoints do not migrate them.
+
+A successful Run commits workspace files and the native runtime continuation.
+After container reclamation, the same Session restores that committed state.
+Recovery failure is explicit; a new empty workspace is not a substitute for
+continuing previous work. Files outside `outputs/` can be workspace state without
+being public artifacts. Failed or cancelled work is not a new successful
+checkpoint.
+
+Every new v2 Session records a 30-day recovery window after the last successful
+Run, including those created from Agents labelled Pet. Another success renews
+it; failed or cancelled Runs do not.
+At expiry, new work is rejected with `readiness_blocked`, while history and
+committed files remain readable. Existing Sessions without that recorded policy
+are not assigned a retrospective deadline. This is an execution recovery policy,
+not a promise to erase stored files. Actual multi-day recovery acceptance is
+still pending; short forced-cold tests do not prove elapsed-day retention.
+
+Usage is paginated in ID order. Pass `nextCursor` as `after` and stop at `null`.
+Null token or cost fields mean unreported, never zero. `reportedCostUsd` is a
+runtime estimate, not settled billing. Inspect `usageContract` before combining
+cache/token buckets; in-progress observations can change when polled again.
+
+Use a stable `Idempotency-Key` when retrying the identical request; use a new key
+for a new turn. Changed content with the same key is a conflict. A second
+concurrent turn is rejected; wait for the current Run or interrupt it.
+
+The v2 CLI module is `public-thread-api-v2`; v1 remains `public-thread-api`.
+Both support file upload, wait and transcript helpers. After upgrading, sign in
+for the selected target to configure v2; logged-out credentials are not silently
+restored. [Read the v2 API reference](/docs/api-reference-v2).
+
+This release uses your own model-provider account configured in the Project (BYOK).
+The provider charges that account. Production turn-budget policy remains a release
+configuration decision; the budget guard limits execution and is not a prepaid balance.
+Platform-supplied models, recharge and commercial usage billing are separate future
+work and do not block this Session API release.
+Migration of existing Cloud Sessions and complete removal of the legacy
+Pet/Cattle types and behavior remain release work. These endpoints do not
+reconstruct historical configuration; customer migration requires its own
+reviewed plan.

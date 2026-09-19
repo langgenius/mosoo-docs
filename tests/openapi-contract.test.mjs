@@ -63,3 +63,49 @@ test('OpenAPI provenance binds the normalized snapshot to upstream Mosoo', () =>
   assert.equal(provenance.upstreamRepository, 'https://github.com/langgenius/mosoo');
   assert.match(provenance.upstreamSha, /^[0-9a-f]{40}$/);
 });
+
+
+test('v2 snapshots retain optional identity, usage semantics and independent doc IDs', () => {
+  for (const language of ['en', 'zh-Hans', 'ja']) {
+    const document = JSON.parse(read(`public/docs/openapi/mosoo-openapi.v2.${language}.generated.json`));
+    const create = document.paths['/agents/{agentId}/threads'].post;
+    assert.equal(create.requestBody.required, false);
+    assert.deepEqual(document.components.schemas.CreateThreadRequest.required, []);
+    assert.deepEqual(document.components.schemas.ThreadSummary.properties.userId.type, ['string', 'null']);
+    const usage = document.paths['/threads/{threadId}/usage'].get;
+    assert.ok(usage.parameters.some((parameter) => parameter.name === 'after'));
+    const entry = document.components.schemas.ThreadUsageResponse.properties.usage.items;
+    assert.deepEqual(entry.properties.reportedCostUsd.type, ['number', 'null']);
+    assert.match(read(`content/docs/${language}/api-reference-v2/read-thread-usage.mdx`), new RegExp(`document="${language}-v2"`));
+    assert.ok(read(`content/docs/${language}/api-reference/index.mdx`).length > 0);
+  }
+  const provenance = JSON.parse(read('public/docs/openapi/mosoo-openapi.provenance.json'));
+  assert.equal(provenance.normalizedOpenApiV2Sha256, createHash('sha256').update(read('public/docs/openapi/mosoo-openapi.v2.en.generated.json')).digest('hex'));
+});
+
+test('per-turn budgets are optional in v2 and do not widen the v1 contract', () => {
+  for (const language of ['en', 'zh-Hans', 'ja']) {
+    const v1 = JSON.parse(read(`public/docs/openapi/mosoo-openapi.${language}.generated.json`));
+    const v2 = JSON.parse(read(`public/docs/openapi/mosoo-openapi.v2.${language}.generated.json`));
+    for (const schemaName of ['CreateThreadRequest', 'SendEventsRequest']) {
+      assert.equal(Object.hasOwn(v1.components.schemas[schemaName].properties, 'maxCostUsd'), false);
+      const request = v2.components.schemas[schemaName];
+      assert.equal(request.properties.maxCostUsd.type, 'number');
+      assert.equal(request.properties.maxCostUsd.minimum, 0.000001);
+      assert.equal(request.required.includes('maxCostUsd'), false);
+      assert.equal(Object.hasOwn(request.properties.maxCostUsd, 'default'), false);
+    }
+    assert.equal(Object.hasOwn(v1.components.schemas.RunSummary.properties, 'budget'), false);
+    const run = v2.components.schemas.RunSummary;
+    assert.equal(run.required.includes('budget'), false);
+    const budget = run.properties.budget;
+    assert.equal(budget.type, 'object');
+    assert.equal(budget.additionalProperties, false);
+    assert.deepEqual(budget.required, ['capUsd', 'estimatedCostUsd', 'state']);
+    assert.equal(budget.properties.capUsd.type, 'number');
+    assert.equal(budget.properties.estimatedCostUsd.type, 'number');
+    assert.deepEqual(budget.properties.state.enum, [
+      'available', 'settling', 'budget_exhausted', 'budget_usage_unavailable',
+    ]);
+  }
+});
