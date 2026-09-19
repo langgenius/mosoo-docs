@@ -149,8 +149,11 @@ Both support file upload, wait and transcript helpers. After upgrading, sign in
 for the selected target to configure v2; logged-out credentials are not silently
 restored. [Read the v2 API reference](/docs/api-reference-v2).
 
-Production budget policy, platform inference allowances and provider funding
-remain release decisions.
+This release uses your own model-provider account configured in the Project (BYOK).
+The provider charges that account. Production turn-budget policy remains a release
+configuration decision; the budget guard limits execution and is not a prepaid balance.
+Platform-supplied models, recharge and commercial usage billing are separate future
+work and do not block this Session API release.
 Migration of existing Cloud Sessions and complete removal of the legacy
 Pet/Cattle types and behavior remain release work. These endpoints do not
 reconstruct historical configuration; customer migration requires its own
