@@ -1,9 +1,9 @@
 ---
 title: "v2 持久会话"
-description: "调用已保存的私有 Agent，并通过同一个 Session 持续推进任务。"
+description: "直接选择 harness 和模型，并通过同一个 Session 持续推进任务。"
 ---
 
-使用前确认目标部署提供 `/api/v2/openapi.json`。
+使用前确认目标部署的 `/api/v2/openapi.json` 包含 Project 创建和上传路由。
 本文不代表 Cloud 生产已开放，也不承诺平台赠送模型额度。
 下述逐轮预算控制尚未正式发布；使用前检查目标部署的 v2 schema 与预算策略。
 
@@ -12,26 +12,41 @@ v1 保持已发布 Agent 的接口行为，现有集成继续参考 [v1 快速�
 
 | 约定 | v1 | v2 |
 | --- | --- | --- |
-| Agent 配置 | 已发布且启用 API 的版本 | 最新保存的私有配置 |
+| 执行配置 | 启用 API 的已发布/live Agent | 直接传入 harness、模型、指令，或显式引用私有 Agent 预设 |
 | 新 Thread 身份 | 必填非空 `userId` | 可以省略，响应仍为 `null` |
 | 现有 Thread | 保留接纳时的配置 | 保留接纳时的配置 |
 | 用量记录 | 此接口不提供 | `GET /threads/{threadId}/usage` |
 
-准备同一 Project 的 API key，以及配置好可用 provider 凭据的 Agent。
-v2 调用不需要发布。Project key 不能越权访问其他 Project，必须放在后端；应用仍负责自身用户认证。
+在 Project 内配置自己的模型 provider 凭据，并创建该 Project 的 API key。
+请求直接选择 harness、provider、模型和指令，无需创建或发布 Agent；已有私有 Agent 是可选预设。
+Project key 不能越权访问其他 Project，必须放在后端；应用仍负责自身用户认证。
 
 ## 创建并继续任务
 
 将 `MOSOO_API_BASE` 指向已验证部署的 `/api/v2`，在后端安全配置
-`MOSOO_AGENT_ID` 和 `MOSOO_API_TOKEN`。不带 input 的创建请求只返回空闲 Thread，不发起模型调用。
+`MOSOO_PROJECT_ID` 和 `MOSOO_API_TOKEN`。不带 input 的创建请求只返回空闲 Thread，不发起模型调用。
 将响应中的 `thread.id` 保存为 `MOSOO_THREAD_ID`，后续任务始终沿用这个 ID。
 
+请选择该 Project 可用的 harness/provider/model 组合。示例使用 `openai-runtime`；Claude Code 使用 `claude-agent-sdk`，并配合可用的 Anthropic 模型和凭据。会话内固定这一选择；不支持的组合或不可用凭据返回 `readiness_blocked`，不会自动更换模型。直接创建返回 `agent_id: null`。
+
+复用私有 Agent 时，将整个 `configuration` 替换为 `{type: "agent", agent_id: "实际 Agent ID"}`，不能混入 inline 字段。现有 `/agents/{agentId}/threads` 仍作为预设兼容入口。
+
+上传可选输入文件无需 Agent：
+
 ```bash
-curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -F "file=@./input.csv"
+```
+
+保存返回的 `file.id`，在创建请求中加入 `resources: [{type: "file", file_id: "返回的 ID"}]`。文件和预设必须属于选中的 Project。CLI 登录可以显式选择自己拥有的 Project；Project key 只能使用其绑定的 Project。
+
+```bash
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: durable-create-1" \
-  -d '{}'
+  -d '{"configuration":{"type":"inline","harness":"openai-runtime","provider":"openai","model":"gpt-5.6-luna","instructions":"Use tools to analyze files and preserve working state for follow-up."}}'
 ```
 
 ```bash
@@ -61,11 +76,11 @@ curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
 以下示例为单轮选择 0.02 美元，不代表默认预算或赠送额度；实际金额须符合目标部署的策略：
 
 ```bash
-curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: budget-create-1" \
-  -d '{"maxCostUsd":0.02,"input":{"type":"user.message","content":[{"type":"text","text":"Read the inputs and write outputs/report.md."}]}}'
+  -d '{"configuration":{"type":"inline","harness":"openai-runtime","provider":"openai","model":"gpt-5.6-luna","instructions":"Use tools to analyze files and preserve working state for follow-up."},"maxCostUsd":0.02,"input":{"type":"user.message","content":[{"type":"text","text":"Read the inputs and write outputs/report.md."}]}}'
 ```
 
 ```bash
@@ -113,12 +128,19 @@ Run 成功后提交工作区文件与原生运行时的续接状态。容器被�
 未上报的 token 或费用为 `null`，不能当作零；`reportedCostUsd` 是运行时估算，不是结算账单。
 汇总缓存与 token 前先看 `usageContract`，进行中的记录可能在后续轮询时更新。
 
-同一请求的重试沿用 `Idempotency-Key`；新一轮任务使用新 key。同 key 配不同内容会冲突。
+同一请求的重试沿用 `Idempotency-Key`；新一轮任务使用新 key。同 key 改变内容、指令、模型或配置来源会冲突。显式选择该 Project 的 CLI 登录和 Project key 共用幂等边界；已提交但中断的创建会恢复原 Session，即使预设随后被修改或删除。
 同一个 Session 同时只接纳一轮任务；另一轮需等待或先中断当前 Run。
 
 CLI 的 v2 模块为 `public-thread-api-v2`，v1 仍为 `public-thread-api`，都支持上传、等待和 transcript。
 升级后为选定目标重新登录以配置 v2；已登出的凭据不会被静默恢复。
 查看 [v2 API 参考](/docs/zh-Hans/api-reference-v2)。
+
+将上方同样的创建请求 JSON 保存为 `session.json`。新版 v2 CLI 显式选择 Project，JSON 仍用于选择 inline 配置或 Agent 预设；需要附加输入文件时，把上传返回的 ID 加入 `resources`。
+
+```bash
+mosoo public-thread-api-v2 files upload --project-id "$MOSOO_PROJECT_ID" --file ./input.csv -o json
+mosoo public-thread-api-v2 threads create --project-id "$MOSOO_PROJECT_ID" --file ./session.json -o json
+```
 
 这一版使用你在 Project 配置的模型账号（BYOK），模型供应商向该账号收费。生产单轮预算策略仍需在发布前配置；它限制执行花费，不是预充值余额。平台模型供给、充值与商业用量计费属于后续独立范围，不阻塞本次 Session API 发布。存量 Cloud 会话迁移，以及 Pet/Cattle 双类型与旧行为的完整移除，仍待发布前完成。
 以上接口不会重建历史配置；客户迁移需要单独审阅的方案。

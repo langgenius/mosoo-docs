@@ -756,8 +756,11 @@
             "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
             "format": "ulid",
             "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "description": "この Thread が属する Agent API Endpoint の ID (ベア ULID)。"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "任意の保存済み Agent プリセットの参照元。inline 設定で作成した Session は null です。"
           },
           "created_at": {
             "description": "Thread が作成されたタイムスタンプ (RFC 3339)。",
@@ -1047,6 +1050,139 @@
         ],
         "type": "object"
       },
+      "ThreadConfiguration": {
+        "description": "inline 設定か所有する Agent プリセットを明示的に選びます。両方は混在できず、受付時の設定を Session に固定します。",
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "harness",
+              "provider",
+              "model",
+              "instructions"
+            ],
+            "properties": {
+              "type": {
+                "const": "inline"
+              },
+              "harness": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255,
+                "description": "対応する実行環境カタログ ID。例：openai-runtime、claude-agent-sdk。"
+              },
+              "provider": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "model": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "instructions": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32000
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "agent_id"
+            ],
+            "properties": {
+              "type": {
+                "const": "agent"
+              },
+              "agent_id": {
+                "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                "format": "ulid",
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "CreateProjectThreadRequest": {
+        "additionalProperties": false,
+        "description": "inline 設定または任意の保存済み Agent プリセットで、Project 所有の永続 Session を作成します。inline 実行では Agent を作成しません。対象 Project にモデル認証情報を設定しておく必要があります。",
+        "properties": {
+          "userId": {
+            "description": "信頼された backend から提供される不透明なアプリケーションユーザー識別子。Thread の存続期間中は不変で、Runs 中に MCP servers へ委任されます。",
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "resources": {
+            "description": "この Session に添付し、実行時にマウントする Project の一時ファイル。",
+            "items": {
+              "$ref": "#/components/schemas/FileResource"
+            },
+            "type": "array"
+          },
+          "input": {
+            "additionalProperties": false,
+            "description": "Thread をシードし、最初の Run をキューに入れる初期ユーザー メッセージ。実行のない空の Thread を作成するには省略します。",
+            "properties": {
+              "content": {
+                "description": "最初のメッセージを構成する順序付けされたコンテンツ部分。",
+                "items": {
+                  "additionalProperties": false,
+                  "description": "最初のメッセージの単一のコンテンツ部分。",
+                  "properties": {
+                    "text": {
+                      "description": "このコンテンツ部分のテキスト。空であってはなりません。",
+                      "maxLength": 32000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": {
+                      "const": "text",
+                      "description": "コンテンツ部分の識別子。現在、`text` のみがサポートされています。"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "text"
+                  ],
+                  "type": "object"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "type": {
+                "const": "user.message",
+                "description": "初期入力の識別子。常に`user.message`。"
+              }
+            },
+            "required": [
+              "type",
+              "content"
+            ],
+            "type": "object"
+          },
+          "maxCostUsd": {
+            "type": "number",
+            "minimum": 0.000001,
+            "description": "初回ターンのモデル費用推定しきい値です。USD で小数点以下六桁まで任意指定できます。input と設定済みのデプロイ予算ポリシーが必要で、プラットフォームの上限以下にします。実行中の利用量は超過する場合があります。省略時は設定済みの既定値があれば適用します。"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/ThreadConfiguration"
+          }
+        },
+        "required": [
+          "configuration"
+        ],
+        "type": "object"
+      },
       "ThreadUsageResponse": {
         "additionalProperties": false,
         "description": "永続化された実行環境の利用量観測を ID 順に返します。null は未報告を意味し、ゼロではありません。token の定義は usageContract に従います。費用は推定値であり確定請求額ではありません。実行中の更新は再取得してください。",
@@ -1161,7 +1297,7 @@
     }
   },
   "info": {
-    "description": "保存済み非公開 Agent 向けの Project スコープの永続 Thread です。作成経路や現在の公開状態に関係なく、同じ Thread ID で読み取り、継続、中断、ファイル取得を行います。v1 の受付条件と公開済み設定の動作は維持されます。",
+    "description": "harness・モデル・指示を直接指定するか、任意の保存済み Agent プリセットで Project 所有の永続 Session を作成します。直接実行に Agent は不要です。返された Thread ID で参照、継続、中断、ファイルのダウンロードを行います。Project のモデル認証情報が必要です。v1 は既存の受付と公開済み設定の動作を維持します。",
     "title": "mosoo Public Thread API",
     "version": "v2"
   },
@@ -2330,6 +2466,204 @@
               }
             },
             "description": "アーカイブを解除しました。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/files": {
+      "post": {
+        "description": "直接指定またはプリセットでの Session 作成に使う Project の一時ファイルをアップロードします。Agent は不要です。",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string"
+            },
+            "description": "所有する Project。Project キーは所属 Project にのみアクセスできます。CLI ログインでは所有する Project を明示します。"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "file": {
+                    "description": "Thread に添付する前にアップロードするファイル バイト。",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "Project ファイルをアップロード",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicFileResponse"
+                }
+              }
+            },
+            "description": "アップロードされたファイル。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/threads": {
+      "post": {
+        "description": "harness・モデル・指示を inline で明示するか、対象 Project の任意の保存済み Agent プリセットで永続 Session を作成します。Project のモデル認証情報が必要です。入力とファイルは任意です。作成時に有効な設定を固定し、隠れた Agent は作成しません。継続時も返された Thread ID を使用します。",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string"
+            },
+            "description": "所有する Project。Project キーは所属 Project にのみアクセスできます。CLI ログインでは所有する Project を明示します。"
+          },
+          {
+            "description": "再試行安全なスレッド作成およびイベント送信呼び出しのオプションのキー。同じリクエストで同じキーを再利用すると、元のレスポンスが返されます。元のリクエストの処理中にキーを再利用すると、409 が返されます。",
+            "example": "thread-20260528-linear-eng-123",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "inline": {
+                  "summary": "Agent を作成せずに実行",
+                  "value": {
+                    "configuration": {
+                      "type": "inline",
+                      "harness": "openai-runtime",
+                      "provider": "openai",
+                      "model": "gpt-5.6-luna",
+                      "instructions": "Analyze the supplied material and save the results."
+                    },
+                    "input": {
+                      "type": "user.message",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Create an analysis report."
+                        }
+                      ]
+                    }
+                  }
+                },
+                "preset": {
+                  "summary": "任意の保存済み Agent プリセットを使用",
+                  "value": {
+                    "configuration": {
+                      "type": "agent",
+                      "agent_id": "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+                    }
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectThreadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "Project Session を作成",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateThreadResponse"
+                }
+              }
+            },
+            "description": "Session を作成しました。",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "この応答が以前に完了した要求から再生されるときは、true として表示されます。",
+                "schema": {
+                  "const": "true",
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "$ref": "#/components/responses/InvalidRequest"

@@ -756,8 +756,11 @@
             "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
             "format": "ulid",
             "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
-            "type": "string",
-            "description": "此 Thread 所属 Agent API Endpoint 的 ID（不带前缀的 ULID）。"
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "可选的已保存 Agent 预设来源；使用 inline 配置创建的 Session 为 null。"
           },
           "created_at": {
             "description": "Thread 创建时间戳（RFC 3339）。",
@@ -1047,6 +1050,139 @@
         ],
         "type": "object"
       },
+      "ThreadConfiguration": {
+        "description": "显式选择 inline 配置或自己拥有的 Agent 预设；两种来源不能混用，Session 保留接纳时的配置。",
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "harness",
+              "provider",
+              "model",
+              "instructions"
+            ],
+            "properties": {
+              "type": {
+                "const": "inline"
+              },
+              "harness": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255,
+                "description": "受支持的运行时目录 ID，例如 openai-runtime 或 claude-agent-sdk。"
+              },
+              "provider": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "model": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "instructions": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32000
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "agent_id"
+            ],
+            "properties": {
+              "type": {
+                "const": "agent"
+              },
+              "agent_id": {
+                "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                "format": "ulid",
+                "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "CreateProjectThreadRequest": {
+        "additionalProperties": false,
+        "description": "使用 inline 配置或可选的 Agent 预设创建 Project 所属的持久 Session。inline 执行不会创建 Agent；须提前在该 Project 配置模型凭据。",
+        "properties": {
+          "userId": {
+            "description": "由可信后端提供的不透明应用用户标识符。它在 Thread 生命周期内不可变，并会在 Runs 期间委托给 MCP servers。",
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string"
+          },
+          "resources": {
+            "description": "要附加到该 Session 并挂载执行的 Project 草稿文件。",
+            "items": {
+              "$ref": "#/components/schemas/FileResource"
+            },
+            "type": "array"
+          },
+          "input": {
+            "additionalProperties": false,
+            "description": "用于初始化 Thread 并排队启动第一个 Run 的用户消息。省略时会创建一个没有 Run 的空 Thread。",
+            "properties": {
+              "content": {
+                "description": "组成初始消息的有序内容片段。",
+                "items": {
+                  "additionalProperties": false,
+                  "description": "初始消息中的单个内容片段。",
+                  "properties": {
+                    "text": {
+                      "description": "该内容片段的文本。不能为空。",
+                      "maxLength": 32000,
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "type": {
+                      "const": "text",
+                      "description": "内容片段判别字段。目前仅支持 `text`。"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "text"
+                  ],
+                  "type": "object"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              "type": {
+                "const": "user.message",
+                "description": "初始输入的判别字段。固定为 `user.message`。"
+              }
+            },
+            "required": [
+              "type",
+              "content"
+            ],
+            "type": "object"
+          },
+          "maxCostUsd": {
+            "type": "number",
+            "minimum": 0.000001,
+            "description": "初始一轮的可选模型费用估算阈值，以美元计，最多六位小数。需要 input 和已配置的部署预算策略，且不能超过平台最大值。执行中的用量可能超额。省略时使用已配置的默认值（若有）。"
+          },
+          "configuration": {
+            "$ref": "#/components/schemas/ThreadConfiguration"
+          }
+        },
+        "required": [
+          "configuration"
+        ],
+        "type": "object"
+      },
       "ThreadUsageResponse": {
         "additionalProperties": false,
         "description": "按 ID 顺序返回已持久化的运行时用量观测。null 表示未上报而非零。token 约定以 usageContract 为准；费用是运行时估算而非结算账单。再次轮询可读取进行中调用的更新。",
@@ -1161,7 +1297,7 @@
     }
   },
   "info": {
-    "description": "Project 范围内、用于已保存私有 Agent 的持久 Thread。无论创建渠道或当前发布状态，现有 Thread ID 都用于读取、继续、取消和下载文件。v1 保留原有接纳规则与已发布配置行为。",
+    "description": "直接传入 harness、模型和指令，或使用可选的已保存 Agent 预设，创建 Project 所属的持久 Session。直接执行无需 Agent。返回的 Thread ID 用于读取、续接、取消和下载文件。须配置 Project 模型凭据；v1 保留原有接纳规则及已发布配置行为。",
     "title": "mosoo 公开 Thread API",
     "version": "v2"
   },
@@ -2330,6 +2466,204 @@
               }
             },
             "description": "已取消归档。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/files": {
+      "post": {
+        "description": "上传用于直接调用或预设调用的 Project 草稿文件，无需 Agent。",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string"
+            },
+            "description": "自己拥有的 Project。Project key 只能访问其绑定的 Project；CLI 登录须显式指定自己拥有的 Project。"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "file": {
+                    "description": "附加到 Thread 之前要上传的文件字节。",
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "上传 Project 文件",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicFileResponse"
+                }
+              }
+            },
+            "description": "已上传文件。"
+          },
+          "400": {
+            "$ref": "#/components/responses/InvalidRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/threads": {
+      "post": {
+        "description": "显式传入 inline harness、模型和指令，或引用该 Project 内可选的 Agent 预设，创建持久 Session。须配置 Project 模型凭据；输入和文件可选。创建时固定实际配置，不会创建隐藏 Agent；后续任务沿用返回的 Thread ID。",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "projectId",
+            "required": true,
+            "schema": {
+              "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+              "format": "ulid",
+              "pattern": "^[0-7][0-9A-HJKMNP-TV-Za-hjkmnp-tv-z]{25}$",
+              "type": "string"
+            },
+            "description": "自己拥有的 Project。Project key 只能访问其绑定的 Project；CLI 登录须显式指定自己拥有的 Project。"
+          },
+          {
+            "description": "用于安全重试 create-thread 和 send-events 调用的可选键。用同一个键重复提交相同请求会返回原始响应。如果原始请求仍在处理中就重复使用该键，会返回 409。",
+            "example": "thread-20260528-linear-eng-123",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "schema": {
+              "maxLength": 128,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "inline": {
+                  "summary": "无需创建 Agent 即可执行",
+                  "value": {
+                    "configuration": {
+                      "type": "inline",
+                      "harness": "openai-runtime",
+                      "provider": "openai",
+                      "model": "gpt-5.6-luna",
+                      "instructions": "Analyze the supplied material and save the results."
+                    },
+                    "input": {
+                      "type": "user.message",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "Create an analysis report."
+                        }
+                      ]
+                    }
+                  }
+                },
+                "preset": {
+                  "summary": "使用可选的 Agent 预设",
+                  "value": {
+                    "configuration": {
+                      "type": "agent",
+                      "agent_id": "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+                    }
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectThreadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "security": [
+          {
+            "publicApiBearer": []
+          }
+        ],
+        "summary": "创建 Project Session",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateThreadResponse"
+                }
+              }
+            },
+            "description": "已创建 Session。",
+            "headers": {
+              "Idempotency-Replayed": {
+                "description": "如果此响应是从之前已完成请求中重放的，则该值为 true。",
+                "schema": {
+                  "const": "true",
+                  "type": "string"
+                }
+              }
+            }
           },
           "400": {
             "$ref": "#/components/responses/InvalidRequest"

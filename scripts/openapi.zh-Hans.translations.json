@@ -266,5 +266,19 @@
   "Runtime usage observations.": "运行时用量观测。",
   "Optional model-cost estimate cap for the initial turn, in USD (up to six decimal places). Requires input and a configured deployment budget policy; must not exceed the platform maximum. In-flight usage can exceed the cap. Omission uses the configured default when available.": "初始一轮的可选模型费用估算阈值，以美元计，最多六位小数。需要 input 和已配置的部署预算策略，且不能超过平台最大值。执行中的用量可能超额。省略时使用已配置的默认值（若有）。",
   "Optional model-cost estimate cap for a user_message turn in this request. Requires a configured deployment budget policy. Does not change earlier turns or the Session's subsequent defaults.": "本请求中 user_message 一轮的可选模型费用估算阈值。需要已配置的部署预算策略，不会更改历史任务或该 Session 后续任务的默认值。",
-  "Present only when this turn admitted a model budget. estimatedCostUsd uses provider counters and Mosoo's price schedule; it is not a settled bill. With budget_usage_unavailable it covers only requests whose usage could be established.": "仅当本轮接纳了模型预算时存在。estimatedCostUsd 依据 provider 计数和 Mosoo 价格表估算，不是结算账单。在 budget_usage_unavailable 状态下，只包含已能确认用量的请求。"
+  "Present only when this turn admitted a model budget. estimatedCostUsd uses provider counters and Mosoo's price schedule; it is not a settled bill. With budget_usage_unavailable it covers only requests whose usage could be established.": "仅当本轮接纳了模型预算时存在。estimatedCostUsd 依据 provider 计数和 Mosoo 价格表估算，不是结算账单。在 budget_usage_unavailable 状态下，只包含已能确认用量的请求。",
+  "Optional saved Agent preset provenance. Null for a Session created with inline execution configuration.": "可选的已保存 Agent 预设来源；使用 inline 配置创建的 Session 为 null。",
+  "Choose inline execution or an owned Agent preset explicitly. The two sources cannot be combined; admitted configuration is frozen for the Session.": "显式选择 inline 配置或自己拥有的 Agent 预设；两种来源不能混用，Session 保留接纳时的配置。",
+  "Supported runtime catalog ID, such as openai-runtime or claude-agent-sdk.": "受支持的运行时目录 ID，例如 openai-runtime 或 claude-agent-sdk。",
+  "Create a Project-owned durable Session with inline configuration or an optional saved Agent preset. No Agent is created for inline execution. Model credentials must already be configured in this Project.": "使用 inline 配置或可选的 Agent 预设创建 Project 所属的持久 Session。inline 执行不会创建 Agent；须提前在该 Project 配置模型凭据。",
+  "Project draft files to attach to this Session and mount for execution.": "要附加到该 Session 并挂载执行的 Project 草稿文件。",
+  "Project-owned durable Sessions with direct harness/model/instructions input and optional saved Agent presets. No Agent is required for direct execution. The returned Thread ID remains the conversation handle for reading, continuing, cancelling, and downloading files. Project model credentials are required; v1 retains its existing admission and published-configuration behavior.": "直接传入 harness、模型和指令，或使用可选的已保存 Agent 预设，创建 Project 所属的持久 Session。直接执行无需 Agent。返回的 Thread ID 用于读取、续接、取消和下载文件。须配置 Project 模型凭据；v1 保留原有接纳规则及已发布配置行为。",
+  "Upload a Project draft file for direct or preset Session creation; no Agent is required.": "上传用于直接调用或预设调用的 Project 草稿文件，无需 Agent。",
+  "Owned Project. A Project key can access only its own Project; CLI login supplies an explicit owned Project.": "自己拥有的 Project。Project key 只能访问其绑定的 Project；CLI 登录须显式指定自己拥有的 Project。",
+  "Upload a Project file": "上传 Project 文件",
+  "Create a durable Session from explicit inline harness/model/instructions, or an optional saved Agent preset in this Project. Project model credentials are required. Input and files are optional. Creation freezes the effective configuration and never creates a hidden Agent; follow-ups use the returned Thread ID.": "显式传入 inline harness、模型和指令，或引用该 Project 内可选的 Agent 预设，创建持久 Session。须配置 Project 模型凭据；输入和文件可选。创建时固定实际配置，不会创建隐藏 Agent；后续任务沿用返回的 Thread ID。",
+  "Execute without creating an Agent": "无需创建 Agent 即可执行",
+  "Use an optional saved Agent preset": "使用可选的 Agent 预设",
+  "Create a Project Session": "创建 Project Session",
+  "Created Session.": "已创建 Session。"
 }

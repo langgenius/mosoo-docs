@@ -109,3 +109,21 @@ test('per-turn budgets are optional in v2 and do not widen the v1 contract', () 
     ]);
   }
 });
+
+test('direct Project creation has explicit exclusive configuration and no required Agent', () => {
+  for (const language of ['en', 'zh-Hans', 'ja']) {
+    const document = JSON.parse(read(`public/docs/openapi/mosoo-openapi.v2.${language}.generated.json`));
+    const create = document.paths['/projects/{projectId}/threads'].post;
+    assert.equal(create.requestBody.required, true);
+    const request = document.components.schemas.CreateProjectThreadRequest;
+    assert.deepEqual(request.required, ['configuration']);
+    const [inline, preset] = document.components.schemas.ThreadConfiguration.oneOf;
+    assert.deepEqual(inline.required, ['type', 'harness', 'provider', 'model', 'instructions']);
+    assert.deepEqual(preset.required, ['type', 'agent_id']);
+    assert.equal(inline.additionalProperties, false);
+    assert.equal(preset.additionalProperties, false);
+    assert.ok(document.paths['/projects/{projectId}/files'].post);
+    assert.equal(document.components.schemas.ThreadSummary.properties.agent_id.type.includes('null'), true);
+    assert.match(read(`content/docs/${language}/durable-sessions-v2.mdx`), /\/projects\/\$MOSOO_PROJECT_ID\/threads/);
+  }
+});

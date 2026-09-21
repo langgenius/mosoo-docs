@@ -7,7 +7,7 @@ const docsLlmsPreamble = `# mosoo Docs
 ## API version selection
 
 - v1 remains the published-Agent contract below.
-- v2 invokes saved-private Agents with optional userId and adds recorded usage. It is undergoing staging acceptance; verify /api/v2/openapi.json on the target before use.
+- v2 creates Project-owned Sessions directly from explicit harness/provider/model/instructions with optional files and userId; no Agent is required. Saved private Agents are optional presets. Project-owned model credentials (BYOK) are required. It is undergoing staging acceptance; verify /api/v2/openapi.json on the target before use.
 - [Durable sessions with v2](https://mosoo.ai/docs/durable-sessions-v2/)
 - [v2 API reference](https://mosoo.ai/docs/api-reference-v2/)
 - [v2 OpenAPI snapshot](https://mosoo.ai/docs/openapi/mosoo-openapi.v2.en.generated.json)

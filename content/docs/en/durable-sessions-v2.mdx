@@ -1,10 +1,10 @@
 ---
 title: "Durable sessions with v2"
-description: "Invoke saved private Agents and continue work through the same Session."
+description: "Select a harness and model directly, then continue work through the same Session."
 ---
 
 Confirm that your target deployment serves
-`/api/v2/openapi.json` before use. This guide does not promise current Cloud
+`/api/v2/openapi.json` with the Project creation and upload routes before use. This guide does not promise current Cloud
 production availability or platform-funded model access.
 The per-turn budget controls below are not formally released. Check the target
 deployment's v2 schema and budget policy before using them.
@@ -15,28 +15,43 @@ and behavior; [the v1 quickstart](/docs/quickstart) still applies.
 
 | Contract | v1 | v2 |
 | --- | --- | --- |
-| Agent configuration | Published version with API enabled | Latest saved private configuration |
+| Execution configuration | Published/live Agent with API enabled | Inline harness/model/instructions or an explicit saved Agent preset |
 | New Thread identity | Required non-blank `userId` | May be omitted; response remains `null` |
 | Existing Thread | Keeps admitted configuration | Keeps admitted configuration |
 | Recorded usage | Not exposed here | `GET /threads/{threadId}/usage` |
 
-Prepare a Project API key and a saved Agent with working provider credentials.
-Publishing is not required for v2. A Project key cannot access another
+Configure your own model-provider credentials in a Project and create its API key.
+A direct request selects the harness, provider, model and instructions; it creates no Agent.
+An owned saved Agent is an optional preset. A Project key cannot access another
 Project. Keep it on your backend; your app still authenticates its own users.
 
 ## Create and continue
 
 Set `MOSOO_API_BASE` to the verified deployment's `/api/v2` URL and provide
-`MOSOO_AGENT_ID` and `MOSOO_API_TOKEN` through backend secret storage. Creation
+`MOSOO_PROJECT_ID` and `MOSOO_API_TOKEN` through backend secret storage. Creation
 without input returns an idle Thread and queues no model work. Copy the returned
 `thread.id` into `MOSOO_THREAD_ID`; all later turns use this same ID.
 
+Choose a supported harness/provider/model combination for the configured Project. The example uses `openai-runtime`; Claude Code uses `claude-agent-sdk` with an available Anthropic model and credentials. Selection is fixed for this Session. Unsupported combinations or unavailable credentials return `readiness_blocked` without a fallback. Inline creation returns `agent_id: null`.
+
+To reuse a saved Agent, replace the entire `configuration` with `{type: "agent", agent_id: "your Agent ID"}`. Do not combine preset and inline fields. Existing `/agents/{agentId}/threads` remains a preset adapter.
+
+Optional file inputs can be uploaded without an Agent:
+
 ```bash
-curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -F "file=@./input.csv"
+```
+
+Save the returned `file.id`; include it in the create body as `resources: [{type: "file", file_id: "the returned ID"}]`. The file and any preset must belong to the selected Project. CLI login may select an owned Project explicitly; a Project key remains bound to its own Project.
+
+```bash
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: durable-create-1" \
-  -d '{}'
+  -d '{"configuration":{"type":"inline","harness":"openai-runtime","provider":"openai","model":"gpt-5.6-luna","instructions":"Use tools to analyze files and preserve working state for follow-up."}}'
 ```
 
 ```bash
@@ -69,11 +84,11 @@ These examples choose USD 0.02 for one turn, not a default or a model allowance.
 Use an amount permitted by your deployment's policy:
 
 ```bash
-curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: budget-create-1" \
-  -d '{"maxCostUsd":0.02,"input":{"type":"user.message","content":[{"type":"text","text":"Read the inputs and write outputs/report.md."}]}}'
+  -d '{"configuration":{"type":"inline","harness":"openai-runtime","provider":"openai","model":"gpt-5.6-luna","instructions":"Use tools to analyze files and preserve working state for follow-up."},"maxCostUsd":0.02,"input":{"type":"user.message","content":[{"type":"text","text":"Read the inputs and write outputs/report.md."}]}}'
 ```
 
 ```bash
@@ -141,13 +156,20 @@ runtime estimate, not settled billing. Inspect `usageContract` before combining
 cache/token buckets; in-progress observations can change when polled again.
 
 Use a stable `Idempotency-Key` when retrying the identical request; use a new key
-for a new turn. Changed content with the same key is a conflict. A second
+for a new turn. Changed content, instructions, model or configuration source with the same key is a conflict. Project keys and CLI login selecting that Project share this receipt boundary. An interrupted committed creation recovers the original Session even if its preset has been edited or removed. A second
 concurrent turn is rejected; wait for the current Run or interrupt it.
 
 The v2 CLI module is `public-thread-api-v2`; v1 remains `public-thread-api`.
 Both support file upload, wait and transcript helpers. After upgrading, sign in
 for the selected target to configure v2; logged-out credentials are not silently
 restored. [Read the v2 API reference](/docs/api-reference-v2).
+
+Save the same creation JSON shown above as `session.json`. The updated v2 CLI selects the Project explicitly; the JSON still chooses inline configuration or an Agent preset. Add returned file IDs to its `resources` when attaching uploaded inputs.
+
+```bash
+mosoo public-thread-api-v2 files upload --project-id "$MOSOO_PROJECT_ID" --file ./input.csv -o json
+mosoo public-thread-api-v2 threads create --project-id "$MOSOO_PROJECT_ID" --file ./session.json -o json
+```
 
 This release uses your own model-provider account configured in the Project (BYOK).
 The provider charges that account. Production turn-budget policy remains a release

@@ -1,0 +1,29 @@
+---
+title: 上传 Project 文件
+description: "上传用于直接调用或预设调用的 Project 草稿文件，无需 Agent。"
+full: true
+_openapi:
+  preload:
+    - zh-Hans-v2
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: 上传用于直接调用或预设调用的 Project 草稿文件，无需 Agent。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans-v2" operations={[{"path":"/projects/{projectId}/files","method":"post"}]} showDescription />
+    </>
+  );
+}

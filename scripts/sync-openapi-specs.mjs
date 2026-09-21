@@ -266,7 +266,9 @@ function collectCopyPasteRequestExamples() {
       }
 
       let kind = null;
-      if (/\/agents\/[^\s"']+\/threads/.test(block)) {
+      if (/\/projects\/[^\s"']+\/threads/.test(block)) {
+        kind = "createProjectThread";
+      } else if (/\/agents\/[^\s"']+\/threads/.test(block)) {
         kind = "createThread";
       } else if (/\/threads\/[^\s"']+\/events/.test(block)) {
         kind = "sendEvents";
@@ -292,11 +294,15 @@ function collectCopyPasteRequestExamples() {
 
   const createCount = examples.filter((example) => example.kind === "createThread").length;
   const sendCount = examples.filter((example) => example.kind === "sendEvents").length;
+  const projectCreateCount = examples.filter((example) => example.kind === "createProjectThread").length;
 
   if (createCount < 4 || sendCount < 4) {
     throw new Error(
       `Expected at least four createThread and four sendEvents copy-paste examples; found ${createCount} and ${sendCount}.`,
     );
+  }
+  if (projectCreateCount < 6) {
+    throw new Error(`Expected two direct Project create examples per language; found ${projectCreateCount}.`);
   }
 
   return examples;
@@ -307,22 +313,25 @@ function validateCopyPasteRequestExamples(mosooRepo) {
   const evalSource = `
 import {
   readCreateThreadRequest,
+  readCreateProjectThreadRequest,
   readSendEventsRequest,
 } from "./apps/api/src/adapters/http/routes/public-thread-api-request.ts";
 
 const examples = JSON.parse(await Bun.stdin.text());
 for (const example of examples) {
   try {
-    if (example.kind === "createThread") {
-      await readCreateThreadRequest({
+    if (example.kind === "createThread" || example.kind === "createProjectThread") {
+      const request = {
         req: {
-          raw: new Request("https://docs.example/api/v1/agents/01J00000000000000000000001/threads", {
+          raw: new Request("https://docs.example/api/" + example.version + "/" + (example.kind === "createProjectThread" ? "projects" : "agents") + "/01J00000000000000000000001/threads", {
             body: JSON.stringify(example.body),
             headers: { "Content-Type": "application/json" },
             method: "POST",
           }),
         },
-      }, example.version);
+      };
+      if (example.kind === "createProjectThread") await readCreateProjectThreadRequest(request);
+      else await readCreateThreadRequest(request, example.version);
     } else {
       await readSendEventsRequest({ req: { json: async () => example.body } }, example.version);
     }
