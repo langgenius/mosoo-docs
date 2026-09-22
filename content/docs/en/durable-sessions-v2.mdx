@@ -6,8 +6,7 @@ description: "Select a harness and model directly, then continue work through th
 Confirm that your target deployment serves
 `/api/v2/openapi.json` with the Project creation and upload routes before use. This guide does not promise current Cloud
 production availability or platform-funded model access.
-The per-turn budget controls below are not formally released. Check the target
-deployment's v2 schema and budget policy before using them.
+Check the target deployment's v2 schema before use; this candidate is not a claim of production availability.
 
 A **Thread** is the public API name for a durable **Session**. A **Run** executes
 one turn using its admitted runtime and workspace. The v1 published-Agent API keeps its name
@@ -71,57 +70,6 @@ curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN"
 ```
 
-## Per-turn model budgets (unreleased)
-
-`maxCostUsd` is an optional, positive USD estimate threshold with up to six
-decimal places. Put it at the top level of a create request with `input`, or an
-events request containing a `user_message`. It applies only to that turn;
-it does not change earlier turns or the defaults for later turns. An idle
-creation or a request containing only permission decisions or interrupts cannot
-set a budget. Retrying with the same idempotency key must keep the same amount.
-
-These examples choose USD 0.02 for one turn, not a default or a model allowance.
-Use an amount permitted by your deployment's policy:
-
-```bash
-curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: budget-create-1" \
-  -d '{"configuration":{"type":"inline","harness":"openai-runtime","provider":"openai","model":"gpt-5.6-luna","instructions":"Use tools to analyze files and preserve working state for follow-up."},"maxCostUsd":0.02,"input":{"type":"user.message","content":[{"type":"text","text":"Read the inputs and write outputs/report.md."}]}}'
-```
-
-```bash
-curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: budget-turn-1" \
-  -d '{"maxCostUsd":0.02,"events":[{"type":"user_message","text":"Continue the report."}]}'
-```
-
-The optional deployment policy sets `defaultUsd` and `maxUsd`. Omission uses
-that policy's default; requesting more than its maximum returns `400
-invalid_request`. Without a configured policy, an explicit `maxCostUsd` returns
-`409 readiness_blocked`; omission admits a turn without this budget mechanism.
-No production default, funded allowance or source of provider funding has been
-set by this implementation.
-
-A budgeted Run includes `run.budget` with `capUsd`, `estimatedCostUsd` and
-`state`. It is absent for turns admitted without a budget. States are
-`available`, `settling`, `budget_exhausted` and `budget_usage_unavailable`;
-they describe budget enforcement, not the Run's completion status.
-Estimates use provider token counters and Mosoo's price schedule, not settled
-bills. At or above the threshold, further model requests are rejected; an
-already running request can exceed it. Missing or truncated usage, unknown
-pricing, or an unsupported protocol stops budgeted work with
-`budget_usage_unavailable`. Its estimate covers only requests whose usage
-could be established. Budgeted inference currently supports native Claude
-Messages and OpenAI Responses; their wire protocols are unchanged.
-
-Budget failures remain failures even if the runtime reports completion.
-Available output files are collected, but a failed turn does not create a new
-successful recovery checkpoint.
-
 ## Recovery, files and usage
 
 Uploads are optional. For uploaded inputs use the existing multipart file flow;
@@ -172,8 +120,7 @@ mosoo public-thread-api-v2 threads create --project-id "$MOSOO_PROJECT_ID" --fil
 ```
 
 This release uses your own model-provider account configured in the Project (BYOK).
-The provider charges that account. Production turn-budget policy remains a release
-configuration decision; the budget guard limits execution and is not a prepaid balance.
+The provider charges that account. Per-turn monetary limits are outside this release; usage and estimated costs remain available.
 Platform-supplied models, recharge and commercial usage billing are separate future
 work and do not block this Session API release.
 Migration of existing Cloud Sessions and complete removal of the legacy

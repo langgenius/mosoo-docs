@@ -301,8 +301,8 @@ function collectCopyPasteRequestExamples() {
       `Expected at least four createThread and four sendEvents copy-paste examples; found ${createCount} and ${sendCount}.`,
     );
   }
-  if (projectCreateCount < 6) {
-    throw new Error(`Expected two direct Project create examples per language; found ${projectCreateCount}.`);
+  if (projectCreateCount < 3) {
+    throw new Error(`Expected one direct Project create example per language; found ${projectCreateCount}.`);
   }
 
   return examples;
@@ -333,7 +333,7 @@ for (const example of examples) {
       if (example.kind === "createProjectThread") await readCreateProjectThreadRequest(request);
       else await readCreateThreadRequest(request, example.version);
     } else {
-      await readSendEventsRequest({ req: { json: async () => example.body } }, example.version);
+      await readSendEventsRequest({ req: { json: async () => example.body } });
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

@@ -188,11 +188,6 @@
             },
             "minItems": 1,
             "type": "array"
-          },
-          "maxCostUsd": {
-            "type": "number",
-            "minimum": 0.000001,
-            "description": "本リクエストの user_message ターンに任意指定するモデル費用推定しきい値です。設定済みのデプロイ予算ポリシーが必要です。過去のターンや Session の後続ターンの既定値は変更しません。"
           }
         },
         "required": [
@@ -576,11 +571,6 @@
               "content"
             ],
             "type": "object"
-          },
-          "maxCostUsd": {
-            "type": "number",
-            "minimum": 0.000001,
-            "description": "初回ターンのモデル費用推定しきい値です。USD で小数点以下六桁まで任意指定できます。input と設定済みのデプロイ予算ポリシーが必要で、プラットフォームの上限以下にします。実行中の利用量は超過する場合があります。省略時は設定済みの既定値があれば適用します。"
           }
         },
         "required": [],
@@ -922,33 +912,6 @@
             "description": "Run に対する最新の変更のタイムスタンプ (RFC 3339)。",
             "format": "date-time",
             "type": "string"
-          },
-          "budget": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "capUsd",
-              "estimatedCostUsd",
-              "state"
-            ],
-            "description": "このターンがモデル予算を伴って受け付けられた場合のみ存在します。estimatedCostUsd は provider の計数と Mosoo の価格表に基づく推定値で、確定請求額ではありません。budget_usage_unavailable の場合、利用量を確認できたリクエストだけを含みます。",
-            "properties": {
-              "capUsd": {
-                "type": "number"
-              },
-              "estimatedCostUsd": {
-                "type": "number"
-              },
-              "state": {
-                "type": "string",
-                "enum": [
-                  "available",
-                  "settling",
-                  "budget_exhausted",
-                  "budget_usage_unavailable"
-                ]
-              }
-            }
           }
         },
         "required": [
@@ -1168,11 +1131,6 @@
               "content"
             ],
             "type": "object"
-          },
-          "maxCostUsd": {
-            "type": "number",
-            "minimum": 0.000001,
-            "description": "初回ターンのモデル費用推定しきい値です。USD で小数点以下六桁まで任意指定できます。input と設定済みのデプロイ予算ポリシーが必要で、プラットフォームの上限以下にします。実行中の利用量は超過する場合があります。省略時は設定済みの既定値があれば適用します。"
           },
           "configuration": {
             "$ref": "#/components/schemas/ThreadConfiguration"

@@ -5,7 +5,7 @@ description: "harness とモデルを直接選び、同じ Session で作業を�
 
 利用前に対象環境の `/api/v2/openapi.json` に Project 作成・アップロードのルートが含まれることを確認してください。
 Cloud 本番での提供や、プラットフォーム負担のモデル利用枠を保証するものではありません。
-以下のターン別予算制御は正式リリース前です。利用前に対象環境の v2 スキーマと予算ポリシーを確認してください。
+利用前に対象環境の v2 スキーマを確認してください。この候補契約は本番での提供開始を示すものではありません。
 
 **Thread** は永続的な **Session** の公開 API 名です。**Run** は受付時の実行環境とワークスペースで一回の処理を実行します。
 v1 の公開済み Agent 向け動作は維持されます。[v1 クイックスタート](/docs/ja/quickstart) も引き続き利用できます。
@@ -66,50 +66,6 @@ curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN"
 ```
 
-## ターン別モデル予算（未リリース）
-
-`maxCostUsd` は任意の正の USD 推定額しきい値で、小数点以下六桁まで指定できます。
-`input` を伴う作成リクエスト、または `user_message` を含む events リクエストのトップレベルに指定します。
-対象はそのターンだけで、過去のターンや後続ターンの既定値は変更しません。
-待機中の Session の作成や、権限への回答・中断だけのリクエストには設定できません。
-同じ冪等キーで再試行するときは金額も同じにします。
-
-以下の例では一回のターンに 0.02 USD を選びます。既定額や提供される利用枠ではありません。
-対象環境のポリシーで許可された金額を使用してください。
-
-```bash
-curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: budget-create-1" \
-  -d '{"configuration":{"type":"inline","harness":"openai-runtime","provider":"openai","model":"gpt-5.6-luna","instructions":"Use tools to analyze files and preserve working state for follow-up."},"maxCostUsd":0.02,"input":{"type":"user.message","content":[{"type":"text","text":"Read the inputs and write outputs/report.md."}]}}'
-```
-
-```bash
-curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: budget-turn-1" \
-  -d '{"maxCostUsd":0.02,"events":[{"type":"user_message","text":"Continue the report."}]}'
-```
-
-任意のデプロイポリシーが `defaultUsd` と `maxUsd` を定めます。金額を省略すると設定済みの既定値を使い、
-上限を超える指定は `400 invalid_request` になります。ポリシー未設定の場合、明示的な金額の指定は
-`409 readiness_blocked` になります。省略すると、この予算制御を伴わないターンを受け付けます。
-本実装は本番の既定額、無償利用枠、provider の費用負担元を設定していません。
-
-予算を伴う Run には `run.budget` があり、`capUsd`、`estimatedCostUsd`、`state` を返します。
-予算なしで受け付けた Run にはこの項目はありません。状態は `available`、`settling`、
-`budget_exhausted`、`budget_usage_unavailable` で、予算制御の状態を表し、Run の成功を意味しません。
-費用は provider の token 計数と Mosoo の価格表に基づく推定値であり、確定請求額ではありません。
-しきい値以上になると次のモデルリクエストを拒否しますが、実行中のリクエストは超過する場合があります。
-利用量の欠落・途切れ、価格不明、非対応プロトコルの場合は `budget_usage_unavailable` で停止し、
-推定額は利用量を確認できたリクエストだけを含みます。予算制御は現在、ネイティブの Claude Messages と
-OpenAI Responses に対応し、それぞれの通信プロトコルを変更しません。
-
-実行環境が完了を報告しても、予算による失敗は失敗として扱います。利用可能な出力ファイルは収集しますが、
-失敗したターンの新しい成功復旧チェックポイントは作成しません。
-
 ## 復旧、ファイル、利用量
 
 アップロードは必須ではありません。ローカル入力には既存の multipart API を使います。
@@ -149,5 +105,5 @@ mosoo public-thread-api-v2 files upload --project-id "$MOSOO_PROJECT_ID" --file 
 mosoo public-thread-api-v2 threads create --project-id "$MOSOO_PROJECT_ID" --file ./session.json -o json
 ```
 
-このリリースは Project に設定した利用者自身のモデルアカウント（BYOK）を使い、モデル提供元がそのアカウントに課金します。本番のターン予算ポリシーはリリース前に設定します。この予算は実行費用の制限であり、プリペイド残高ではありません。プラットフォームによるモデル提供、チャージ、商用の従量課金は別の将来スコープであり、今回の Session API リリースの前提ではありません。既存 Cloud Session の移行と、Pet/Cattle の二種類および旧動作の完全な廃止はリリース前の残作業です。
+このリリースは Project に設定した利用者自身のモデルアカウント（BYOK）を使い、モデル提供元がそのアカウントに課金します。今回のリリースにはターン別の金額上限は含まれません。利用量と推定費用の記録は引き続き利用できます。プラットフォームによるモデル提供、チャージ、商用の従量課金は別の将来スコープであり、今回の Session API リリースの前提ではありません。既存 Cloud Session の移行と、Pet/Cattle の二種類および旧動作の完全な廃止はリリース前の残作業です。
 これらのエンドポイントは過去の設定を再構成しません。顧客移行は別途レビューした計画が必要です。

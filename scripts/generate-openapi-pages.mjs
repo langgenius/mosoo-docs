@@ -202,10 +202,10 @@ function groupedIndexContent(spec, files) {
 
   if (version === 'v2') {
     const note = spec.language === 'zh-Hans'
-      ? '使用前确认目标部署提供 /api/v2/openapi.json，并检查其预算策略。预算尚未正式发布，不代表 Cloud 生产可用或平台承诺模型额度。'
+      ? '使用前确认目标部署提供 /api/v2/openapi.json。此候选契约使用 Project 自备模型账号，不代表已在 Cloud 生产发布。'
       : spec.language === 'ja'
-        ? '利用前に対象環境の /api/v2/openapi.json と予算ポリシーを確認してください。予算制御は正式リリース前で、Cloud 本番での提供やプラットフォームのモデル利用枠を保証しません。'
-        : 'Check /api/v2/openapi.json and the budget policy on your target deployment before use. Budgets are not formally released; this does not promise Cloud production availability or platform-funded model access.';
+        ? '利用前に対象環境の /api/v2/openapi.json を確認してください。この候補契約は Project の BYOK モデルアカウントを使い、Cloud 本番での提供開始を示すものではありません。'
+        : 'Check /api/v2/openapi.json on your target deployment before use. This candidate uses Project BYOK model credentials and is not a claim of Cloud production availability.';
     lines.push('', note);
   }
   for (const group of apiReferenceGroups) {
