@@ -1,38 +1,34 @@
 ---
 title: "Common Agent patterns"
-description: "Choose an Agent type and mosoo features for common workflows."
+description: "Choose Sessions, presets and mosoo features for common workflows."
 ---
 
 Use these patterns as starting points, then test with your own data and failure cases.
 
 ## Ongoing research assistant
 
-- **Type:** Assistant Agent
 - **Why:** repeated research benefits from a continuing workspace.
 - **Configuration:** a citation-focused prompt, relevant research Skills, optional Remote HTTPS MCP sources, and a reusable Environment for analysis packages.
 - **Delivery:** mosoo Threads for interactive work; API access for embedding in another product.
 
 ## Pull-request reviewer
 
-- **Type:** Task Agent
 - **Why:** each review should start in clean temporary state.
 - **Configuration:** repository-review Skill, GitHub MCP connection, strict output format, and a minimal Environment.
 - **Delivery:** one Thread per review or an external system calling the Public Thread API.
 
 ## Ticket triage worker
 
-- **Type:** Task Agent
 - **Why:** tickets are independent jobs and should not leak temporary state.
 - **Configuration:** triage rubric in a Skill, issue-tracker MCP, and explicit rules for labels and escalation.
 - **Operations:** filter failed Threads, inspect Logs, and monitor production usage separately from Preview.
 
 ## Team copilot
 
-- **Type:** Assistant Agent
-- **Why:** the copilot benefits from a stable working directory across sessions.
+- **Why:** the copilot benefits from a stable working directory across follow-up turns in the same Session.
 - **Configuration:** product and operations Skills plus authorized MCP connections.
 - **Boundary:** mosoo's current console is single-owner; team roles and shared administration are not available. Expose the Agent through an appropriate external surface rather than sharing owner credentials.
 
 ## Public application
 
-Publish the Agent, then use the Public Thread API from your backend to create or resume a Thread for each application user.
+Use a Project key from your backend to create or continue a Session for each application user. Supply harness configuration directly or reuse an optional Agent preset. Existing v1 integrations can keep their published-Agent flow.

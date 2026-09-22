@@ -53,6 +53,7 @@ const COPY_PASTE_GUIDES = [
   "content/docs/en/quickstart.mdx",
   "content/docs/zh-Hans/quickstart.mdx",
   "content/docs/ja/quickstart.mdx",
+  ...["en", "zh-Hans", "ja"].map((language) => `content/docs/${language}/quickstart-v1.mdx`),
   "content/docs/en/events-and-streaming.mdx",
   "content/docs/zh-Hans/events-and-streaming.mdx",
   "content/docs/ja/events-and-streaming.mdx",
@@ -288,7 +289,9 @@ function collectCopyPasteRequestExamples() {
         );
       }
 
-      examples.push({ body, kind, source: relativePath, version: relativePath.endsWith("/durable-sessions-v2.mdx") ? "v2" : "v1" });
+      const version = relativePath.endsWith("/quickstart.mdx") ||
+        relativePath.endsWith("/durable-sessions-v2.mdx") ? "v2" : "v1";
+      examples.push({ body, kind, source: relativePath, version });
     }
   }
 

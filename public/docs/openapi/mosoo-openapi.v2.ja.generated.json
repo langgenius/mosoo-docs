@@ -764,13 +764,6 @@
             "type": "string",
             "description": "一意の Thread ID (ベア ULID)。"
           },
-          "kind": {
-            "description": "この Thread をサポートする Agent 種類 (たとえば、永続的または 1 回限りの Agent API Endpoint)。",
-            "enum": [
-              "pet",
-              "cattle"
-            ]
-          },
           "last_run_id": {
             "description": "最新の Run、または Run がまだ存在しない場合は null の ID (ベア ULID)。",
             "oneOf": [
@@ -822,7 +815,6 @@
           "agent_id",
           "created_at",
           "id",
-          "kind",
           "last_run_id",
           "source",
           "status",

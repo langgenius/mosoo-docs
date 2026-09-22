@@ -1,50 +1,39 @@
 ---
 title: "mosoo 文档"
-description: "使用 mosoo 构建、运行、发布并集成托管 AI Agent。"
+description: "直接调用 agent harness，用持久 Session 承载持续执行状态。"
 ---
 
-mosoo 提供一个统一工作区，用于配置 AI Agent、用真实任务测试、发布稳定版本、运营 Runs 与文件，并通过 Public Thread API 集成到其他产品。
+使用 Project API key (`msp_`) 选择 harness、模型和指令，把输入与文件交给持久 Session。Agent 是可选的复用预设。模型账号由你在 Project 中配置。
 
 <Cards>
-  <Card title="创建第一个 Agent" href="/docs/zh-Hans/first-agent">配置 Provider，创建、测试并发布 Agent。</Card>
-  <Card title="产品导览" href="/docs/zh-Hans/product-tour">理解 Projects、Agents、Threads、Runs 和交付方式。</Card>
-  <Card title="CLI 设置" href="/docs/zh-Hans/cli/overview">安装 CLI、登录并检查 cloud readiness。</Card>
-  <Card title="API 快速开始" href="/docs/zh-Hans/quickstart">通过 curl 从 backend 调用已发布 Agent。</Card>
+  <Card title="API 快速开始" href="/docs/zh-Hans/quickstart">无需创建 Agent，直接启动并续接 Session。</Card>
+  <Card title="CLI 设置" href="/docs/zh-Hans/cli/overview">安装 CLI 并选择 Project。</Card>
+  <Card title="保存 Agent 预设" href="/docs/zh-Hans/first-agent">复用指令、工具和环境配置。</Card>
+  <Card title="Session 续接" href="/docs/zh-Hans/durable-sessions-v2">了解文件、恢复及 v1 兼容规则。</Card>
 </Cards>
 
-## 直接答案
+## 执行模型
 
-- **mosoo 是什么？** mosoo 是面向 Coding Agent 的开源 Agent runtime 与 API。它围绕已发布的 Agent 提供托管 Thread、文件、sandbox 执行、工具事件和 API access。
-- **应该先读什么？** 先从[创建第一个 Agent](/docs/zh-Hans/first-agent)开始；当你准备从可信 backend 调用已发布 Agent 时，再阅读 [API 快速开始](/docs/zh-Hans/quickstart)。
-- **Public Thread API 是什么？** 它是与已发布 Agent 交互的 backend API，可创建和恢复 Thread、读取或 stream events，并传输文件。
-- **credential 应该放在哪里？** 使用 Agent 所属 Project 的 Project API key（`msp_`），只将它保存在可信服务器或自动化 runner 上；旧账号 token 已被拒绝。浏览器和移动端应调用你的 backend，再由 backend 调用 mosoo。
+- **Project** 拥有模型凭据、Session、可选的 Agent 预设和用量记录。
+- **Harness** 在 Session 工作区内调用模型和工具。
+- **Session** 保存接纳时的配置、会话和工作文件。后续输入沿用同一个公开 Thread ID。
+- **Run** 表示一次执行轮次，记录独立的结果、事件和用量。
 
-## 来源与验证
+每个 Session 拥有独立执行状态，不再选择 Assistant/Task 类型。正式会话不会因为闲置到期；Cloud 调试 Preview 使用单独的 30 天闲置策略。
 
-- [GitHub 源码](https://github.com/langgenius/mosoo)展示开源 runtime 与 license。
-- [API 参考](/docs/zh-Hans/api-reference)记录由 OpenAPI contract 生成的 Public Thread API。
-- [OpenAPI 3.1](https://cloud.mosoo.ai/api/v1/openapi.json)是可机器读取的 API 来源。
-- [llms.txt](/docs/llms.txt) 与 [llms-full.txt](/docs/llms-full.txt)为 AI answer engine 提供简版和完整版文档索引。
+## 配置与运维
 
-## 构建
+- 添加[模型账号](/docs/zh-Hans/providers-and-models)。
+- 按需复用 [Agent 配置](/docs/zh-Hans/agent-configuration)、[Skills 与 MCP](/docs/zh-Hans/skills-and-mcp) 和 [Environment](/docs/zh-Hans/environments)。
+- [调试预设](/docs/zh-Hans/test-and-debug)，查看 [Run、文件和用量](/docs/zh-Hans/operations)。
+- 阅读 [Project 与 Session 概念](/docs/zh-Hans/concepts)。
 
-- 选择 [Project boundary 与 Agent type](/docs/zh-Hans/concepts)。
-- 添加 [Provider credential 和模型](/docs/zh-Hans/providers-and-models)。
-- 配置 Agent 的[身份、runtime、指令、Skills、MCP 与 Environment](/docs/zh-Hans/agent-configuration)。
-- 发布前完成 [Preview 与调试](/docs/zh-Hans/test-and-debug)。
+## API 版本与资料
 
-## 发布与运营
+新接入使用 [v2 API 参考](/docs/zh-Hans/api-reference-v2)。已有发布型 Agent 集成保留 [v1 快速开始](/docs/zh-Hans/quickstart-v1)、[v1 参考](/docs/zh-Hans/api-reference) 及原 Thread/Run ID。只有选择已发布配置的流程需要 Publish。
 
-- [发布 Agent 并启用 API access](/docs/zh-Hans/publish-and-api-access)。
-- 查看 [Runs、文件与用量](/docs/zh-Hans/operations)。
-- 通过[导入、导出、fork 与 version history](/docs/zh-Hans/import-export-versions)复用配置。
+请确认目标部署支持所述 v2 接口；本发布指南不代表 Cloud 生产环境已提供这些能力。Project API key (`msp_`) 应保存在后端，由后端验证你的应用用户。
 
-## 集成
+[源码仓库](https://github.com/langgenius/mosoo)、[llms.txt](/docs/llms.txt) 和 [llms-full.txt](/docs/llms-full.txt) 提供实现与文档索引。
 
-Public Thread API 用于与已经发布的 Agent 交互，包括创建和恢复 Thread、读取或 stream events，以及传输文件。Agent 的创建和配置仍通过 console 或 CLI 完成。
-
-<Cards>
-  <Card title="API 核心概念" href="/docs/zh-Hans/threads-and-runs">理解 Thread 和 Run 生命周期。</Card>
-  <Card title="API 参考" href="/docs/zh-Hans/api-reference">查看自动生成的 request 与 response schema。</Card>
-  <Card title="错误与限制" href="/docs/zh-Hans/errors-and-limits">安全重试并处理失败状态。</Card>
-</Cards>
+已部署的 v1 契约可通过 [OpenAPI](https://cloud.mosoo.ai/api/v1/openapi.json) 查看。

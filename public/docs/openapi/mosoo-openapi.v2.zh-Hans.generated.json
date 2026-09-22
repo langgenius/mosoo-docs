@@ -764,13 +764,6 @@
             "type": "string",
             "description": "唯一 Thread ID（不带前缀的 ULID）。"
           },
-          "kind": {
-            "description": "支撑此 Thread 的 Agent 类型，例如持久型或一次性 Agent API Endpoint。",
-            "enum": [
-              "pet",
-              "cattle"
-            ]
-          },
           "last_run_id": {
             "description": "最近一次 Run 的 ID（不带前缀的 ULID）；尚无 Run 时为 null。",
             "oneOf": [
@@ -822,7 +815,6 @@
           "agent_id",
           "created_at",
           "id",
-          "kind",
           "last_run_id",
           "source",
           "status",

@@ -764,13 +764,6 @@
             "type": "string",
             "description": "Unique Thread ID (bare ULID)."
           },
-          "kind": {
-            "description": "Agent kind backing this Thread (for example a persistent or one-off Agent API Endpoint).",
-            "enum": [
-              "pet",
-              "cattle"
-            ]
-          },
           "last_run_id": {
             "description": "ID (bare ULID) of the most recent Run, or null when no Run exists yet.",
             "oneOf": [
@@ -822,7 +815,6 @@
           "agent_id",
           "created_at",
           "id",
-          "kind",
           "last_run_id",
           "source",
           "status",

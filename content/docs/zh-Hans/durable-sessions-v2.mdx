@@ -1,105 +1,24 @@
 ---
-title: "v2 持久会话"
-description: "直接选择 harness 和模型，并通过同一个 Session 持续推进任务。"
+title: "Session 续接与 API 版本"
+description: "Session 续接与 API 版本"
 ---
 
-使用前确认目标部署的 `/api/v2/openapi.json` 包含 Project 创建和上传路由。
-本文不代表 Cloud 生产已开放，也不承诺平台赠送模型额度。
-使用前检查目标部署的 v2 schema；本文所述候选契约不代表已在生产发布。
+Project key 可以直接调用 harness，Agent 是可选的已保存预设。新接入请从 [API 快速开始](/docs/zh-Hans/quickstart) 开始；已有发布型 Agent 集成可继续使用 [v1 快速开始](/docs/zh-Hans/quickstart-v1) 和 [v1 参考](/docs/zh-Hans/api-reference)。
 
-**Thread** 是持久 **Session** 的公开 API 名称，**Run** 使用该会话接纳的运行时与工作区执行一轮任务。
-v1 保持已发布 Agent 的接口行为，现有集成继续参考 [v1 快速开始](/docs/zh-Hans/quickstart)。
+## 选择配置来源
 
-| 约定 | v1 | v2 |
-| --- | --- | --- |
-| 执行配置 | 启用 API 的已发布/live Agent | 直接传入 harness、模型、指令，或显式引用私有 Agent 预设 |
-| 新 Thread 身份 | 必填非空 `userId` | 可以省略，响应仍为 `null` |
-| 现有 Thread | 保留接纳时的配置 | 保留接纳时的配置 |
-| 用量记录 | 此接口不提供 | `GET /threads/{threadId}/usage` |
+使用 inline 的 `harness`、`provider`、`model`、`instructions`，或 `configuration: {type: "agent", agent_id: "Agent ID"}`，不要混合两种来源。Session 固定接纳时的配置，后续编辑预设只影响新 Session。直调返回 `agent_id: null`。v2 摘要不再包含 Pet/Cattle 的 `kind`，v1 保留历史兼容字段。
 
-在 Project 内配置自己的模型 provider 凭据，并创建该 Project 的 API key。
-请求直接选择 harness、provider、模型和指令，无需创建或发布 Agent；已有私有 Agent 是可选预设。
-Project key 不能越权访问其他 Project，必须放在后端；应用仍负责自身用户认证。
+## 续接同一个 Session
 
-## 创建并继续任务
+后续输入沿用同一个 Thread/Session ID。成功轮次必须先提交工作区和原生续接状态，再报告完成。`outputs/` 外的文件可以是私有工作状态，公开产物通过文件接口读取。失败或取消的轮次保留真实结果；新 ID 或重放摘要不能代替恢复原上下文。
 
-将 `MOSOO_API_BASE` 指向已验证部署的 `/api/v2`，在后端安全配置
-`MOSOO_PROJECT_ID` 和 `MOSOO_API_TOKEN`。不带 input 的创建请求只返回空闲 Thread，不发起模型调用。
-将响应中的 `thread.id` 保存为 `MOSOO_THREAD_ID`，后续任务始终沿用这个 ID。
+正式会话和已用于 API 的 Session 不因闲置到期。间隔一段时间后，继续向同一个 Session ID 发送输入，沿用已接纳的配置及已提交的工作区、原生上下文；旧快照记录的恢复期限不再阻止续接。
 
-请选择该 Project 可用的 harness/provider/model 组合。示例使用 `openai-runtime`；Claude Code 使用 `claude-agent-sdk`，并配合可用的 Anthropic 模型和凭据。会话内固定这一选择；不支持的组合或不可用凭据返回 `readiness_blocked`，不会自动更换模型。直接创建返回 `agent_id: null`。
+只有明确启用清理策略的 Cloud 调试 Preview，才可能在 30 天没有消息、Run 或文件活动后被清理。登录控制台和读取历史不会续期，这个规则不影响正式 API Session。另行审阅的存量迁移会话可能变为只读，同时保留历史和已保存文件；永久删除仍是单独操作。
 
-复用私有 Agent 时，将整个 `configuration` 替换为 `{type: "agent", agent_id: "实际 Agent ID"}`，不能混入 inline 字段。现有 `/agents/{agentId}/threads` 仍作为预设兼容入口。
+模拟时间或短时间强制冷启动测试不能证明真实跨日存续。依赖迁移后的存量会话前，应检查目标部署的验收证据。
 
-上传可选输入文件无需 Agent：
+## 兼容与发布
 
-```bash
-curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/files" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -F "file=@./input.csv"
-```
-
-保存返回的 `file.id`，在创建请求中加入 `resources: [{type: "file", file_id: "返回的 ID"}]`。文件和预设必须属于选中的 Project。CLI 登录可以显式选择自己拥有的 Project；Project key 只能使用其绑定的 Project。
-
-```bash
-curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: durable-create-1" \
-  -d '{"configuration":{"type":"inline","harness":"openai-runtime","provider":"openai","model":"gpt-5.6-luna","instructions":"Use tools to analyze files and preserve working state for follow-up."}}'
-```
-
-```bash
-curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: durable-turn-1" \
-  -d '{"events":[{"type":"user_message","text":"Read the inputs and write outputs/report.md."}]}'
-```
-
-```bash
-curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN"
-curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/files" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN"
-curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN"
-```
-
-## 恢复、文件和用量
-
-上传不是前提。有本地输入时沿用 multipart 文件接口；分析公开仓库时可以提供 URL 和确切 commit SHA，
-由 Agent 在环境允许时通过工具读取。记录实际使用的 commit，确保分析输入可复现。
-
-本文对应的 v2 版本中，每个新建 Session 都拥有独立执行工作区，即使已保存的 Agent 仍标记为 Pet。
-这些新会话适用下述检查点与恢复策略。存量共享会话保留接纳时的运行时与工作区，以上接口不会迁移它们。
-
-Run 成功后提交工作区文件与原生运行时的续接状态。容器被回收后，同一个 Session 从已提交状态恢复。
-恢复失败必须明确报错，不能用新空工作区冒充续接。`outputs/` 之外的文件也可以作为私有工作区状态保存；
-失败或取消的工作不会成为新的成功检查点。
-
-每个新建 v2 Session 都记录 30 天恢复窗口，从最后一次成功 Run 开始计算，包括由标记为 Pet 的 Agent 创建的会话。
-再次成功会续期，失败或取消不会。到期后新任务返回 `readiness_blocked`，历史和已提交文件仍可读取。
-没有记录该策略的存量会话不会被追溯设置期限。这是执行恢复策略，不是文件自动删除承诺。
-真实跨多天恢复仍待验收，短时间内的强制冷启动测试不能替代这项证据。
-
-用量按 ID 分页，把 `nextCursor` 作为 `after`，直到返回 `null`。
-未上报的 token 或费用为 `null`，不能当作零；`reportedCostUsd` 是运行时估算，不是结算账单。
-汇总缓存与 token 前先看 `usageContract`，进行中的记录可能在后续轮询时更新。
-
-同一请求的重试沿用 `Idempotency-Key`；新一轮任务使用新 key。同 key 改变内容、指令、模型或配置来源会冲突。显式选择该 Project 的 CLI 登录和 Project key 共用幂等边界；已提交但中断的创建会恢复原 Session，即使预设随后被修改或删除。
-同一个 Session 同时只接纳一轮任务；另一轮需等待或先中断当前 Run。
-
-CLI 的 v2 模块为 `public-thread-api-v2`，v1 仍为 `public-thread-api`，都支持上传、等待和 transcript。
-升级后为选定目标重新登录以配置 v2；已登出的凭据不会被静默恢复。
-查看 [v2 API 参考](/docs/zh-Hans/api-reference-v2)。
-
-将上方同样的创建请求 JSON 保存为 `session.json`。新版 v2 CLI 显式选择 Project，JSON 仍用于选择 inline 配置或 Agent 预设；需要附加输入文件时，把上传返回的 ID 加入 `resources`。
-
-```bash
-mosoo public-thread-api-v2 files upload --project-id "$MOSOO_PROJECT_ID" --file ./input.csv -o json
-mosoo public-thread-api-v2 threads create --project-id "$MOSOO_PROJECT_ID" --file ./session.json -o json
-```
-
-这一版使用你在 Project 配置的模型账号（BYOK），模型供应商向该账号收费。本次首发不提供逐轮金额上限，保留用量和估算成本记录。平台模型供给、充值与商业用量计费属于后续独立范围，不阻塞本次 Session API 发布。存量 Cloud 会话迁移，以及 Pet/Cattle 双类型与旧行为的完整移除，仍待发布前完成。
-以上接口不会重建历史配置；客户迁移需要单独审阅的方案。
+v1 保留已发布配置选择和必填 `userId`；v2 支持直调或私有预设、可选的应用用户身份及用量记录。Thread、Run 资源名称保持不变。请匹配 API、CLI 和文档版本；本指南不会执行客户迁移，也不代表 Cloud 生产环境已上线这些能力。

@@ -3,6 +3,8 @@ title: "发布与 API 访问"
 description: "发布 Agent，并选择 Thread、API 或 coding-agent 交付方式。"
 ---
 
+本页示例使用 v1 发布型 Agent API。直调 harness 或使用可选预设，请参阅 [v2 快速开始](/docs/zh-Hans/quickstart)。
+
 发布会快照 draft 配置，并开放对应交付入口。
 
 ![Publish 菜单提供 Thread、API Access 和 coding-agent instructions。](/docs/images/product/publish-agent.png)
@@ -13,7 +15,7 @@ description: "发布 Agent，并选择 Thread、API 或 coding-agent 交付方�
 2. 打开 **Publish** 并发布 draft。
 3. 检查 live-version badge 与版本摘要。
 
-首次发布会锁定 Agent type。新 session 使用当前 live version，已经运行的 session 保持原版本。
+Publish 为 v1 等使用已发布配置的交付流程选择 live 配置。v2 直调和私有预设都不以发布为前提，已有 Session 保留创建时接纳的配置。
 
 ## 创建 Thread
 
@@ -28,7 +30,7 @@ description: "发布 Agent，并选择 Thread、API 或 coding-agent 交付方�
 Token 只应放在 `Authorization: Bearer` header 中。API access 用于创建和恢复 Thread，不负责创建、编辑或发布 Agent。
 
 <Cards>
-  <Card title="API 快速开始" href="/docs/zh-Hans/quickstart">用 curl 创建 Thread。</Card>
+  <Card title="API 快速开始" href="/docs/zh-Hans/quickstart-v1">用 curl 创建 Thread。</Card>
   <Card title="认证与访问" href="/docs/zh-Hans/auth-and-access">理解 token 与 Agent access。</Card>
   <Card title="API 参考" href="/docs/zh-Hans/api-reference">查看全部 Public Thread API operation。</Card>
 </Cards>

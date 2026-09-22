@@ -3,7 +3,7 @@ title: "产品导览"
 description: "了解 mosoo 中组织、Project、Agent 与运行记录之间的关系。"
 ---
 
-mosoo 是一个用于构建、运行、发布和运营 AI Agent 的托管工作区。你可以先配置 Agent，在控制台中测试，然后通过 Thread 或 API endpoint 使用它。
+mosoo 在持久 Session 中运行选定的 harness 和模型。你可以通过 Project key 直接调用，也可以按需把复用配置保存为 Agent 预设。
 
 ## 产品模型
 
@@ -11,20 +11,18 @@ mosoo 是一个用于构建、运行、发布和运营 AI Agent 的托管工作�
 | --- | --- |
 | **Organization** | 账号级容器。当前产品是单所有者体验，暂不提供团队角色和邀请。 |
 | **Project** | Agent、文件、配置和用量的隔离边界。新账号会获得 Default Project。 |
-| **Agent** | 可复用的工作者，包含类型、runtime、模型、指令、Skills、MCP 连接和 Environment。 |
-| **Thread** | 一个 Agent 的持久对话与工作记录，可以通过后续回复异步恢复。 |
+| **Agent** | 可选的已保存预设，包含 runtime/model、指令、Skills、MCP 连接和 Environment。 |
+| **Thread / Session** | 接纳时的配置、原生会话与独立工作文件，后续输入沿用同一个 ID。 |
 | **Run** | Thread 中的一次执行，会产生事件、日志、用量和文件。 |
 
 ## 典型工作流
 
-1. 打开或创建一个 Project。
-2. 添加模型 Provider key。
-3. 创建 Agent 并选择 runtime。
-4. 配置身份、指令、Skills、MCP servers 和 Environment。
-5. 在 **Preview** 中测试；需要时检查 **Logs**、**Cost** 和 **Terminal**。
-6. 发布 Agent。
-7. 在 mosoo 中创建 Thread 或启用 API access。
-8. 持续查看 Runs、文件、版本和用量。
+1. 打开 Project 并配置模型账号。
+2. 创建 Project key 并保存在后端。
+3. 选择 harness、模型与指令，直接创建 Session。
+4. 发送输入和文件，查看结果、事件、产物与用量。
+5. 闲置或资源回收后，相关工作沿用同一个 Session ID。
+6. 需要复用配置时保存 Agent 预设；v2 不要求发布。
 
 <Callout type="info">
   大部分配置属于当前 Project。Provider key、MCP 凭据、Skill 和 Environment 不会自动跨 Project 共享。

@@ -3,7 +3,7 @@ title: "Preview and debug"
 description: "Test an Agent and inspect Logs, Cost, Terminal, and working state."
 ---
 
-Use the Agent workspace to test draft configuration before publishing.
+Use the Agent workspace to test an optional preset in a Preview Session.
 
 ## Preview
 
@@ -15,7 +15,7 @@ Enter a representative task in the left pane. Test:
 - missing information and clarification behavior;
 - tool, credential, or Environment failure paths.
 
-Draft changes affect Preview immediately. A green **Ready** state means the editor is ready to accept a task; it is not proof that every external dependency works.
+Saved preset edits apply to new Sessions. Start a new Preview when testing changed configuration. Cloud debug Previews may be cleaned up after 30 days without message, Run or file activity; opening the console or reading history does not renew that period. Formal API Sessions do not use this expiry rule.
 
 ## Logs
 
@@ -25,9 +25,9 @@ Open **Logs** to inspect session and execution history. Use it to correlate runt
 
 Open **Cost** for Agent-level spend estimates, model mix, and recent usage events. Filter production and debug use separately. Cost values are estimates from recorded model calls, not Provider invoices.
 
-## Terminal and reset
+## Session maintenance
 
-Assistant Agents expose a Terminal and working-state controls because their environment can persist across sessions. Use reset when you intentionally want a clean state; it can remove local workspace state, caches, or sign-ins. Task Agents start clean for every Run and do not expose the same persistent controls.
+Maintenance actions target the selected Session. Restarting its Driver or recreating its sandbox preserves the committed workspace and native continuation; a different Session does not inherit that state. Start a new Session for unrelated work. A failed or incomplete checkpoint must be resolved before continuation or maintenance can use it.
 
 ## Diagnose common failures
 
@@ -35,4 +35,4 @@ Assistant Agents expose a Terminal and working-state controls because their envi
 2. **Model is unavailable:** verify the Provider's model list and endpoint compatibility.
 3. **MCP tool fails:** confirm the connection is enabled and authorized, then retry a direct tool task.
 4. **Environment startup fails:** check exact package versions, setup script, and required variables.
-5. **Old session behaves differently:** start a new session to use the current published version.
+5. **A saved edit is absent from an existing Session:** configuration is fixed when a Session starts. Start a new Preview to test changed settings.

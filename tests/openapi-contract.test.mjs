@@ -98,6 +98,8 @@ test('direct Project creation has explicit exclusive configuration and no requir
     assert.equal(preset.additionalProperties, false);
     assert.ok(document.paths['/projects/{projectId}/files'].post);
     assert.equal(document.components.schemas.ThreadSummary.properties.agent_id.type.includes('null'), true);
-    assert.match(read(`content/docs/${language}/durable-sessions-v2.mdx`), /\/projects\/\$MOSOO_PROJECT_ID\/threads/);
+    assert.equal(document.components.schemas.ThreadSummary.properties.kind, undefined);
+    assert.match(read(`content/docs/${language}/quickstart-v1.mdx`), /\/agents\/\$MOSOO_AGENT_ID\/threads/);
+    assert.match(read(`content/docs/${language}/quickstart.mdx`), /\/projects\/\$MOSOO_PROJECT_ID\/threads/);
   }
 });

@@ -1,0 +1,148 @@
+---
+title: "v1 quickstart"
+description: "Create a Thread on a published mosoo Agent with curl."
+---
+
+This guide covers v1. For direct harness/model invocation without creating an Agent, see [durable sessions with v2](/docs/quickstart).
+
+Create a Thread on a published Agent, send one follow-up message, read the public event log, and attach a file.
+
+## Before you start
+
+You need:
+
+- A published Agent with API access enabled in mosoo.
+- The `agentId` from the Agent API Access panel.
+- A mosoo API token that is allowed to call that Agent.
+- An opaque `userId` for the application user authenticated by your backend.
+
+```bash
+export MOSOO_API_BASE="https://cloud.mosoo.ai/api/v1"
+export MOSOO_API_TOKEN="msp_..."
+export MOSOO_AGENT_ID="01J00000000000000000000001"
+```
+
+<Callout type="info">
+  v1 resource IDs are bare ULIDs, not prefixed IDs such as `agent_...` or `thread_...`.
+</Callout>
+
+## 1. Create a Thread
+
+A Thread is the API conversation container for a published Agent. Creating one with `input` also queues the first Run.
+
+```bash
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: quickstart-create-thread" \
+  -d '{
+    "userId": "customer-123",
+    "input": {
+      "type": "user.message",
+      "content": [
+        {
+          "type": "text",
+          "text": "Say hello and explain what you can help with."
+        }
+      ]
+    }
+  }'
+```
+
+Copy `thread.id` from the response:
+
+```bash
+export MOSOO_THREAD_ID="01J00000000000000000000009"
+```
+
+## 2. Send another message
+
+Use `thread.id` to continue the same Agent interaction.
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: quickstart-send-message-1" \
+  -d '{
+    "events": [
+      {
+        "type": "user_message",
+        "requestId": "quickstart-message-1",
+        "text": "Give me the three most important next steps."
+      }
+    ]
+  }'
+```
+
+You can also send `permission_decision` or `user_interrupt` events when the current Run is waiting for input or still executing.
+
+## 3. Read the event log
+
+Read public events in chronological order.
+
+```bash
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events?limit=100" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+```
+
+The event log is the stable place to read results. It can include user messages, Agent message deltas, thinking deltas, tool status, file changes, usage updates, and run status.
+
+## 4. Attach a file
+
+Upload the file to the Agent first:
+
+```bash
+printf 'Customer asks for an implementation plan.' > brief.txt
+
+curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -F "file=@brief.txt;type=text/plain"
+```
+
+Copy `file.id` from the response:
+
+```bash
+export MOSOO_FILE_ID="01J0000000000000000000000J"
+```
+
+Send the file with a later user message:
+
+```bash
+curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: quickstart-file-message-1" \
+  -d '{
+    "events": [
+      {
+        "type": "user_message",
+        "requestId": "quickstart-file-message-1",
+        "resources": [
+          {
+            "type": "file",
+            "file_id": "01J0000000000000000000000J"
+          }
+        ],
+        "text": "Summarize the attached file."
+      }
+    ]
+  }'
+```
+
+To include a file in the first user message, upload it before step 1 and add the same `resources` array to the create-Thread request.
+
+<Cards>
+  <Card title="Threads and Runs" href="/docs/threads-and-runs">
+    Understand Thread and Run lifecycle states.
+  </Card>
+  <Card title="Events and streaming" href="/docs/events-and-streaming">
+    Read snapshots or stream Thread events with SSE.
+  </Card>
+  <Card title="Files" href="/docs/files">
+    Upload files and mount them into Thread messages.
+  </Card>
+  <Card title="Errors and limits" href="/docs/errors-and-limits">
+    Handle retries, idempotency conflicts, rate limits, and invalid requests.
+  </Card>
+</Cards>

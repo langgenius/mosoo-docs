@@ -3,6 +3,8 @@ title: "Threads and Runs"
 description: "How mosoo maps a published Agent call to Thread and Run lifecycle state."
 ---
 
+The examples on this page use the v1 published-Agent API. For direct harness execution and optional presets, use the [v2 quickstart](/docs/quickstart).
+
 mosoo exposes a published Agent through Thread-based APIs. Your application creates or reuses a Thread, then sends user events that queue Runs. mosoo executes each Run inside the published Agent configuration and writes public events back to the Thread.
 
 ## Resource model

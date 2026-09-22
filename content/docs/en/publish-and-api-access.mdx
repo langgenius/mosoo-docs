@@ -3,6 +3,8 @@ title: "Publish and API access"
 description: "Publish an Agent and choose Thread, API, or coding-agent delivery."
 ---
 
+The examples on this page use the v1 published-Agent API. For direct harness execution and optional presets, use the [v2 quickstart](/docs/quickstart).
+
 Publishing snapshots the draft configuration and makes delivery surfaces available.
 
 ![The Publish menu exposes Thread, API Access, and coding-agent instructions.](/docs/images/product/publish-agent.png)
@@ -13,7 +15,7 @@ Publishing snapshots the draft configuration and makes delivery surfaces availab
 2. Open **Publish** and publish the draft.
 3. Review the live-version badge and version summary.
 
-The first publish locks the Agent type. New sessions use the current live version; sessions already in progress keep their original version.
+Publishing selects a live configuration for v1 and other published delivery flows. Direct v2 invocation and saved presets do not require it. Existing Sessions retain the configuration admitted at creation.
 
 ## Start a Thread
 
@@ -28,7 +30,7 @@ Choose **API Access** from the Publish menu and copy the bare ULID Agent ID. Ope
 Use the token only in an `Authorization: Bearer` header. API access creates and resumes Threads; it does not create, edit, or publish Agents.
 
 <Cards>
-  <Card title="API quickstart" href="/docs/quickstart">Create a Thread with curl.</Card>
+  <Card title="API quickstart" href="/docs/quickstart-v1">Create a Thread with curl.</Card>
   <Card title="Authentication and access" href="/docs/auth-and-access">Understand tokens and Agent access.</Card>
   <Card title="API reference" href="/docs/api-reference">Browse every Public Thread API operation.</Card>
 </Cards>

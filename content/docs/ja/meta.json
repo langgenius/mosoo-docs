@@ -3,6 +3,7 @@
   "pages": [
     "index",
     "---はじめに---",
+    "quickstart",
     "product-tour",
     "first-agent",
     "cli",
@@ -21,15 +22,15 @@
     "use-cases",
     "---API 統合---",
     "durable-sessions-v2",
-    "quickstart",
+    "quickstart-v1",
     "agent-api-endpoints",
     "threads-and-runs",
     "events-and-streaming",
     "files",
     "auth-and-access",
     "---リファレンス---",
-    "api-reference",
     "api-reference-v2",
+    "api-reference",
     "errors-and-limits"
   ]
 }

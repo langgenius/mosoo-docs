@@ -1,9 +1,9 @@
 ---
-title: "最初の Agent を作成"
-description: "mosoo console で Agent を設定、テスト、公開します。"
+title: "Agent プリセットを保存"
+description: "再利用できる指示・ツール・環境設定を保存して検証します。"
 ---
 
-このガイドでは、空の Project から Agent を公開するまでの手順を説明します。
+設定を再利用する場合は Agent プリセットを保存します。プリセットなしで直接実行するには、[API クイックスタート](/docs/ja/quickstart)から始めてください。
 
 ## 1. Project を開く
 
@@ -29,17 +29,15 @@ description: "mosoo console で Agent を設定、テスト、公開します。
 
 ## 4. 動作を設定する
 
-**Preview** で **Assistant Agent** または **Task Agent** を選び、モデルと system prompt を設定します。Agent に必要な場合だけ Skill、MCP server、custom Environment を追加します。
+**Preview** でモデルと system prompt を設定します。必要な場合だけ Skill・MCP server・custom Environment を追加します。
 
-![Agent Preview ではライブテストと設定編集を同じ画面で行えます。](/docs/images/product/configure-agent.png)
+## 5. プリセットをテストする
 
-## 5. 公開前にテストする
+左側の Preview pane から代表的なタスクを送信します。回答、tool call、ファイル、失敗時の動作を確認してください。実行の詳細は **Logs**、モデル使用量は **Cost** で確認できます。
 
-左側の Preview pane から代表的なタスクを送信します。回答、tool call、ファイル、失敗時の動作を確認してください。実行の詳細は **Logs**、モデル使用量は **Cost** で確認できます。Assistant Agent では作業 Environment の **Terminal** とリセット操作も利用できます。
+## 6. 保存済みプリセットを再利用する
 
-## 6. 公開する
-
-**Publish** を開いて draft を公開します。最初の公開時に Agent タイプが固定されます。以後の新しい session は現在の公開バージョンを使用し、既存 session は開始時のバージョンを維持します。
+保存したプリセットは v2 の `configuration: {type: "agent", agent_id: "Agent ID"}` で呼び出せます。このパスに公開は不要です。公開済み設定を使うフローが必要な場合に **Publish** から draft を公開します。既存 Session は受付時の設定を保持します。
 
 公開後、提供方法を選択します。
 

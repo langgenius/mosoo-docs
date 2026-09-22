@@ -1,148 +1,104 @@
 ---
-title: "クイックスタート"
-description: "curl を使って公開済み mosoo Agent に Thread を作成します。"
+title: "API クイックスタート"
+description: "harness とモデルを直接選び、同じ Session で作業を続けます。"
 ---
 
-このガイドは v1 向けです。Agent 作成なしでの harness・モデルの直接呼び出しは [v2 の永続セッション](/docs/ja/durable-sessions-v2) を参照してください。
+このガイドには、Project 単位の `/api/v2` 作成・ファイル API を提供する環境が必要です。Project に自身のモデルプロバイダー認証情報を設定してください。プラットフォーム負担のモデル利用枠は含まれません。
 
-公開済み Agent に Thread を作成し、follow-up message を一つ送信して、public event log を読み取り、ファイルを添付します。
+**Thread** は永続的な **Session** の公開 API 名です。**Run** は受付時の実行環境とワークスペースで一回の処理を実行します。
+v1 の公開済み Agent 向け動作は維持されます。[v1 クイックスタート](/docs/ja/quickstart-v1) も引き続き利用できます。
 
-## 始める前に
+| 契約 | v1 | v2 |
+| --- | --- | --- |
+| 実行設定 | API が有効な公開済み/live Agent | harness・モデル・指示の直接指定、または明示的な保存済み Agent プリセット |
+| 新しい Thread の識別子 | 空でない `userId` が必須 | 省略可能、応答は `null` |
+| 既存 Thread | 受付時の設定を維持 | 受付時の設定を維持 |
+| 利用量の記録 | この API にはなし | `GET /threads/{threadId}/usage` |
 
-次が必要です。
+Project に自分のモデル provider 認証情報を設定し、Project API キーを作成します。
+リクエストで harness・provider・モデル・指示を直接選ぶため、Agent の作成や公開は不要です。保存済みの非公開 Agent は任意のプリセットです。
+キーをバックエンドに保管し、アプリ自身でユーザーを認証してください。Project キーは他の Project にはアクセスできません。
 
-- mosoo で API access を有効にした公開済み Agent。
-- Agent API Access panel に表示される `agentId`。
-- その Agent を呼び出せる mosoo API token。
-- backend で認証した application user の opaque な `userId`。
+## 作成と継続
+
+`MOSOO_API_BASE` を検証済み環境の `/api/v2` に設定し、バックエンドで
+`MOSOO_PROJECT_ID` と `MOSOO_API_TOKEN` を安全に設定します。input を省略するとモデルを呼ばずに待機中の Thread を作成します。
+応答の `thread.id` を `MOSOO_THREAD_ID` として保存し、以降も同じ ID を使用します。
+
+Project で利用可能な harness/provider/model の組み合わせを選びます。例は `openai-runtime` を使用します。Claude Code は `claude-agent-sdk` と利用可能な Anthropic モデル・認証情報を使用します。Session 内では選択を固定します。未対応の組み合わせや利用できない認証情報は `readiness_blocked` となり、別モデルへ切り替えません。直接作成の応答は `agent_id: null` です。
+
+保存済み Agent を再利用する場合は、`configuration` 全体を `{type: "agent", agent_id: "実際の Agent ID"}` に置き換えます。inline フィールドとの混在はできません。既存の `/agents/{agentId}/threads` はプリセット互換入口として残ります。
+
+任意の入力ファイルは Agent なしでアップロードできます：
 
 ```bash
-export MOSOO_API_BASE="https://cloud.mosoo.ai/api/v1"
-export MOSOO_API_TOKEN="msp_..."
-export MOSOO_AGENT_ID="01J00000000000000000000001"
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -F "file=@./input.csv"
 ```
 
-<Callout type="info">
-  v1 の resource ID は prefix のない ULID です。`agent_...` や `thread_...` のような prefix 付き ID ではありません。
-</Callout>
-
-## 1. Thread を作成する
-
-Thread は公開済み Agent の API conversation container です。`input` を指定して作成すると、最初の Run も queue に追加されます。
+返された `file.id` を保存し、作成リクエストに `resources: [{type: "file", file_id: "返された ID"}]` を含めます。ファイルとプリセットは選択した Project に属する必要があります。CLI ログインは所有する Project を明示的に選択できます。Project キーはその Project に限定されます。
 
 ```bash
-curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: quickstart-create-thread" \
-  -d '{
-    "userId": "customer-123",
-    "input": {
-      "type": "user.message",
-      "content": [
-        {
-          "type": "text",
-          "text": "こんにちは。どのような支援ができるか説明してください。"
-        }
-      ]
-    }
-  }'
+  -H "Idempotency-Key: durable-create-1" \
+  -d '{"configuration":{"type":"inline","harness":"openai-runtime","provider":"openai","model":"gpt-5.6-luna","instructions":"Use tools to analyze files and preserve working state for follow-up."}}'
 ```
-
-response から `thread.id` をコピーします。
-
-```bash
-export MOSOO_THREAD_ID="01J00000000000000000000009"
-```
-
-## 2. 別の message を送信する
-
-同じ Agent interaction を続けるには `thread.id` を使用します。
 
 ```bash
 curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: quickstart-send-message-1" \
-  -d '{
-    "events": [
-      {
-        "type": "user_message",
-        "requestId": "quickstart-message-1",
-        "text": "次に行うべき重要な三つの手順を教えてください。"
-      }
-    ]
-  }'
+  -H "Idempotency-Key: durable-turn-1" \
+  -d '{"events":[{"type":"user_message","text":"Read the inputs and write outputs/report.md."}]}'
 ```
 
-現在の Run が input 待ち、または実行中の場合は、`permission_decision` や `user_interrupt` event も送信できます。
-
-## 3. Event log を読み取る
-
-public event を時系列順に読み取ります。
-
 ```bash
-curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events?limit=100" \
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN"
 ```
 
-event log は結果を読み取るための安定した場所です。user message、Agent message delta、thinking delta、tool status、file change、usage update、run status などが含まれます。
+## 復旧、ファイル、利用量
 
-## 4. ファイルを添付する
+アップロードは必須ではありません。ローカル入力には既存の multipart API を使います。
+公開リポジトリでは URL と正確な commit SHA を入力し、環境が許可する場合に Agent がツールで取得できます。
+入力を再現できるよう、実際の commit を記録してください。
 
-最初に Agent へファイルを upload します。
+新しい Session はそれぞれ独立した実行ワークスペースを持ちます。Agent は任意のプリセットであり、Session 間でマシンやワークスペースを共有しません。既存の共有 Session には別途検証された移行が必要です。新しい Session の作成はその移行を実行しません。
+
+Run が成功するとワークスペースとネイティブ実行環境の継続状態を確定します。
+コンテナ回収後は同じ Session が確定済み状態を復元します。復元できなければ明示的に失敗し、
+新しい空のワークスペースで継続を装いません。`outputs/` 外のファイルも非公開の状態として保持できます。
+失敗やキャンセルは新しい成功チェックポイントになりません。
+
+正式な Session と API で使用した Session は、非アクティブな期間だけでは期限切れになりません。同じ Session ID に次の入力を送り、受付時の設定と確定済みワークスペース・ネイティブコンテキストを継続します。古いスナップショットに記録された復旧期限は継続を妨げません。
+
+明示的にクリーンアップを有効にした Cloud のデバッグ Preview のみ、メッセージ・Run・ファイルの操作が 30 日間ない場合に削除されることがあります。コンソールへのログインや履歴の閲覧では期間を更新しません。このルールは正式な API Session には適用されません。別途審査された移行対象の古い Session は、履歴と保存済みファイルを残して読み取り専用になる場合があります。完全削除は別の明示的な操作です。
+
+時計を進めたテストや短時間の強制コールドテストは、実際に数日経過した後の継続性を証明しません。移行した既存 Session を利用する前に、対象環境の検証結果を確認してください。
+
+利用量は ID 順です。`nextCursor` を `after` に渡し、`null` で終了します。
+未報告の値は `null` で、ゼロではありません。`reportedCostUsd` は実行環境の推定値であり請求額ではありません。
+キャッシュと token の集計前に `usageContract` を確認してください。実行中の観測値は再取得で更新されることがあります。
+
+同一リクエストの再試行では同じ `Idempotency-Key` を使い、新しい処理には新しいキーを使います。
+同じキーで内容・指示・モデル・設定元を変更すると競合します。同じ Project を明示する CLI ログインと Project キーは冪等性境界を共有します。コミット後に中断した作成は、プリセットが編集・削除されても元の Session を復元します。同じ Session の並行処理は拒否されるため、現在の Run を待つか中断してください。
+
+CLI では `public-thread-api-v2` を選択します。v1 は `public-thread-api` のままです。
+両方でアップロード、待機、transcript を利用できます。更新後は対象環境にログインして v2 を設定します。
+ログアウト済みの認証情報が自動復元されることはありません。[v2 API リファレンス](/docs/ja/api-reference-v2)。
+
+上の作成リクエストと同じ JSON を `session.json` に保存します。更新した v2 CLI では Project を明示し、JSON で inline 設定または Agent プリセットを選びます。入力ファイルを添付する場合は、アップロードで返された ID を `resources` に追加します。
 
 ```bash
-printf '顧客から実装計画を求められています。' > brief.txt
-
-curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/files" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -F "file=@brief.txt;type=text/plain"
+mosoo public-thread-api-v2 files upload --project-id "$MOSOO_PROJECT_ID" --file ./input.csv -o json
+mosoo public-thread-api-v2 threads create --project-id "$MOSOO_PROJECT_ID" --file ./session.json -o json
 ```
 
-response から `file.id` をコピーします。
-
-```bash
-export MOSOO_FILE_ID="01J0000000000000000000000J"
-```
-
-後続の user message とともにファイルを送信します。
-
-```bash
-curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: quickstart-file-message-1" \
-  -d '{
-    "events": [
-      {
-        "type": "user_message",
-        "requestId": "quickstart-file-message-1",
-        "resources": [
-          {
-            "type": "file",
-            "file_id": "01J0000000000000000000000J"
-          }
-        ],
-        "text": "添付ファイルを要約してください。"
-      }
-    ]
-  }'
-```
-
-最初の user message にファイルを含めるには、step 1 より前に upload し、create-Thread request に同じ `resources` array を追加します。
-
-<Cards>
-  <Card title="Thread と Run" href="/docs/ja/threads-and-runs">
-    Thread と Run の lifecycle state を理解します。
-  </Card>
-  <Card title="イベントとストリーミング" href="/docs/ja/events-and-streaming">
-    snapshot を読み取るか、SSE で Thread event を stream します。
-  </Card>
-  <Card title="ファイル" href="/docs/ja/files">
-    ファイルを upload して Thread message に mount します。
-  </Card>
-  <Card title="エラーと制限" href="/docs/ja/errors-and-limits">
-    retry、idempotency conflict、rate limit、invalid request を処理します。
-  </Card>
-</Cards>
+このリリースは Project に設定した利用者自身のモデルアカウント（BYOK）を使い、モデル提供元がそのアカウントに課金します。今回のリリースにはターン別の金額上限は含まれません。利用量と推定費用の記録は引き続き利用できます。プラットフォームによるモデル提供、チャージ、商用の従量課金は別の将来スコープであり、今回の Session API リリースの前提ではありません。既存顧客の移行は別途審査する操作であり、これらの API が自動実行するものではありません。
