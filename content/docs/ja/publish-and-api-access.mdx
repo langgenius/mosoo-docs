@@ -3,6 +3,8 @@ title: "公開と API access"
 description: "Agent を公開し、Thread、API、coding-agent の提供方法を選択します。"
 ---
 
+このページの例は v1 の公開済み Agent API を使用します。harness の直接実行と任意のプリセットには、[v2 クイックスタート](/docs/ja/quickstart)を参照してください。
+
 公開すると draft 設定の snapshot が作られ、各提供方法が利用可能になります。
 
 ![Publish menu には Thread、API Access、coding-agent instructions が表示されます。](/docs/images/product/publish-agent.png)
@@ -13,7 +15,7 @@ description: "Agent を公開し、Thread、API、coding-agent の提供方法�
 2. **Publish** を開いて draft を公開します。
 3. live-version badge と version summary を確認します。
 
-最初の公開時に Agent タイプが固定されます。新しい session は現在の live version を使用し、進行中の session は元のバージョンを使い続けます。
+Publish は v1 などの公開済み設定を使うフローの live 設定を選択します。v2 の直接実行と保存済みプリセットには不要です。既存 Session は作成時に受け付けた設定を維持します。
 
 ## Thread を開始する
 
@@ -28,7 +30,7 @@ Publish menu の **API Access** で prefix のない ULID Agent ID をコピー�
 token は `Authorization: Bearer` header でのみ使用してください。API access は Thread の作成と再開を行います。Agent の作成、編集、公開は行いません。
 
 <Cards>
-  <Card title="API クイックスタート" href="/docs/ja/quickstart">curl で Thread を作成します。</Card>
+  <Card title="API クイックスタート" href="/docs/ja/quickstart-v1">curl で Thread を作成します。</Card>
   <Card title="認証とアクセス" href="/docs/ja/auth-and-access">token と Agent access を理解します。</Card>
   <Card title="API リファレンス" href="/docs/ja/api-reference">Public Thread API のすべての operation を参照します。</Card>
 </Cards>

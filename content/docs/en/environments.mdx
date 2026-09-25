@@ -15,7 +15,7 @@ Open **Config → Environments → Create environment**, then configure:
 - **Packages** from public npm or PyPI with exact versions.
 - **Setup script** that runs after prepared packages are restored.
 - **Environment variables**, whose values are encrypted after save.
-- **Network policy**: Full internet access or Limited access with a domain allowlist for Task Agents.
+- **Network policy**: Full internet access or Limited access with a domain allowlist.
 
 You can also create one from project dependency files with:
 
@@ -32,7 +32,7 @@ Make an Environment the Project default or select one on a specific Agent. A new
 - **Full** keeps direct internet access enabled.
 - **Limited** disables direct internet access and filters outbound HTTP/HTTPS traffic through a domain allowlist. The allowlist includes the Environment's allowed domains and the endpoints mosoo needs for runtime control and artifact storage.
 
-Limited is supported only for **Task Agents** with session-scoped sandboxes. **Assistant Agents** share a sandbox across sessions and require Full. The runtime applies the policy before starting the sandbox and keeps it fixed for that session; start a new session to use a different policy.
+Limited access uses a domain allowlist for the Session-owned sandbox. The policy is applied before execution and stays fixed for that Session. Create a new Session to use a different policy.
 
 If Limited cannot be enforced, the runtime rejects sandbox startup rather than falling back to unrestricted access. This includes local development with HTTPS interception disabled. Limited also rejects `HTTP_PROXY`, `HTTPS_PROXY`, and `ALL_PROXY` environment variables, including lowercase variants.
 

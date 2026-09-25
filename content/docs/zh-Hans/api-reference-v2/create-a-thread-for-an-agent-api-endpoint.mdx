@@ -1,0 +1,31 @@
+---
+title: 为 Agent API Endpoint 创建 Thread
+description: "从最新保存的私有 Agent 创建持久 Thread。无需发布或提供 userId。输入和文件可选。该 Thread 的接纳配置被冻结；后续 Agent 修改仅影响新 Thread。"
+full: true
+_openapi:
+  preload:
+    - zh-Hans-v2
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          从最新保存的私有 Agent 创建持久 Thread。无需发布或提供 userId。输入和文件可选。该 Thread 的接纳配置被冻结；后续
+          Agent 修改仅影响新 Thread。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans-v2" operations={[{"path":"/agents/{agentId}/threads","method":"post"}]} showDescription />
+    </>
+  );
+}

@@ -1,19 +1,13 @@
 ---
 title: "Agent を設定"
-description: "Agent の識別情報、タイプ、runtime、モデル、指示、tool、Environment を設定します。"
+description: "指示・モデル・ツール・Environment 設定を再利用します。"
 ---
 
 Agent を開くと、ライブ Preview pane と並べて設定できます。
 
-![Agent editor ではテストと設定を一つの workspace で行えます。](/docs/images/product/configure-agent.png)
+## 名前と説明
 
-## 識別情報とタイプ
-
-- **Name and description** はリスト、Thread、提供先で Agent を識別します。
-- **Assistant Agent** は session 間で作業 Environment を維持します。
-- **Task Agent** は Run ごとにクリーンな Environment で開始します。
-
-タイプを変更できるのは最初の公開前だけです。
+Name と description は任意の Agent プリセットを一覧や提供画面で識別するためのものです。実行状態は各 Session に属し、Agent タイプは選択しません。
 
 ## Runtime とモデル
 
@@ -33,8 +27,8 @@ Agent の役割、境界、回答スタイル、確認が必要な条件を記�
 
 ## Environment
 
-package、setup script、変数、network policy をまとめた再利用可能な runtime template を選びます。Agent に明示的な Environment がない場合は Project default が適用されます。新しい session は選択した Environment revision を固定して使用します。Task Agent は Full または Limited のネットワークアクセスを利用でき、Assistant Agent には Full が必要です。詳しくは [Environment のネットワークポリシー](/docs/ja/environments#ネットワークポリシー)を参照してください。
+package・setup script・変数・network policy を含む再利用可能な環境を選択します。未指定なら Project default を使い、新しい Session は選択した revision を固定します。Session 単位の実行では Full と Limited の両方を利用できます。[Environment のネットワークポリシー](/docs/ja/environments#network-policies)を参照してください。
 
 ## 保存と公開の動作
 
-draft の編集は Preview に反映されます。公開すると、以後の session 向けに新しい live version が作成されます。既存 session の設定が暗黙に切り替わることはありません。
+保存した編集はプリセットを使用する新しい Session に適用されます。既存 Session は受付時の設定を保持します。Publish は v1 などの公開済み設定を使うフローの live version を作成します。

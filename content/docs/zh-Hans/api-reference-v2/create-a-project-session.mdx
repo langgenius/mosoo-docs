@@ -1,0 +1,31 @@
+---
+title: 创建 Project Session
+description: "显式传入 inline harness、模型和指令，或引用该 Project 内可选的 Agent 预设，创建持久 Session。须配置 Project 模型凭据；输入和文件可选。创建时固定实际配置，不会创建隐藏 Agent；后续任务沿用返回的 Thread ID。"
+full: true
+_openapi:
+  preload:
+    - zh-Hans-v2
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          显式传入 inline harness、模型和指令，或引用该 Project 内可选的 Agent 预设，创建持久 Session。须配置
+          Project 模型凭据；输入和文件可选。创建时固定实际配置，不会创建隐藏 Agent；后续任务沿用返回的 Thread ID。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans-v2" operations={[{"path":"/projects/{projectId}/threads","method":"post"}]} showDescription />
+    </>
+  );
+}

@@ -1,0 +1,31 @@
+---
+title: 上传 Agent file
+description: "在 Thread 创建前，将文件上传到 Agent API Endpoint 所属 Project 的 draft scope。将返回的文件 ID 用于 create-thread 或 send-events 的 resources。"
+full: true
+_openapi:
+  preload:
+    - zh-Hans-v2
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          在 Thread 创建前，将文件上传到 Agent API Endpoint 所属 Project 的 draft scope。将返回的文件
+          ID 用于 create-thread 或 send-events 的 resources。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="zh-Hans-v2" operations={[{"path":"/agents/{agentId}/files","method":"post"}]} showDescription />
+    </>
+  );
+}

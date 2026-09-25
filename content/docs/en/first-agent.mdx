@@ -1,9 +1,9 @@
 ---
-title: "Create your first Agent"
-description: "Configure, test, and publish an Agent from the mosoo console."
+title: "Save an Agent preset"
+description: "Save and test reusable instructions, tools and environment configuration."
 ---
 
-This guide takes you from an empty Project to a published Agent.
+Use an Agent when you want to reuse configuration. For execution without a preset, start with the [API quickstart](/docs/quickstart).
 
 ## 1. Open a Project
 
@@ -29,17 +29,15 @@ Open **Agents → Create agent**, enter a name, and choose a runtime.
 
 ## 4. Configure behavior
 
-In **Preview**, choose **Assistant Agent** or **Task Agent**, then set the model and system prompt. Add Skills, MCP servers, or a custom Environment only when the Agent needs them.
+In **Preview**, set the model and system prompt. Add Skills, MCP servers or a custom Environment only when the preset needs them.
 
-![Agent Preview combines live testing with the configuration editor.](/docs/images/product/configure-agent.png)
+## 5. Test the preset
 
-## 5. Test before publishing
+Send a representative task in the left Preview pane. Verify the answer, tool calls, files, and failure behavior. Use **Logs** for execution details and **Cost** for model usage.
 
-Send a representative task in the left Preview pane. Verify the answer, tool calls, files, and failure behavior. Use **Logs** for execution details and **Cost** for model usage. Assistant Agents also expose a **Terminal** and reset controls for their working environment.
+## 6. Reuse the saved preset
 
-## 6. Publish
-
-Open **Publish** and publish the draft. The first publish locks the Agent type. Later sessions start on the current published version; existing sessions keep the version they started with.
+Save the preset for use with `configuration: {type: "agent", agent_id: "your Agent ID"}` in v2. Publishing remains optional for this path. To use a published delivery flow, open **Publish** and publish the draft; existing Sessions keep their admitted configuration.
 
 After publishing, choose a delivery surface:
 

@@ -1,50 +1,39 @@
 ---
 title: "mosoo ドキュメント"
-description: "mosoo でマネージド AI Agent を構築、実行、公開、統合します。"
+description: "agent harness を直接呼び出し、永続 Session で作業を継続します。"
 ---
 
-mosoo は、AI Agent の設定、実際のタスクによるテスト、安定版の公開、Run とファイルの運用、Public Thread API を通じた統合を一つのワークスペースで提供します。
+Project API key (`msp_`)で harness・モデル・指示を選び、入力とファイルを永続 Session に送ります。Agent は任意の再利用可能なプリセットです。Project に自身のモデルプロバイダー認証情報を設定します。
 
 <Cards>
-  <Card title="最初の Agent を作成" href="/docs/ja/first-agent">Provider を設定し、Agent を作成、テスト、公開します。</Card>
-  <Card title="製品ツアー" href="/docs/ja/product-tour">Project、Agent、Thread、Run、提供方法の関係を理解します。</Card>
-  <Card title="CLI のセットアップ" href="/docs/ja/cli/overview">CLI をインストールしてサインインし、クラウドの準備状態を確認します。</Card>
-  <Card title="API クイックスタート" href="/docs/ja/quickstart">バックエンドから curl で公開済み Agent を呼び出します。</Card>
+  <Card title="API クイックスタート" href="/docs/ja/quickstart">Agent を作成せずに Session を開始・継続します。</Card>
+  <Card title="CLI の設定" href="/docs/ja/cli/overview">CLI をインストールし、Project を選択します。</Card>
+  <Card title="Agent プリセットを保存" href="/docs/ja/first-agent">指示・ツール・環境設定を再利用します。</Card>
+  <Card title="Session の継続" href="/docs/ja/durable-sessions-v2">ファイル・復旧・v1 互換性を確認します。</Card>
 </Cards>
 
-## 直接回答
+## 実行モデル
 
-- **mosoo とは？** mosoo は Coding Agent 向けのオープンソース Agent runtime と API です。公開済み Agent の周りに、ホストされた Thread、ファイル、sandbox 実行、tool event、API access を提供します。
-- **最初に何を読むべきですか？** まず[最初の Agent を作成](/docs/ja/first-agent)を読み、信頼されたバックエンドから公開済み Agent を呼び出す段階で [API クイックスタート](/docs/ja/quickstart)に進みます。
-- **Public Thread API とは？** 公開済み Agent と対話するための backend API です。Thread の作成と再開、event の読み取りや streaming、ファイル転送を行います。
-- **credential はどこに置くべきですか？** Agent と同じ Project の Project API key（`msp_`）を使用し、信頼されたサーバーまたは automation runner に保存します。旧 account token は拒否されます。ブラウザやモバイル client は自分の backend を呼び、backend が mosoo を呼び出します。
+- **Project** は認証情報・Session・任意の Agent プリセット・利用量を管理します。
+- **Harness** は Session のワークスペース内でモデルとツールを実行します。
+- **Session** は受付時の設定・会話・作業ファイルを保持します。続きの入力には同じ公開 Thread ID を使います。
+- **Run** は一つの実行ターンで、個別の結果・イベント・利用量を記録します。
 
-## ソースと検証
+Session ごとに実行状態を分離し、Assistant/Task タイプは選択しません。正式な Session は非アクティブであるだけでは失効しません。Cloud のデバッグ Preview には別の 30 日ルールがあります。
 
-- [GitHub ソース](https://github.com/langgenius/mosoo)でオープンソース runtime と license を確認できます。
-- [API リファレンス](/docs/ja/api-reference)は OpenAPI contract から生成された Public Thread API を説明します。
-- [OpenAPI 3.1](https://cloud.mosoo.ai/api/v1/openapi.json)は機械可読な API source です。
-- [llms.txt](/docs/llms.txt) と [llms-full.txt](/docs/llms-full.txt)は AI answer engine 向けの簡潔版と完全版のドキュメント index です。
+## 設定と運用
 
-## 構築
+- [モデルプロバイダーの認証情報](/docs/ja/providers-and-models)を追加します。
+- 必要に応じて [Agent 設定](/docs/ja/agent-configuration)、[Skills と MCP](/docs/ja/skills-and-mcp)、[Environment](/docs/ja/environments)を再利用します。
+- [プリセットをテスト](/docs/ja/test-and-debug)し、[Run・ファイル・利用量](/docs/ja/operations)を確認します。
+- [Project と Session の概念](/docs/ja/concepts)を参照してください。
 
-- [Project の境界と Agent タイプ](/docs/ja/concepts)を選択します。
-- [Provider の認証情報とモデル](/docs/ja/providers-and-models)を追加します。
-- Agent の[識別情報、runtime、指示、Skill、MCP、Environment](/docs/ja/agent-configuration)を設定します。
-- 公開前に[プレビューとデバッグ](/docs/ja/test-and-debug)を行います。
+## API バージョンと資料
 
-## 公開と運用
+新しい連携には [v2 API リファレンス](/docs/ja/api-reference-v2)を使います。公開済み Agent を使う既存の連携では、[v1 クイックスタート](/docs/ja/quickstart-v1)、[v1 リファレンス](/docs/ja/api-reference)、同じ Thread/Run ID を引き続き使用できます。Publish が必要なのは公開済み設定を選ぶフローだけです。
 
-- [Agent を公開して API access を有効化](/docs/ja/publish-and-api-access)します。
-- [Run、ファイル、使用量](/docs/ja/operations)を確認します。
-- [インポート、エクスポート、fork、バージョン履歴](/docs/ja/import-export-versions)で設定を再利用します。
+対象環境が記載の v2 ルートを提供していることを確認してください。このリリースガイドは Cloud 本番への提供を保証しません。Project API key (`msp_`)はバックエンドに保持し、アプリケーション利用者の認証はバックエンドが行います。
 
-## 統合
+[ソース](https://github.com/langgenius/mosoo)、[llms.txt](/docs/llms.txt)、[llms-full.txt](/docs/llms-full.txt)から実装とドキュメント索引を参照できます。
 
-Public Thread API は、公開済み Agent と対話するための API です。Thread の作成と再開、イベントの読み取りやストリーミング、ファイル転送を行えます。Agent の作成と設定は引き続き console または CLI で行います。
-
-<Cards>
-  <Card title="API の基本概念" href="/docs/ja/threads-and-runs">Thread と Run のライフサイクルを理解します。</Card>
-  <Card title="API リファレンス" href="/docs/ja/api-reference">自動生成された request と response の schema を参照します。</Card>
-  <Card title="エラーと制限" href="/docs/ja/errors-and-limits">安全な再試行と失敗状態の処理を実装します。</Card>
-</Cards>
+現在の v1 契約は [OpenAPI](https://cloud.mosoo.ai/api/v1/openapi.json) で確認できます。

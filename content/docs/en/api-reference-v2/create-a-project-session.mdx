@@ -1,0 +1,34 @@
+---
+title: Create a Project Session
+description: "Create a durable Session from explicit inline harness/model/instructions, or an optional saved Agent preset in this Project."
+full: true
+_openapi:
+  preload:
+    - en-v2
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          Create a durable Session from explicit inline
+          harness/model/instructions, or an optional saved Agent preset in this
+          Project. Project model credentials are required. Input and files are
+          optional. Creation freezes the effective configuration and never
+          creates a hidden Agent; follow-ups use the returned Thread ID.
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="en-v2" operations={[{"path":"/projects/{projectId}/threads","method":"post"}]} showDescription />
+    </>
+  );
+}

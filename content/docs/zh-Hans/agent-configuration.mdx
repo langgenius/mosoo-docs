@@ -1,19 +1,13 @@
 ---
 title: "配置 Agent"
-description: "设置 Agent 身份、类型、runtime、模型、指令、工具和 Environment。"
+description: "保存可复用的指令、模型、工具和 Environment 配置。"
 ---
 
 打开 Agent 后，可以在同一个工作区中编辑配置并即时 Preview。
 
-![Agent editor 将测试区与配置区并列展示。](/docs/images/product/configure-agent.png)
+## 身份
 
-## 身份与类型
-
-- **Name 与 description** 用于 Agent 列表、Thread 和交付界面。
-- **Assistant Agent** 在 session 间保留工作环境。
-- **Task Agent** 每次 Run 都从干净环境开始。
-
-Agent type 只能在首次发布前修改。
+Name 与 description 用于在列表和交付入口中识别可选的 Agent 预设。执行状态属于各个 Session，不再选择 Agent 类型。
 
 ## 运行时与模型
 
@@ -33,8 +27,8 @@ Agent type 只能在首次发布前修改。
 
 ## 环境
 
-选择用于 packages、setup script、variables 和网络策略的 runtime template。Agent 未显式选择时使用 Project default。新 session 会冻结启动时选中的 Environment revision。Task Agent 支持 Full 或 Limited 网络访问；Assistant Agent 必须使用 Full。详见 [Environment 网络策略](/docs/zh-Hans/environments#网络策略)。
+选择用于 packages、setup script、variables 和网络策略的可复用环境模板。未显式选择时使用 Project default，新 Session 固定选中的版本。Full 和 Limited 均适用于 Session 独立执行，详见 [Environment 网络策略](/docs/zh-Hans/environments#network-policies)。
 
 ## 保存与发布
 
-Draft 改动影响 Preview；发布会创建供未来 session 使用的新 live version。已有 session 不会静默切换配置。
+保存后的修改用于新建的预设 Session，已有 Session 保持接纳时的配置。Publish 为 v1 及其他发布型交付流程创建 live 版本。

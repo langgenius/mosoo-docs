@@ -63,3 +63,43 @@ test('OpenAPI provenance binds the normalized snapshot to upstream Mosoo', () =>
   assert.equal(provenance.upstreamRepository, 'https://github.com/langgenius/mosoo');
   assert.match(provenance.upstreamSha, /^[0-9a-f]{40}$/);
 });
+
+
+test('v2 snapshots retain optional identity, usage semantics and independent doc IDs', () => {
+  for (const language of ['en', 'zh-Hans', 'ja']) {
+    const document = JSON.parse(read(`public/docs/openapi/mosoo-openapi.v2.${language}.generated.json`));
+    const create = document.paths['/agents/{agentId}/threads'].post;
+    assert.equal(create.requestBody.required, false);
+    assert.deepEqual(document.components.schemas.CreateThreadRequest.required, []);
+    assert.deepEqual(document.components.schemas.ThreadSummary.properties.userId.type, ['string', 'null']);
+    const usage = document.paths['/threads/{threadId}/usage'].get;
+    assert.ok(usage.parameters.some((parameter) => parameter.name === 'after'));
+    const entry = document.components.schemas.ThreadUsageResponse.properties.usage.items;
+    assert.deepEqual(entry.properties.reportedCostUsd.type, ['number', 'null']);
+    assert.match(read(`content/docs/${language}/api-reference-v2/read-thread-usage.mdx`), new RegExp(`document="${language}-v2"`));
+    assert.ok(read(`content/docs/${language}/api-reference/index.mdx`).length > 0);
+  }
+  const provenance = JSON.parse(read('public/docs/openapi/mosoo-openapi.provenance.json'));
+  assert.equal(provenance.normalizedOpenApiV2Sha256, createHash('sha256').update(read('public/docs/openapi/mosoo-openapi.v2.en.generated.json')).digest('hex'));
+});
+
+
+test('direct Project creation has explicit exclusive configuration and no required Agent', () => {
+  for (const language of ['en', 'zh-Hans', 'ja']) {
+    const document = JSON.parse(read(`public/docs/openapi/mosoo-openapi.v2.${language}.generated.json`));
+    const create = document.paths['/projects/{projectId}/threads'].post;
+    assert.equal(create.requestBody.required, true);
+    const request = document.components.schemas.CreateProjectThreadRequest;
+    assert.deepEqual(request.required, ['configuration']);
+    const [inline, preset] = document.components.schemas.ThreadConfiguration.oneOf;
+    assert.deepEqual(inline.required, ['type', 'harness', 'provider', 'model', 'instructions']);
+    assert.deepEqual(preset.required, ['type', 'agent_id']);
+    assert.equal(inline.additionalProperties, false);
+    assert.equal(preset.additionalProperties, false);
+    assert.ok(document.paths['/projects/{projectId}/files'].post);
+    assert.equal(document.components.schemas.ThreadSummary.properties.agent_id.type.includes('null'), true);
+    assert.equal(document.components.schemas.ThreadSummary.properties.kind, undefined);
+    assert.match(read(`content/docs/${language}/quickstart-v1.mdx`), /\/agents\/\$MOSOO_AGENT_ID\/threads/);
+    assert.match(read(`content/docs/${language}/quickstart.mdx`), /\/projects\/\$MOSOO_PROJECT_ID\/threads/);
+  }
+});

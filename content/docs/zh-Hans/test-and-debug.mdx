@@ -3,7 +3,7 @@ title: "预览与调试"
 description: "测试 Agent，并检查 Logs、Cost、Terminal 和工作状态。"
 ---
 
-使用 Agent workspace 在发布前测试 draft 配置。
+使用 Agent workspace 在 Preview Session 中测试可选的 Agent 预设。
 
 ## 预览
 
@@ -15,7 +15,7 @@ description: "测试 Agent，并检查 Logs、Cost、Terminal 和工作状态。
 - 信息不足时的追问行为；
 - tool、credential 或 Environment 的失败路径。
 
-Draft 变更会立即作用于 Preview。绿色 **Ready** 表示 editor 可以接收任务，并不代表所有外部依赖都工作正常。
+保存后的预设修改用于新 Session。测试新配置时请新建 Preview。Cloud 调试 Preview 可能在 30 天没有消息、Run 或文件活动后被清理，登录控制台和读取历史不会续期。正式 API Session 不采用这项到期规则。
 
 ## 日志
 
@@ -25,9 +25,9 @@ Draft 变更会立即作用于 Preview。绿色 **Ready** 表示 editor 可以�
 
 打开 **Cost** 查看 Agent 级用量估算、model mix 和最近 usage event。Production 与 Debug 可分开过滤。Cost 是模型调用估算，不是 Provider invoice。
 
-## 终端与重置
+## Session 维护
 
-Assistant Agent 因为可跨 session 保留环境，所以提供 Terminal 和工作状态控制。只有在确实需要干净状态时才 reset；它可能移除本地 workspace 状态、cache 或 sign-in。Task Agent 每次 Run 都从干净环境开始，不提供相同的持久控制。
+维护操作只针对选中的 Session。重启 Driver 或重建沙箱会保留已提交的工作区与原生续接状态，其他 Session 不会继承它。无关工作应新建 Session；检查点失败或未提交时，需先解决该问题再继续执行或维护。
 
 ## 常见问题定位
 
@@ -35,4 +35,4 @@ Assistant Agent 因为可跨 session 保留环境，所以提供 Terminal 和工
 2. **Model unavailable**：检查 Provider model list 与 endpoint compatibility。
 3. **MCP tool failed**：确认连接已启用并授权，再直接测试工具任务。
 4. **Environment startup failed**：检查精确 package version、setup script 和必需 variables。
-5. **旧 session 行为不同**：创建新 session 以使用当前 published version。
+5. **保存的修改没有出现在已有 Session 中**：Session 创建时会固定配置。测试修改后的配置请新建 Preview。

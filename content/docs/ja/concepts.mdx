@@ -1,37 +1,28 @@
 ---
-title: "Project、Agent、runtime"
-description: "mosoo のオープンソース Agent runtime が Project、Agent、Thread、Run、sandbox driver で Coding Agent を支える仕組み。"
+title: "Project・harness・Session"
+description: "harness の直接実行、任意の Agent プリセット、永続 Session の状態を理解します。"
 ---
 
-mosoo は Coding Agent 向けのオープンソース Agent runtime です。Claude Agent SDK、OpenAI Runtime、OpenCode Agent を一つのプロダクトモデルで実行し、永続的な Thread、Run、event、file、API access を提供することで、アプリ側が sandbox、lifecycle、provider layer を作り直さずに済むようにします。
+## Project の境界
 
-## Project は分離の境界
+Project はモデル認証情報・Session・ファイル・再利用設定・利用量を分離します。同じアカウントが所有していても、Project キーから別の Project にはアクセスできません。現在の Alpha は単一所有者向けで、チームロール・招待・所有権移転は提供していません。
 
-Project は Agent、ファイル、設定リソース、使用量を分離します。Project を切り替えると console に表示されるリソースも変わります。現在の Alpha は単一オーナー向けであり、Organization のチームロール、招待、所有権移管は利用できません。
+## Harness と設定
 
-## Agent タイプは継続性を決める
+直接実行では、対応する harness・provider・model・instructions を選択します。Agent は指示・ツール・環境を再利用する任意の保存済みプリセットです。inline フィールドとプリセットを混在させず、設定元を一つ選びます。
 
-| タイプ | Runtime state | 適した用途 |
-| --- | --- | --- |
-| **Assistant Agent** | session 間で安定した作業 Environment を維持します。再構築時に選択した workspace と memory は保持されますが、ローカルのサインインや cache が失われる場合があります。 | 継続性が役立つアシスタント、copilot、反復作業。 |
-| **Task Agent** | Thread ごとに state を分離します。成功した Run の作業ディレクトリと provider resume state を保存し、同じ Thread の後続 Run で復元します。 | レビュー、triage、webhook、独立した batch task。 |
+実行環境には Claude Agent SDK・OpenAI Runtime・OpenCode があります。選択した runtime とモデルが利用できる認証情報を Project に設定してください。利用できない設定は明示的に失敗し、別の harness やモデルへ自動で切り替えません。
 
-新しい Thread は分離された state で開始します。Task Run の成功後、Thread の作業ディレクトリ全体と provider resume state の保存が完了してから次のターンを開始します。cold continuation は checkpoint を復元し、保存失敗時は空の環境で続けず後続ターンを拒否します。checkpoint は少なくとも 20 日間復元可能で、archive 後も保持され、Thread の完全削除時に削除されます。実行中の process、socket、一時 credential、添付ファイルの mount は含みません。導入前の Thread は最初の checkpoint 保存成功まで記録済み artifact を復元できます。
+## Session の状態と継続
 
-新しい Agent は Assistant Agent として作成されます。draft の間はタイプを変更できますが、最初の公開時に固定されます。元の Agent を変えずにタイプを変更するには fork します。
+各 Session は独立したワークスペースを持ちます。Agent タイプは選択せず、新しい Session 間で Agent のマシンを共有しません。Session は受付時の設定を保持し、プリセットの編集は新しい Session に適用されます。
 
-## Runtime は Agent driver
+成功した Run は完了前に作業ファイルとネイティブ継続状態を確定します。コンテナ回収後も同じ Session と確定済み状態を使用します。実行中のプロセス・socket・一時認証情報は永続状態ではありません。復旧状態がない場合、空のワークスペースや新しい Session は元の作業の継続にはなりません。
 
-runtime は Agent の実行方法と解決する Provider credential を決めます。runtime の選択は Agent タイプとは独立しています。
+正式な Session と API で使用した Session には、繰り返し適用される非アクティブ期限はありません。archive は状態を保持し、完全削除はデータを削除します。Cloud デバッグ Preview のみ、明示的な 30 日ルールを使用できます。既存の共有 Session と審査済みの読み取り専用移行対象には、個別に検証された移行が必要です。[Session の継続](/docs/ja/durable-sessions-v2)を参照してください。
 
-- **Claude Agent SDK** は Anthropic を使用します。
-- **OpenAI Runtime** は OpenAI または互換性のある Responses API endpoint を使用します。
-- **OpenCode** は独自 runtime と互換性のある Provider 設定をサポートします。
+## Thread・Run・公開バージョン
 
-## Thread と Run
+Thread は永続 Session の公開 API リソース名です。Run は状態・イベント・ファイル・利用量を持つ一つのターンです。別の作業には新しい Session を作成し、続きの作業には同じ ID を使います。
 
-Thread は一つの Agent に対する永続的な対話記録です。新しいタスクや再開時の返信によって Run が開始されます。Thread は履歴を保持し、非同期に再度開くことができます。Run は status、イベント、ファイル、ログ、使用量を持つ一回の実行です。
-
-## 公開バージョン
-
-公開すると Agent 設定の snapshot が作成されます。新しい session は現在の live version を使用し、既存 session は開始時のバージョンを使い続けます。現在、version history は読み取り専用であり、過去設定の完全な復元や並列比較は利用できません。
+v2 の直接実行には Publish は不要です。保存済みプリセットを使う新しい Session は、その設定を読み込み固定します。v1 互換 API は公開済み設定と必須の `userId` を維持します。Publish は旧提供フロー用の設定を保存し、既存 Session は変更しません。

@@ -1,0 +1,24 @@
+---
+title: "Session 续接与 API 版本"
+description: "Session 续接与 API 版本"
+---
+
+Project key 可以直接调用 harness，Agent 是可选的已保存预设。新接入请从 [API 快速开始](/docs/zh-Hans/quickstart) 开始；已有发布型 Agent 集成可继续使用 [v1 快速开始](/docs/zh-Hans/quickstart-v1) 和 [v1 参考](/docs/zh-Hans/api-reference)。
+
+## 选择配置来源
+
+使用 inline 的 `harness`、`provider`、`model`、`instructions`，或 `configuration: {type: "agent", agent_id: "Agent ID"}`，不要混合两种来源。Session 固定接纳时的配置，后续编辑预设只影响新 Session。直调返回 `agent_id: null`。v2 摘要不再包含 Pet/Cattle 的 `kind`，v1 保留历史兼容字段。
+
+## 续接同一个 Session
+
+后续输入沿用同一个 Thread/Session ID。成功轮次必须先提交工作区和原生续接状态，再报告完成。`outputs/` 外的文件可以是私有工作状态，公开产物通过文件接口读取。失败或取消的轮次保留真实结果；新 ID 或重放摘要不能代替恢复原上下文。
+
+正式会话和已用于 API 的 Session 不因闲置到期。间隔一段时间后，继续向同一个 Session ID 发送输入，沿用已接纳的配置及已提交的工作区、原生上下文；旧快照记录的恢复期限不再阻止续接。
+
+只有明确启用清理策略的 Cloud 调试 Preview，才可能在 30 天没有消息、Run 或文件活动后被清理。登录控制台和读取历史不会续期，这个规则不影响正式 API Session。另行审阅的存量迁移会话可能变为只读，同时保留历史和已保存文件；永久删除仍是单独操作。
+
+模拟时间或短时间强制冷启动测试不能证明真实跨日存续。依赖迁移后的存量会话前，应检查目标部署的验收证据。
+
+## 兼容与发布
+
+v1 保留已发布配置选择和必填 `userId`；v2 支持直调或私有预设、可选的应用用户身份及用量记录。Thread、Run 资源名称保持不变。请匹配 API、CLI 和文档版本；本指南不会执行客户迁移，也不代表 Cloud 生产环境已上线这些能力。
