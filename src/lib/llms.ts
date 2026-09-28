@@ -2,12 +2,12 @@ import { toAbsoluteDocsLink } from './llms-core';
 
 const docsLlmsPreamble = `# mosoo Docs
 
-> Product and developer documentation for building, publishing, operating, and integrating mosoo Agents.
+> Product and developer documentation for invoking agent harnesses and continuing work in durable mosoo Sessions.
 
 ## API version selection
 
 - v1 remains the published-Agent contract below.
-- v2 creates Project-owned Sessions directly from explicit harness/provider/model/instructions with optional files and userId; no Agent is required. Saved private Agents are optional presets. Project-owned model credentials (BYOK) are required. It is undergoing staging acceptance; verify /api/v2/openapi.json on the target before use.
+- v2 is available on Mosoo Cloud and creates Project-owned Sessions directly from explicit harness/provider/model/instructions with optional files and userId; no Agent is required. Saved private Agents are optional presets. Project-owned model credentials (BYOK) are required. Use /api/v2/openapi.json for the deployed contract and CLI v0.4.0 or newer for direct Project Session commands.
 - [Durable sessions with v2](https://mosoo.ai/docs/durable-sessions-v2/)
 - [v2 API reference](https://mosoo.ai/docs/api-reference-v2/)
 - [v2 OpenAPI snapshot](https://mosoo.ai/docs/openapi/mosoo-openapi.v2.en.generated.json)
