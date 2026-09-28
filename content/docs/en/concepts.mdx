@@ -1,37 +1,28 @@
 ---
-title: "Projects, Agents, and runtimes"
-description: "Learn how mosoo's open-source agent runtime uses Projects, Agents, Threads, Runs, and sandbox drivers for coding agents."
+title: "Projects, harnesses, and Sessions"
+description: "Understand direct harness execution, optional Agent presets and durable Session state."
 ---
 
-mosoo is an open-source agent runtime for coding agents. It runs Claude Agent SDK, OpenAI Runtime, and OpenCode agents behind one product model, then exposes durable Threads, Runs, events, files, and API access so applications do not rebuild their own sandbox, lifecycle, or provider layer.
+## Project ownership
 
-## Projects are isolation boundaries
+A Project separates model credentials, Sessions, files, reusable configuration and usage. A Project key cannot access another Project, even when the same account owns both. The current Alpha is single-owner; team roles, invitations and ownership transfer are not available.
 
-A Project keeps its Agents, files, configuration resources, and usage separate. Switching Projects changes the resources visible in the console. The current Alpha is single-owner: organization team roles, invitations, and ownership transfer are not available.
+## Harness and configuration
 
-## Agent types control continuity
+A direct request selects a supported harness, provider, model and instructions. An Agent is an optional saved preset for reusable instructions, tools and environment settings. Choose one configuration source rather than combining inline fields with a preset.
 
-| Type | Runtime state | Best for |
-| --- | --- | --- |
-| **Assistant Agent** | Keeps a stable working environment across sessions. Rebuilds preserve selected workspace and memory, but may lose local sign-ins or caches. | Ongoing assistants, copilots, and repeated work that benefits from continuity. |
-| **Task Agent** | Isolates state by Thread. Successful Runs checkpoint the working directory and provider resume state; later Runs in the same Thread restore that committed state. | Reviews, triage, webhooks, and isolated batch tasks. |
+The available runtime families include Claude Agent SDK, OpenAI Runtime and OpenCode. The Project must contain credentials supported by the selected runtime and model. An unavailable selection fails explicitly rather than silently switching harness or model.
 
-A new Thread starts with isolated state. A successful Task Run commits its complete Thread working directory and provider resume state before a follow-up can start. Cold continuation restores that checkpoint; a failed commit blocks follow-up rather than silently starting empty. Checkpoints remain restorable for at least 20 days, survive archive, and are removed on permanent Thread deletion. Live processes, sockets, temporary credentials, and attachment mounts are not checkpointed. Threads predating the checkpoint rollout can restore recorded artifacts until their first successful checkpointed turn.
+## Session ownership and continuity
 
-New Agents start as Assistant Agents. You can switch type while the Agent is a draft; the first publish locks it. Fork the Agent to change type later without changing the original.
+Each Session has an isolated execution workspace. There is no Agent type to select, and no shared Agent machine for new Sessions. A Session retains its admitted configuration; changing a preset affects new Sessions.
 
-## Runtimes are Agent drivers
+A successful Run commits working files and native continuation before reporting completion. A follow-up uses the same Session and committed state, including after container reclamation. Running processes, sockets and temporary credentials are not durable state. Missing recovery state cannot be replaced with an empty workspace or a new Session without changing the user's task.
 
-The runtime determines how the Agent executes and which Provider credential it resolves. Runtime choice is separate from Agent type:
+Formal and API-used Sessions have no recurring inactivity deadline. Archiving preserves stored state; permanent deletion removes it. Cloud debug Previews alone may use an explicitly recorded 30-day inactivity policy. Existing shared Sessions and reviewed read-only migration cohorts require their own verified transition. See [Session continuity](/docs/durable-sessions-v2).
 
-- **Claude Agent SDK** uses Anthropic.
-- **OpenAI Runtime** uses OpenAI or a compatible Responses API endpoint.
-- **OpenCode** supports its own runtime and compatible Provider configurations.
+## Thread, Run and published versions
 
-## Threads and Runs
+Thread is the public API resource name for a durable Session. A Run is one execution turn with status, events, files and usage. New work uses a new Session; related follow-up keeps the same ID.
 
-A Thread is the durable interaction record for one Agent. Each new task or resumed reply may start a Run. A Thread keeps its history and can be reopened asynchronously. A Run is one execution with status, events, files, logs, and usage.
-
-## Published versions
-
-Publishing snapshots Agent configuration. New sessions use the current live version; an existing session stays on the version it began with. Version history is read-only today: complete historical restore and side-by-side comparison are not available.
+Direct v2 execution does not require publishing. With a saved preset, new v2 Sessions use its saved configuration and freeze it. The v1 compatibility API keeps published/live configuration selection and required `userId`. Publishing snapshots configuration for those older delivery flows; it does not change an admitted Session.

@@ -1,0 +1,24 @@
+---
+title: "Session continuity and API versions"
+description: "Session continuity and API versions"
+---
+
+A Project key can invoke a harness directly; an Agent is an optional saved preset. Start with the [API quickstart](/docs/quickstart). Existing published-Agent integrations can continue using the [v1 quickstart](/docs/quickstart-v1) and [v1 reference](/docs/api-reference).
+
+## Choose a configuration source
+
+Use inline `harness`, `provider`, `model` and `instructions`, or `configuration: {type: "agent", agent_id: "your Agent ID"}`. Do not combine them. The Session freezes its admitted configuration; editing a preset affects new Sessions. Inline Sessions return `agent_id: null`. v2 summaries omit the retired Pet/Cattle `kind`; v1 retains its historical compatibility field.
+
+## Continue one Session
+
+Keep the same Thread/Session ID for follow-up. Successful turns commit the workspace and native continuation before reporting completion. Files outside `outputs/` may remain private workspace state; public artifacts are listed through the file API. A failed or cancelled turn keeps its actual outcome. A new ID or replayed summary is not restoration of the original context.
+
+Formal and API-used Sessions have no inactivity deadline. After an idle interval, send the next input to the same Session ID; its admitted configuration and committed workspace/native context remain the continuation source. Old recorded recovery deadlines are ignored.
+
+Only Cloud debug Previews with an explicit cleanup policy may be removed after 30 days without message, Run or file activity. Console login and history reads do not renew that period. This does not expire formal API Sessions. A separately reviewed legacy Session may be read-only while retaining history and saved files. Permanent deletion remains explicit.
+
+Clock-controlled and forced-cold tests do not establish real elapsed-day survival. Check the target deployment’s acceptance evidence before relying on a migrated legacy Session.
+
+## Compatibility and release
+
+The v1 API keeps published configuration selection and required `userId`. v2 supports direct execution or a private saved preset, optional end-user identity, and recorded usage. The resource names Thread and Run remain. Use matching API, CLI and documentation versions; these guides do not migrate customer data or establish current Cloud production availability.

@@ -1,19 +1,13 @@
 ---
 title: "Configure an Agent"
-description: "Set Agent identity, type, runtime, model, instructions, tools, and Environment."
+description: "Save reusable instructions, model, tools and Environment configuration."
 ---
 
 Open an Agent to configure it alongside the live Preview pane.
 
-![The Agent editor keeps testing and configuration in one workspace.](/docs/images/product/configure-agent.png)
+## Identity
 
-## Identity and type
-
-- **Name and description** identify the Agent in lists, Threads, and delivery surfaces.
-- **Assistant Agent** keeps a working environment across sessions.
-- **Task Agent** starts each Run in a clean environment.
-
-You can change type only before the first publish.
+Name and description identify the optional Agent preset in lists and delivery surfaces. Execution state belongs to each Session; there is no Agent type to select.
 
 ## Runtime and model
 
@@ -33,8 +27,8 @@ Attach authorized Remote HTTPS MCP connections from the active Project. A connec
 
 ## Environment
 
-Choose the reusable runtime template for packages, setup script, variables, and network policy. If the Agent has no explicit Environment, the Project default applies. A new session freezes the selected Environment revision. Task Agents support Full or Limited network access; Assistant Agents require Full. See [Environment network policies](/docs/environments#network-policies).
+Choose the reusable runtime template for packages, setup script, variables and network policy. Without an explicit Environment, the Project default applies. Each new Session freezes the selected revision. Both Full and Limited network policies apply to Session-owned execution. See [Environment network policies](/docs/environments#network-policies).
 
 ## Save and publish behavior
 
-Draft edits affect Preview. Publishing creates a new live version for future sessions. Existing sessions do not silently switch configuration.
+Saved edits apply to new Sessions using the preset. Existing Sessions keep their admitted configuration. Publishing creates a live version for v1 and other published delivery flows.

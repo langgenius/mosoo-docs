@@ -1,0 +1,31 @@
+---
+title: Thread の利用量を取得
+description: "同じ Thread から永続化されたモデル利用量を読み取ります。Session 記録が存在する限り利用量を取得でき、未報告値は null です。実行環境の費用は推定値であり請求額ではありません。実行中の観測を更新するには以前のページを再取得してください。"
+full: true
+_openapi:
+  preload:
+    - ja-v2
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          同じ Thread から永続化されたモデル利用量を読み取ります。Session 記録が存在する限り利用量を取得でき、未報告値は null
+          です。実行環境の費用は推定値であり請求額ではありません。実行中の観測を更新するには以前のページを再取得してください。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="ja-v2" operations={[{"path":"/threads/{threadId}/usage","method":"get"}]} showDescription />
+    </>
+  );
+}

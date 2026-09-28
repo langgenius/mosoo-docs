@@ -3,6 +3,8 @@ title: "Thread と Run"
 description: "mosoo が公開済み Agent の呼び出しを Thread と Run の lifecycle state に対応付ける方法です。"
 ---
 
+このページの例は v1 の公開済み Agent API を使用します。harness の直接実行と任意のプリセットには、[v2 クイックスタート](/docs/ja/quickstart)を参照してください。
+
 mosoo は公開済み Agent を Thread-based API として公開します。application は Thread を作成または再利用し、Run を queue に追加する user event を送信します。mosoo は公開済み Agent 設定の中で各 Run を実行し、public event を Thread に書き戻します。
 
 ## Resource model

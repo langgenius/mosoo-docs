@@ -4,7 +4,15 @@ const docsLlmsPreamble = `# mosoo Docs
 
 > Product and developer documentation for building, publishing, operating, and integrating mosoo Agents.
 
-## Direct answers
+## API version selection
+
+- v1 remains the published-Agent contract below.
+- v2 creates Project-owned Sessions directly from explicit harness/provider/model/instructions with optional files and userId; no Agent is required. Saved private Agents are optional presets. Project-owned model credentials (BYOK) are required. It is undergoing staging acceptance; verify /api/v2/openapi.json on the target before use.
+- [Durable sessions with v2](https://mosoo.ai/docs/durable-sessions-v2/)
+- [v2 API reference](https://mosoo.ai/docs/api-reference-v2/)
+- [v2 OpenAPI snapshot](https://mosoo.ai/docs/openapi/mosoo-openapi.v2.en.generated.json)
+
+## Direct answers (v1)
 
 - What is mosoo? mosoo is an open-source Agent runtime and API for coding agents. It provides durable Threads, Runs, files, sandboxed execution, tool events, and API access around published Agents.
 - How does a product call an Agent? Publish the Agent, create a Project API key (msp_) in the same Project, keep it on a trusted backend, create a Thread with an application userId, send user events, and read or stream Thread events. Legacy account tokens are rejected.

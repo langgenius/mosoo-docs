@@ -1,0 +1,31 @@
+---
+title: Download Thread file content
+description: "Downloads bytes for a ready Thread attachment or Agent artifact. The file must belong to a public Thread visible to the API token caller."
+full: true
+_openapi:
+  preload:
+    - en-v2
+  method: GET
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          Downloads bytes for a ready Thread attachment or Agent artifact. The
+          file must belong to a public Thread visible to the API token caller.
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="en-v2" operations={[{"path":"/files/{fileId}/content","method":"get"}]} showDescription />
+    </>
+  );
+}

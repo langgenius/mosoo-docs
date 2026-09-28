@@ -1,0 +1,33 @@
+---
+title: Create a Thread for an Agent API Endpoint
+description: "Creates a durable Thread from the latest saved private Agent. Publishing and userId are not required. Input and files are optional."
+full: true
+_openapi:
+  preload:
+    - en-v2
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          Creates a durable Thread from the latest saved private Agent.
+          Publishing and userId are not required. Input and files are optional.
+          The admitted configuration is frozen for this Thread; subsequent Agent
+          edits affect only new Threads.
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="en-v2" operations={[{"path":"/agents/{agentId}/threads","method":"post"}]} showDescription />
+    </>
+  );
+}

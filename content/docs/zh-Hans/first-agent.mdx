@@ -1,9 +1,9 @@
 ---
-title: "创建第一个 Agent"
-description: "在 mosoo 控制台中配置、测试并发布一个 Agent。"
+title: "保存 Agent 预设"
+description: "保存并测试可复用的指令、工具与环境配置。"
 ---
 
-本指南从空 Project 开始，最终得到一个已发布的 Agent。
+需要复用配置时可以保存 Agent 预设。无需预设直接执行，请从 [API 快速开始](/docs/zh-Hans/quickstart) 开始。
 
 ## 1. 打开 Project
 
@@ -29,17 +29,15 @@ description: "在 mosoo 控制台中配置、测试并发布一个 Agent。"
 
 ## 4. 配置行为
 
-在 **Preview** 中选择 **Assistant Agent** 或 **Task Agent**，再设置模型与 system prompt。只有确有需要时才添加 Skills、MCP servers 或自定义 Environment。
+在 **Preview** 中设置模型和 system prompt。只有预设确有需要时才添加 Skills、MCP servers 或自定义 Environment。
 
-![Agent Preview 将即时测试与配置编辑器放在同一个界面。](/docs/images/product/configure-agent.png)
+## 5. 测试预设
 
-## 5. 发布前测试
+在左侧 Preview 中发送具有代表性的任务。验证回答、工具调用、文件以及失败行为。用 **Logs** 查看执行细节，用 **Cost** 查看模型用量。
 
-在左侧 Preview 中发送具有代表性的任务。验证回答、工具调用、文件以及失败行为。用 **Logs** 查看执行细节，用 **Cost** 查看模型用量。Assistant Agent 还提供 **Terminal** 和工作环境重置操作。
+## 6. 复用已保存的预设
 
-## 6. 发布
-
-打开 **Publish** 并发布当前 draft。首次发布会锁定 Agent type。之后创建的新 session 使用当前已发布版本，已有 session 保持启动时的版本。
+保存后可在 v2 中使用 `configuration: {type: "agent", agent_id: "Agent ID"}` 引用预设，这条路径不需要发布。如果要使用已发布配置的交付流程，再从 **Publish** 发布草稿；已有 Session 始终保留接纳时的配置。
 
 发布后选择交付方式：
 

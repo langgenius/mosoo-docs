@@ -1,0 +1,31 @@
+---
+title: Agent API Endpoint の Thread を作成する
+description: "最新の保存済み非公開 Agent から永続 Thread を作成します。公開操作と userId は不要です。入力とファイルは任意です。受付時の設定は固定され、以降の Agent 変更は新しい Thread のみに適用されます。"
+full: true
+_openapi:
+  preload:
+    - ja-v2
+  method: POST
+  webhook: false
+  toc: []
+  structuredData:
+    headings: []
+    contents:
+      - content: >-
+          最新の保存済み非公開 Agent から永続 Thread を作成します。公開操作と userId
+          は不要です。入力とファイルは任意です。受付時の設定は固定され、以降の Agent 変更は新しい Thread のみに適用されます。
+---
+
+{/* This file is generated from the mosoo OpenAPI snapshot. Run npm run openapi:pages after changing the spec. */}
+
+export default function Layout(props) {
+  const { APIPage, OpenAPIPage } = props.components ?? {};
+  // "APIPage" is the old name from v10, this allows both for backward compatibility
+  const Comp = OpenAPIPage ?? APIPage;
+  return (
+    <>
+      {props.children}
+      <Comp document="ja-v2" operations={[{"path":"/agents/{agentId}/threads","method":"post"}]} showDescription />
+    </>
+  );
+}

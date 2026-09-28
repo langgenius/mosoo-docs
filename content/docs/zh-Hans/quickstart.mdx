@@ -1,146 +1,102 @@
 ---
-title: "快速开始"
-description: "用 curl 在已发布的 mosoo Agent 上创建 Thread。"
+title: "API 快速开始"
+description: "直接选择 harness 和模型，并通过同一个 Session 持续推进任务。"
 ---
 
-创建一个已发布 Agent 的 Thread，发送一条后续消息，读取公开事件日志，并附加一个文件。
+本文要求目标部署提供 Project 级 `/api/v2` 创建与文件接口。先在 Project 配置自己的模型账号；本版本不包含平台代付模型额度。
 
-## 开始前
+**Thread** 是持久 **Session** 的公开 API 名称，**Run** 使用该会话接纳的运行时与工作区执行一轮任务。
+v1 保持已发布 Agent 的接口行为，现有集成继续参考 [v1 快速开始](/docs/zh-Hans/quickstart-v1)。
 
-你需要：
+| 约定 | v1 | v2 |
+| --- | --- | --- |
+| 执行配置 | 启用 API 的已发布/live Agent | 直接传入 harness、模型、指令，或显式引用私有 Agent 预设 |
+| 新 Thread 身份 | 必填非空 `userId` | 可以省略，响应仍为 `null` |
+| 现有 Thread | 保留接纳时的配置 | 保留接纳时的配置 |
+| 用量记录 | 此接口不提供 | `GET /threads/{threadId}/usage` |
 
-- mosoo 中一个已发布并启用 API access 的 Agent。
-- Agent API Access 面板中的 `agentId`。
-- 一个有权限调用该 Agent 的 mosoo API token。
-- 由你的后端完成身份验证的应用用户对应的 opaque `userId`。
+在 Project 内配置自己的模型 provider 凭据，并创建该 Project 的 API key。
+请求直接选择 harness、provider、模型和指令，无需创建或发布 Agent；已有私有 Agent 是可选预设。
+Project key 不能越权访问其他 Project，必须放在后端；应用仍负责自身用户认证。
+
+## 创建并继续任务
+
+将 `MOSOO_API_BASE` 指向已验证部署的 `/api/v2`，在后端安全配置
+`MOSOO_PROJECT_ID` 和 `MOSOO_API_TOKEN`。不带 input 的创建请求只返回空闲 Thread，不发起模型调用。
+将响应中的 `thread.id` 保存为 `MOSOO_THREAD_ID`，后续任务始终沿用这个 ID。
+
+请选择该 Project 可用的 harness/provider/model 组合。示例使用 `openai-runtime`；Claude Code 使用 `claude-agent-sdk`，并配合可用的 Anthropic 模型和凭据。会话内固定这一选择；不支持的组合或不可用凭据返回 `readiness_blocked`，不会自动更换模型。直接创建返回 `agent_id: null`。
+
+复用私有 Agent 时，将整个 `configuration` 替换为 `{type: "agent", agent_id: "实际 Agent ID"}`，不能混入 inline 字段。现有 `/agents/{agentId}/threads` 仍作为预设兼容入口。
+
+上传可选输入文件无需 Agent：
 
 ```bash
-export MOSOO_API_BASE="https://cloud.mosoo.ai/api/v1"
-export MOSOO_API_TOKEN="msp_..."
-export MOSOO_AGENT_ID="01J00000000000000000000001"
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -F "file=@./input.csv"
 ```
 
-<Callout type="info">
-  v1 资源 ID 是不带前缀的 ULID，不是 `agent_...` 或 `thread_...` 这类前缀 ID。
-</Callout>
-
-## 1. 创建 Thread
-
-Thread 是已发布 Agent 的 API 对话容器。创建时带上 `input` 会同时排队第一个 Run。
+保存返回的 `file.id`，在创建请求中加入 `resources: [{type: "file", file_id: "返回的 ID"}]`。文件和预设必须属于选中的 Project。CLI 登录可以显式选择自己拥有的 Project；Project key 只能使用其绑定的 Project。
 
 ```bash
-curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/threads" \
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: quickstart-create-thread" \
-  -d '{
-    "userId": "customer-123",
-    "input": {
-      "type": "user.message",
-      "content": [
-        {
-          "type": "text",
-          "text": "Say hello and explain what you can help with."
-        }
-      ]
-    }
-  }'
+  -H "Idempotency-Key: durable-create-1" \
+  -d '{"configuration":{"type":"inline","harness":"openai-runtime","provider":"openai","model":"gpt-5.6-luna","instructions":"Use tools to analyze files and preserve working state for follow-up."}}'
 ```
-
-从响应中复制 `thread.id`：
-
-```bash
-export MOSOO_THREAD_ID="01J00000000000000000000009"
-```
-
-## 2. 发送另一条消息
-
-使用 `thread.id` 继续同一个 Agent 交互。
 
 ```bash
 curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN" \
   -H "Content-Type: application/json" \
-  -H "Idempotency-Key: quickstart-send-message-1" \
-  -d '{
-    "events": [
-      {
-        "type": "user_message",
-        "requestId": "quickstart-message-1",
-        "text": "Give me the three most important next steps."
-      }
-    ]
-  }'
+  -H "Idempotency-Key: durable-turn-1" \
+  -d '{"events":[{"type":"user_message","text":"Read the inputs and write outputs/report.md."}]}'
 ```
 
-当当前 Run 正在等待输入或仍在执行时，也可以发送 `permission_decision` 或 `user_interrupt`。
-
-## 3. 读取事件日志
-
-按时间顺序读取公开事件：
-
 ```bash
-curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events?limit=100" \
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/files" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN"
+curl "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/usage?limit=100" \
   -H "Authorization: Bearer $MOSOO_API_TOKEN"
 ```
 
-事件日志是读取结果的稳定位置。它可能包含用户消息、Agent message delta、thinking delta、工具状态、文件变化、用量更新和 Run 状态。
+## 恢复、文件和用量
 
-## 4. 附加文件
+上传不是前提。有本地输入时沿用 multipart 文件接口；分析公开仓库时可以提供 URL 和确切 commit SHA，
+由 Agent 在环境允许时通过工具读取。记录实际使用的 commit，确保分析输入可复现。
 
-先把文件上传到 Agent：
+每个新 Session 都有独立的执行工作区。Agent 只是可选预设，不会让多个 Session 共享机器或工作区。存量共享会话需要经过单独验证的迁移，创建新 Session 不会执行这项迁移。
+
+Run 成功后提交工作区文件与原生运行时的续接状态。容器被回收后，同一个 Session 从已提交状态恢复。
+恢复失败必须明确报错，不能用新空工作区冒充续接。`outputs/` 之外的文件也可以作为私有工作区状态保存；
+失败或取消的工作不会成为新的成功检查点。
+
+正式会话和已用于 API 的 Session 不因闲置到期。间隔一段时间后，继续向同一个 Session ID 发送输入，沿用已接纳的配置及已提交的工作区、原生上下文；旧快照记录的恢复期限不再阻止续接。
+
+只有明确启用清理策略的 Cloud 调试 Preview，才可能在 30 天没有消息、Run 或文件活动后被清理。登录控制台和读取历史不会续期，这个规则不影响正式 API Session。另行审阅的存量迁移会话可能变为只读，同时保留历史和已保存文件；永久删除仍是单独操作。
+
+模拟时间或短时间强制冷启动测试不能证明真实跨日存续。依赖迁移后的存量会话前，应检查目标部署的验收证据。
+
+用量按 ID 分页，把 `nextCursor` 作为 `after`，直到返回 `null`。
+未上报的 token 或费用为 `null`，不能当作零；`reportedCostUsd` 是运行时估算，不是结算账单。
+汇总缓存与 token 前先看 `usageContract`，进行中的记录可能在后续轮询时更新。
+
+同一请求的重试沿用 `Idempotency-Key`；新一轮任务使用新 key。同 key 改变内容、指令、模型或配置来源会冲突。显式选择该 Project 的 CLI 登录和 Project key 共用幂等边界；已提交但中断的创建会恢复原 Session，即使预设随后被修改或删除。
+同一个 Session 同时只接纳一轮任务；另一轮需等待或先中断当前 Run。
+
+CLI 的 v2 模块为 `public-thread-api-v2`，v1 仍为 `public-thread-api`，都支持上传、等待和 transcript。
+升级后为选定目标重新登录以配置 v2；已登出的凭据不会被静默恢复。
+查看 [v2 API 参考](/docs/zh-Hans/api-reference-v2)。
+
+将上方同样的创建请求 JSON 保存为 `session.json`。新版 v2 CLI 显式选择 Project，JSON 仍用于选择 inline 配置或 Agent 预设；需要附加输入文件时，把上传返回的 ID 加入 `resources`。
 
 ```bash
-printf 'Customer asks for an implementation plan.' > brief.txt
-
-curl -X POST "$MOSOO_API_BASE/agents/$MOSOO_AGENT_ID/files" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -F "file=@brief.txt;type=text/plain"
+mosoo public-thread-api-v2 files upload --project-id "$MOSOO_PROJECT_ID" --file ./input.csv -o json
+mosoo public-thread-api-v2 threads create --project-id "$MOSOO_PROJECT_ID" --file ./session.json -o json
 ```
 
-从响应中复制 `file.id`：
-
-```bash
-export MOSOO_FILE_ID="01J0000000000000000000000J"
-```
-
-在后续用户消息中带上这个文件：
-
-```bash
-curl -X POST "$MOSOO_API_BASE/threads/$MOSOO_THREAD_ID/events" \
-  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: quickstart-file-message-1" \
-  -d '{
-    "events": [
-      {
-        "type": "user_message",
-        "requestId": "quickstart-file-message-1",
-        "resources": [
-          {
-            "type": "file",
-            "file_id": "01J0000000000000000000000J"
-          }
-        ],
-        "text": "Summarize the attached file."
-      }
-    ]
-  }'
-```
-
-如果要在首条用户消息中带文件，请在第 1 步之前上传文件，并把同一个 `resources` 数组加入 create-Thread 请求。
-
-<Cards>
-  <Card title="对话与运行" href="/docs/zh-Hans/threads-and-runs">
-    理解 Thread 和 Run 的生命周期状态。
-  </Card>
-  <Card title="事件与流式传输" href="/docs/zh-Hans/events-and-streaming">
-    通过快照或 SSE stream 读取 Thread event。
-  </Card>
-  <Card title="文件" href="/docs/zh-Hans/files">
-    上传文件并挂载到 Thread message。
-  </Card>
-  <Card title="错误与限制" href="/docs/zh-Hans/errors-and-limits">
-    处理重试、幂等冲突、限流和无效请求。
-  </Card>
-</Cards>
+这一版使用你在 Project 配置的模型账号（BYOK），模型供应商向该账号收费。本次首发不提供逐轮金额上限，保留用量和估算成本记录。平台模型供给、充值与商业用量计费属于后续独立范围，不阻塞本次 Session API 发布。存量客户迁移是另行审阅的操作，不会由这些接口自动执行。

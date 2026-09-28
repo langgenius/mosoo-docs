@@ -3,7 +3,7 @@ title: "Product tour"
 description: "Understand how Organizations, Projects, Agents, and runs fit together in mosoo."
 ---
 
-mosoo is a managed workspace for building, running, publishing, and operating AI Agents. You configure an Agent once, test it in the console, then use it through a Thread or an API endpoint.
+mosoo runs a selected harness and model in a durable Session. Invoke it directly from a Project key, or save reusable configuration as an optional Agent preset.
 
 ## The product model
 
@@ -11,20 +11,18 @@ mosoo is a managed workspace for building, running, publishing, and operating AI
 | --- | --- |
 | **Organization** | Your account-level container. The current product is a single-owner experience; team roles and invitations are not available. |
 | **Project** | The isolation boundary for Agents, files, configuration, and usage. A new account starts with a Default Project. |
-| **Agent** | A reusable worker with a type, runtime, model, instructions, Skills, MCP connections, and an Environment. |
-| **Thread** | The durable conversation and work record for one Agent. Replies can resume work asynchronously. |
+| **Agent** | Optional saved runtime/model, instructions, Skills, MCP connections and Environment configuration. |
+| **Thread / Session** | Admitted configuration, native conversation and isolated working files. Follow-up keeps the same ID. |
 | **Run** | One execution inside a Thread. Runs produce events, logs, usage, and files. |
 
 ## A typical workflow
 
-1. Open or create a Project.
-2. Add a model Provider key.
-3. Create an Agent and choose its runtime.
-4. Configure its identity, instructions, Skills, MCP servers, and Environment.
-5. Test in **Preview**; inspect **Logs**, **Cost**, and **Terminal** when applicable.
-6. Publish the Agent.
-7. Start Threads in mosoo or enable API access.
-8. Monitor Runs, files, versions, and usage.
+1. Open a Project and configure a model-provider account.
+2. Create a Project key and keep it on your backend.
+3. Select a harness, model and instructions, then create a Session directly.
+4. Send input and files; inspect outcomes, events, artifacts and usage.
+5. Continue related work with the same Session ID after idle time or reclamation.
+6. Save an Agent preset when you need reusable configuration; publishing is optional for v2.
 
 <Callout type="info">
   Most configuration belongs to the active Project. Provider keys, MCP credentials, Skills, and Environments do not automatically cross Project boundaries.

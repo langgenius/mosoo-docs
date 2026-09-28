@@ -92,7 +92,9 @@ test('localized homepages explain current Project keys and point to their API re
     assert.match(content, /Project API key/);
     assert.match(content, /`msp_`/);
     assert.doesNotMatch(content, /App.owner token|Personal Access Token/);
-    assert.ok(content.includes(language === 'en' ? '/docs/api-reference' : `/docs/${language}/api-reference`));
+    const prefix = language === 'en' ? '/docs' : `/docs/${language}`;
+    assert.ok(content.includes(`${prefix}/api-reference-v2`));
+    assert.ok(content.includes(`${prefix}/quickstart-v1`));
     assert.match(content, /https:\/\/cloud\.mosoo\.ai\/api\/v1\/openapi\.json/);
     assert.match(content, /\/docs\/llms-full\.txt/);
   }
