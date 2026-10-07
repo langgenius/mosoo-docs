@@ -1,0 +1,62 @@
+---
+title: "Pi runtime"
+description: "Choose Pi explicitly for a custom OpenAI-compatible model and continue work in a durable Session."
+---
+
+Pi is an optional runtime for custom OpenAI-compatible models. Select **Pi** in an Agent preset or use `harness: "pi"` in a v2 API request. Adding a custom Provider does not switch existing Agents or Sessions to Pi; OpenCode remains the default for custom Providers.
+
+<Callout>
+  These instructions require a deployment that includes Pi. Confirm that Pi is available on your selected target before creating a Session. Local test results alone do not establish availability on mosoo Cloud.
+</Callout>
+
+## Configure a model
+
+1. In the active Project, open **Config → Providers → Add custom model**.
+2. Save an API key, an HTTPS base URL, and the exact model ID supported by that endpoint. The endpoint must support **Chat Completions streaming and tool calls**.
+3. In the Agent editor, select **Pi**, then select that custom model. Pi has no built-in model preset; the model must come from your Project's custom Provider configuration.
+4. Send a representative task that uses a tool, then check its answer and output files. A successful optional Provider connection test alone does not verify a full Pi Run.
+
+Pi currently accepts only the `openai-compatible` Provider family. An OpenAI-compatible Responses-only endpoint is insufficient. See [Providers and models](/docs/providers-and-models) for credential management.
+
+## Create a Session with the API or CLI
+
+Follow the [v2 quickstart](/docs/quickstart) to configure the target, Project ID and Project API key. Save this request as `pi-session.json`, replacing `YOUR_CUSTOM_MODEL_ID` with the exact model ID configured above:
+
+```json
+{
+  "configuration": {
+    "type": "inline",
+    "harness": "pi",
+    "provider": "openai-compatible",
+    "model": "YOUR_CUSTOM_MODEL_ID",
+    "instructions": "Use tools to inspect the workspace and save deliverables in outputs/."
+  }
+}
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: pi-session-1" \
+  --data-binary @pi-session.json
+```
+
+`MOSOO_API_BASE` must end in `/api/v2`. Creation without input returns an idle Session; it does not test the model. Use the returned `thread.id` to [send input, wait for a Run and read files](/docs/quickstart#create-and-continue). Keep the same ID for follow-up work. The Session retains the admitted Pi runtime and model.
+
+The v2 CLI accepts the same JSON with an explicitly selected Project:
+
+```bash
+mosoo public-thread-api-v2 threads create --project-id "$MOSOO_PROJECT_ID" --file ./pi-session.json --idempotency-key pi-session-1 -o json
+```
+
+No provider API key belongs in this JSON. Configure it in the Project; use a Project API key or CLI login for mosoo access.
+
+## Execution and continuation
+
+- Pi accepts text input. Uploaded files remain available in the Session workspace; this does not enable direct image, audio or video model input.
+- Pi uses full-access execution inside the Session. Per-tool restrictions and interactive approval policies are not supported and are rejected. Choose an [Environment](/docs/environments) with the required network policy.
+- Attached Skills and authorized Remote MCP connections use the existing [Skills and MCP](/docs/skills-and-mcp) flow.
+- A successful Run checkpoints workspace files and Pi's native conversation state. Continue the same Session to restore that state. Missing or mismatched native state fails explicitly; it does not silently start a new conversation.
+
+Self-hosted operators must deploy the matched API Worker, Driver and Pi sandbox image together. This integration uses Pi CLI **0.99.2**, native RPC and Driver protocol **6**. Follow the [deployment guide](/docs/deploy-mosoo) before enabling it on a target.

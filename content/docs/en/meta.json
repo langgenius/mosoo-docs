@@ -12,6 +12,7 @@
     "concepts",
     "agent-configuration",
     "providers-and-models",
+    "pi-runtime",
     "skills-and-mcp",
     "environments",
     "test-and-debug",

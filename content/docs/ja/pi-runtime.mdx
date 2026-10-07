@@ -1,0 +1,62 @@
+---
+title: "Pi runtime"
+description: "カスタム OpenAI-compatible モデルで Pi を明示的に選択し、永続 Session で作業を継続します。"
+---
+
+Pi はカスタム OpenAI-compatible モデル向けの任意の runtime です。Agent プリセットで **Pi** を選ぶか、v2 API のリクエストで `harness: "pi"` を指定します。カスタム Provider を追加しても既存の Agent や Session は Pi に切り替わりません。カスタム Provider のデフォルトは引き続き OpenCode です。
+
+<Callout>
+  この手順には Pi を含むデプロイが必要です。Session を作成する前に、選択した接続先で Pi が利用可能か確認してください。ローカルテストの成功だけでは mosoo Cloud での提供状況は確認できません。
+</Callout>
+
+## モデルを設定する
+
+1. 現在の Project で **Config → Providers → Add custom model** を開きます。
+2. API key、HTTPS base URL、endpoint が対応する正確なモデル ID を保存します。endpoint は **Chat Completions のストリーミングとツール呼び出し**に対応している必要があります。
+3. Agent エディターで **Pi** を選び、そのカスタムモデルを選択します。Pi には組み込みモデルのプリセットがありません。現在の Project のカスタム Provider 設定が必要です。
+4. ツールを使う代表的なタスクを送り、回答と出力ファイルを確認します。任意の Provider 接続テストの成功だけでは、Pi Run 全体の動作を確認できません。
+
+Pi が現在受け付ける Provider は `openai-compatible` のみです。Responses API だけに対応する OpenAI-compatible endpoint では実行できません。認証情報の管理は [Provider とモデル](/docs/ja/providers-and-models)を参照してください。
+
+## API または CLI で Session を作成する
+
+[v2 クイックスタート](/docs/ja/quickstart)に従って接続先、Project ID、Project API key を設定します。次のリクエストを `pi-session.json` に保存し、`YOUR_CUSTOM_MODEL_ID` を設定済みの正確なモデル ID に置き換えます。
+
+```json
+{
+  "configuration": {
+    "type": "inline",
+    "harness": "pi",
+    "provider": "openai-compatible",
+    "model": "YOUR_CUSTOM_MODEL_ID",
+    "instructions": "Use tools to inspect the workspace and save deliverables in outputs/."
+  }
+}
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: pi-session-1" \
+  --data-binary @pi-session.json
+```
+
+`MOSOO_API_BASE` の末尾は `/api/v2` にします。入力なしでの作成はアイドル状態の Session を返し、モデルをテストしません。返された `thread.id` で[入力を送り、Run を待ち、ファイルを読み取ります](/docs/ja/quickstart)。後続の作業でも同じ ID を使います。Session は作成時に確定した Pi runtime とモデルを保持します。
+
+v2 CLI でも同じ JSON を使い、Project を明示的に選択します。
+
+```bash
+mosoo public-thread-api-v2 threads create --project-id "$MOSOO_PROJECT_ID" --file ./pi-session.json --idempotency-key pi-session-1 -o json
+```
+
+この JSON にモデル Provider の API key を含めないでください。Project に設定し、mosoo へのアクセスには Project API key または CLI ログインを使います。
+
+## 実行と継続
+
+- Pi はテキスト入力に対応します。アップロードしたファイルは Session のワークスペースで利用できますが、モデルへの画像・音声・動画の直接入力を有効にするものではありません。
+- Pi は Session 内でフルアクセスの実行を行います。ツールごとの制限や対話型の承認ポリシーには対応せず、そのような設定は拒否されます。必要なネットワークポリシーを持つ [Environment](/docs/ja/environments) を選択してください。
+- 添付した Skills と認可済み Remote MCP 接続は、既存の [Skills と MCP](/docs/ja/skills-and-mcp) の手順を使います。
+- 成功した Run はワークスペースのファイルと Pi のネイティブ会話状態を保存します。同じ Session を続けると保存済みの状態が復元されます。ネイティブ状態の欠落や不一致は明示的に失敗し、新しい会話へ暗黙に切り替わりません。
+
+セルフホストでは、互換性のある API Worker、Driver、Pi sandbox image をまとめてデプロイしてください。この統合は Pi CLI **0.99.2**、ネイティブ RPC、Driver プロトコル **6** を使用します。接続先で有効にする前に[デプロイガイド](/docs/ja/deploy-mosoo)を確認してください。

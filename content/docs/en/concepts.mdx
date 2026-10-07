@@ -11,7 +11,7 @@ A Project separates model credentials, Sessions, files, reusable configuration a
 
 A direct request selects a supported harness, provider, model and instructions. An Agent is an optional saved preset for reusable instructions, tools and environment settings. Choose one configuration source rather than combining inline fields with a preset.
 
-The available runtime families include Claude Agent SDK, OpenAI Runtime and OpenCode. The Project must contain credentials supported by the selected runtime and model. An unavailable selection fails explicitly rather than silently switching harness or model.
+The runtime families include Claude Agent SDK, OpenAI Runtime and OpenCode. Deployments that include [Pi](/docs/pi-runtime) also support explicitly selecting it for a custom OpenAI-compatible model; adding a custom Provider still defaults to OpenCode. The Project must contain credentials supported by the selected runtime and model. An unavailable selection fails explicitly rather than silently switching harness or model.
 
 ## Session ownership and continuity
 

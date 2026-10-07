@@ -25,7 +25,8 @@ description: "保存并测试可复用的指令、工具与环境配置。"
 
 - **Claude Agent SDK** 使用 Anthropic key。
 - **OpenAI Runtime** 使用 OpenAI-compatible key，并要求 endpoint 支持相应 Responses API。
-- **OpenCode** 可使用支持的 Provider 配置，包括自定义 OpenAI-compatible endpoint。
+- **OpenCode** 可使用支持的 Provider 配置，包括自定义 OpenAI-compatible endpoint，并继续作为自定义 Provider 的默认选项。
+- **[Pi](/docs/zh-Hans/pi-runtime)** 需要在已包含 Pi 的部署上显式选择，并配置自定义 OpenAI-compatible 模型；endpoint 必须支持 Chat Completions 流式响应和工具调用。
 
 ## 4. 配置行为
 
