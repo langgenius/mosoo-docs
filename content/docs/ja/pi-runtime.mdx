@@ -3,7 +3,7 @@ title: "Pi runtime"
 description: "カスタム OpenAI-compatible モデルで Pi を明示的に選択し、永続 Session で作業を継続します。"
 ---
 
-Pi はカスタム OpenAI-compatible モデル向けの任意の runtime です。Agent プリセットで **Pi** を選ぶか、v2 API のリクエストで `harness: "pi"` を指定します。カスタム Provider を追加しても既存の Agent や Session は Pi に切り替わりません。カスタム Provider のデフォルトは引き続き OpenCode です。
+Pi はカスタム OpenAI-compatible モデル向けの任意の runtime です。Agent プリセットで **Pi** を選ぶか、v2 API のリクエストで `harness: "pi"` を指定します。カスタム Provider を追加しても既存の Agent や Session は Pi に切り替わりません。Project にカスタム OpenAI-compatible Provider だけを設定した場合、デフォルトは引き続き OpenCode です。
 
 <Callout>
   この手順には Pi を含むデプロイが必要です。Session を作成する前に、選択した接続先で Pi が利用可能か確認してください。ローカルテストの成功だけでは mosoo Cloud での提供状況は確認できません。

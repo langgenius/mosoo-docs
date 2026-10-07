@@ -3,7 +3,7 @@ title: "Pi 运行时"
 description: "为自定义 OpenAI-compatible 模型显式选择 Pi，并在持久 Session 中继续工作。"
 ---
 
-Pi 是自定义 OpenAI-compatible 模型的可选运行时。在 Agent 预设中选择 **Pi**，或在 v2 API 请求中传入 `harness: "pi"`。添加自定义 Provider 不会把已有 Agent 或 Session 切换到 Pi；自定义 Provider 仍默认使用 OpenCode。
+Pi 是自定义 OpenAI-compatible 模型的可选运行时。在 Agent 预设中选择 **Pi**，或在 v2 API 请求中传入 `harness: "pi"`。添加自定义 Provider 不会把已有 Agent 或 Session 切换到 Pi；Project 仅配置自定义 OpenAI-compatible Provider 时，仍默认使用 OpenCode。
 
 <Callout>
   以下操作要求目标部署已包含 Pi。创建 Session 前，请确认所选目标已提供 Pi。本地测试通过本身不能证明 mosoo Cloud 已经上线该运行时。
