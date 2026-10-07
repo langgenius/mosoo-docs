@@ -3,7 +3,7 @@ title: "Pi runtime"
 description: "Choose Pi explicitly for a custom OpenAI-compatible model and continue work in a durable Session."
 ---
 
-Pi is an optional runtime for custom OpenAI-compatible models. Select **Pi** in an Agent preset or use `harness: "pi"` in a v2 API request. Adding a custom Provider does not switch existing Agents or Sessions to Pi; When the Project has only a custom OpenAI-compatible Provider, OpenCode remains the default.
+Pi is an optional runtime for custom OpenAI-compatible models. Select **Pi** in an Agent preset or use `harness: "pi"` in a v2 API request. Adding a custom Provider does not switch existing Agents or Sessions to Pi; when the Project has only a custom OpenAI-compatible Provider, OpenCode remains the default.
 
 <Callout>
   These instructions require a deployment that includes Pi. Confirm that Pi is available on your selected target before creating a Session. Local test results alone do not establish availability on mosoo Cloud.
@@ -16,7 +16,7 @@ Pi is an optional runtime for custom OpenAI-compatible models. Select **Pi** in 
 3. In the Agent editor, select **Pi**, then select that custom model. Pi has no built-in model preset; the model must come from your Project's custom Provider configuration.
 4. Send a representative task that uses a tool, then check its answer and output files. A successful optional Provider connection test alone does not verify a full Pi Run.
 
-Pi currently accepts only the `openai-compatible` Provider family. An OpenAI-compatible Responses-only endpoint is insufficient. See [Providers and models](/docs/providers-and-models) for credential management.
+Pi currently accepts only the `openai-compatible` Provider family. Even if your service appears in the built-in Provider catalog, use **Add custom model** to configure an OpenAI-compatible entry for Pi. An OpenAI-compatible Responses-only endpoint is insufficient. See [Providers and models](/docs/providers-and-models) for credential management.
 
 ## Create a Session with the API or CLI
 

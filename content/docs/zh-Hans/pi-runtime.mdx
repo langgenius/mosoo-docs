@@ -16,7 +16,7 @@ Pi 是自定义 OpenAI-compatible 模型的可选运行时。在 Agent 预设中
 3. 在 Agent 编辑器中选择 **Pi**，再选择该自定义模型。Pi 没有内置模型预设，模型必须来自当前 Project 的自定义 Provider 配置。
 4. 发送一个需要调用工具的代表性任务，检查回答和输出文件。可选的 Provider 连接测试通过，并不能证明完整的 Pi Run 可用。
 
-Pi 当前仅接受 `openai-compatible` Provider 类型。只支持 Responses API 的 OpenAI-compatible endpoint 无法满足要求。凭据管理参见[模型服务商与模型](/docs/zh-Hans/providers-and-models)。
+Pi 当前仅接受 `openai-compatible` Provider 类型。即使服务商已出现在内置 Provider 列表中，也需要通过 **Add custom model** 为 Pi 配置自定义 OpenAI-compatible 条目。只支持 Responses API 的 OpenAI-compatible endpoint 无法满足要求。凭据管理参见[模型服务商与模型](/docs/zh-Hans/providers-and-models)。
 
 ## 通过 API 或 CLI 创建 Session
 
