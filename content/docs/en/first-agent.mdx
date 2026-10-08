@@ -25,7 +25,8 @@ Open **Agents → Create agent**, enter a name, and choose a runtime.
 
 - **Claude Agent SDK** resolves an Anthropic key.
 - **OpenAI Runtime** resolves an OpenAI-compatible key and requires a compatible Responses API endpoint.
-- **OpenCode** can use supported provider credentials, including custom OpenAI-compatible endpoints.
+- **OpenCode** can use supported provider credentials, including custom OpenAI-compatible endpoints. When the Project has only a custom OpenAI-compatible Provider, OpenCode remains the default.
+- **[Pi](/docs/pi-runtime)** is an explicit choice for a custom OpenAI-compatible model on deployments that include Pi. Its endpoint must support Chat Completions streaming and tool calls.
 
 ## 4. Configure behavior
 

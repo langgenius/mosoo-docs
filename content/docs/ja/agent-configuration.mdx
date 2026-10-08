@@ -13,6 +13,8 @@ Name と description は任意の Agent プリセットを一覧や提供画面�
 
 最初に runtime を選択し、解決された Provider key で利用可能なモデルを選びます。モデル一覧が空の場合や runtime に **Needs key** と表示される場合は、現在の Project で対応する Provider を設定してください。
 
+[Pi](/docs/ja/pi-runtime) を使う場合は runtime と設定済みのカスタム OpenAI-compatible モデルを明示的に選択します。Pi には組み込みモデルのプリセットがありません。
+
 ## System prompt
 
 Agent の役割、境界、回答スタイル、確認が必要な条件を記述します。曖昧な personality の説明より、明示的な運用ルールを優先してください。公開前に正常系と失敗系の両方をテストします。

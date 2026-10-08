@@ -1,0 +1,62 @@
+---
+title: "Pi 运行时"
+description: "为自定义 OpenAI-compatible 模型显式选择 Pi，并在持久 Session 中继续工作。"
+---
+
+Pi 是自定义 OpenAI-compatible 模型的可选运行时。在 Agent 预设中选择 **Pi**，或在 v2 API 请求中传入 `harness: "pi"`。添加自定义 Provider 不会把已有 Agent 或 Session 切换到 Pi；Project 仅配置自定义 OpenAI-compatible Provider 时，仍默认使用 OpenCode。
+
+<Callout>
+  以下操作要求目标部署已包含 Pi。创建 Session 前，请确认所选目标已提供 Pi。本地测试通过本身不能证明 mosoo Cloud 已经上线该运行时。
+</Callout>
+
+## 配置模型
+
+1. 在当前 Project 中打开 **Config → Providers → Add custom model**。
+2. 保存 API key、HTTPS base URL，以及 endpoint 支持的准确模型 ID。endpoint 必须支持 **Chat Completions 流式响应和工具调用**。
+3. 在 Agent 编辑器中选择 **Pi**，再选择该自定义模型。Pi 没有内置模型预设，模型必须来自当前 Project 的自定义 Provider 配置。
+4. 发送一个需要调用工具的代表性任务，检查回答和输出文件。可选的 Provider 连接测试通过，并不能证明完整的 Pi Run 可用。
+
+Pi 当前仅接受 `openai-compatible` Provider 类型。即使服务商已出现在内置 Provider 列表中，也需要通过 **Add custom model** 为 Pi 配置自定义 OpenAI-compatible 条目。只支持 Responses API 的 OpenAI-compatible endpoint 无法满足要求。凭据管理参见[模型服务商与模型](/docs/zh-Hans/providers-and-models)。
+
+## 通过 API 或 CLI 创建 Session
+
+按照 [v2 快速开始](/docs/zh-Hans/quickstart)配置目标、Project ID 和 Project API key。将以下请求保存为 `pi-session.json`，并把 `YOUR_CUSTOM_MODEL_ID` 替换为上一步配置的准确模型 ID：
+
+```json
+{
+  "configuration": {
+    "type": "inline",
+    "harness": "pi",
+    "provider": "openai-compatible",
+    "model": "YOUR_CUSTOM_MODEL_ID",
+    "instructions": "Use tools to inspect the workspace and save deliverables in outputs/."
+  }
+}
+```
+
+```bash
+curl -X POST "$MOSOO_API_BASE/projects/$MOSOO_PROJECT_ID/threads" \
+  -H "Authorization: Bearer $MOSOO_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: pi-session-1" \
+  --data-binary @pi-session.json
+```
+
+`MOSOO_API_BASE` 必须以 `/api/v2` 结尾。不带输入的创建请求只会返回空闲 Session，不会测试模型。使用返回的 `thread.id` [发送输入、等待 Run 并读取文件](/docs/zh-Hans/quickstart)。后续工作继续使用同一 ID；Session 会保留创建时确定的 Pi 运行时和模型。
+
+v2 CLI 接受同一份 JSON，并要求显式选择 Project：
+
+```bash
+mosoo public-thread-api-v2 threads create --project-id "$MOSOO_PROJECT_ID" --file ./pi-session.json --idempotency-key pi-session-1 -o json
+```
+
+不要在这份 JSON 中放模型服务商的 API key。请在 Project 中配置它；访问 mosoo 使用 Project API key 或 CLI 登录。
+
+## 执行与续接
+
+- Pi 接受文本输入。上传文件可以在 Session 工作区中使用，但这并不启用直接向模型输入图片、音频或视频的能力。
+- Pi 在 Session 内按全访问模式执行。不支持逐工具限制或交互式审批策略；这些配置会被拒绝。请选用具有所需网络策略的 [Environment](/docs/zh-Hans/environments)。
+- 附加 Skills 和已授权的 Remote MCP 连接沿用现有 [Skills 与 MCP](/docs/zh-Hans/skills-and-mcp) 流程。
+- 成功的 Run 会保存工作区文件和 Pi 原生会话状态。继续同一 Session 时会恢复这些状态；原生状态缺失或不匹配时明确失败，不会静默新建对话。
+
+自托管部署需要同时更新匹配的 API Worker、Driver 和 Pi sandbox image。本次集成使用 Pi CLI **0.99.2**、原生 RPC 与 Driver 协议 **6**。在目标环境启用前，请遵循[部署指南](/docs/zh-Hans/deploy-mosoo)。

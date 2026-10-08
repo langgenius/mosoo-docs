@@ -23,7 +23,7 @@ Key 可以命名、编辑、测试、设为默认和删除。可选测试失败�
 
 ## 自定义 endpoint
 
-OpenCode 可使用自定义 OpenAI-compatible credential。OpenAI Runtime 还要求 endpoint 实现该 runtime 使用的 Responses API。
+Project 仅配置自定义 OpenAI-compatible Provider 时，仍默认使用 OpenCode。在已包含 Pi 的部署上，也可以显式选择 [Pi](/docs/zh-Hans/pi-runtime)；Pi 要求 HTTPS endpoint 支持 Chat Completions 流式响应和工具调用。OpenAI Runtime 还要求 endpoint 实现该 runtime 使用的 Responses API。
 
 ## 凭据边界
 
