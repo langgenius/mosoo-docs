@@ -1,7 +1,7 @@
 {
   "normalizedOpenApiSha256": "581981d08f03117a1bfb193f0d096cd4912b9b06e462634a7864285009972110",
   "normalizedOpenApiV2Sha256": "be35a4516873668fb438384ddc6faff8f8340f73b9382c873a5e5c05e6a20149",
-  "upstreamRef": "7e92d221af06daa01061ab1a973446dab6b624b1",
+  "upstreamRef": "4f12c10120d965a489b5b1a1c72e11949b8db7b3",
   "upstreamRepository": "https://github.com/langgenius/mosoo",
-  "upstreamSha": "7e92d221af06daa01061ab1a973446dab6b624b1"
+  "upstreamSha": "4f12c10120d965a489b5b1a1c72e11949b8db7b3"
 }
