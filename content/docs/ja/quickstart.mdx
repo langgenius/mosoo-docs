@@ -27,7 +27,7 @@ Project に自分のモデル provider 認証情報を設定し、Project API �
 
 Project で利用可能な harness/provider/model の組み合わせを選びます。例は `openai-runtime` を使用します。Claude Code は `claude-agent-sdk` と利用可能な Anthropic モデル・認証情報を使用します。Session 内では選択を固定します。未対応の組み合わせや利用できない認証情報は `readiness_blocked` となり、別モデルへ切り替えません。直接作成の応答は `agent_id: null` です。
 
-Pi を含む接続先でカスタム OpenAI-compatible モデルを使う場合は、`harness: "pi"`、`provider: "openai-compatible"`、設定済みの正確なモデル ID を指定します。endpoint の要件と API/CLI の例は [Pi runtime](/docs/ja/pi-runtime) を参照してください。
+Pi を含む接続先では、`harness: "pi"` と Project 内の互換 Provider・モデルを指定します。カスタム Provider は `provider: "openai-compatible"` と設定済みの正確なモデル ID を使用し、上流プロトコルは credential で選択します。対応表と API/CLI の例は [Pi runtime](/docs/ja/pi-runtime) を参照してください。
 
 保存済み Agent を再利用する場合は、`configuration` 全体を `{type: "agent", agent_id: "実際の Agent ID"}` に置き換えます。inline フィールドとの混在はできません。既存の `/agents/{agentId}/threads` はプリセット互換入口として残ります。
 

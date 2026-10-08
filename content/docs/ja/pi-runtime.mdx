@@ -1,9 +1,9 @@
 ---
 title: "Pi runtime"
-description: "カスタム OpenAI-compatible モデルで Pi を明示的に選択し、永続 Session で作業を継続します。"
+description: "Project 内の互換性のある Provider で Pi を明示的に選び、永続 Session で作業を継続します。"
 ---
 
-Pi はカスタム OpenAI-compatible モデル向けの任意の runtime です。Agent プリセットで **Pi** を選ぶか、v2 API のリクエストで `harness: "pi"` を指定します。カスタム Provider を追加しても既存の Agent や Session は Pi に切り替わりません。Project にカスタム OpenAI-compatible Provider だけを設定した場合、デフォルトは引き続き OpenCode です。
+Pi は Project に設定した組み込み Provider とカスタム Provider で利用できる任意の runtime です。Agent プリセットで **Pi** を選ぶか、v2 API リクエストで `harness: "pi"` を指定します。Provider を追加しても既存の Agent や Session は Pi に切り替わりません。カスタム Provider だけを設定した Project のデフォルトは引き続き OpenCode です。
 
 <Callout>
   この手順には Pi を含むデプロイが必要です。Session を作成する前に、選択した接続先で Pi が利用可能か確認してください。ローカルテストの成功だけでは mosoo Cloud での提供状況は確認できません。
@@ -11,16 +11,20 @@ Pi はカスタム OpenAI-compatible モデル向けの任意の runtime です�
 
 ## モデルを設定する
 
-1. 現在の Project で **Config → Providers → Add custom model** を開きます。
-2. API key、HTTPS base URL、endpoint が対応する正確なモデル ID を保存します。endpoint は **Chat Completions のストリーミングとツール呼び出し**に対応している必要があります。
-3. Agent エディターで **Pi** を選び、そのカスタムモデルを選択します。Pi には組み込みモデルのプリセットがありません。現在の Project のカスタム Provider 設定が必要です。
+1. 現在の Project で **Config → Providers** を開き、組み込み Provider の key を追加するか、**Add custom provider** を選びます。
+2. カスタム Provider には API key、HTTPS base URL、正確なモデル ID と、endpoint が実装する **Model protocol** を保存します。OpenAI Chat Completions、OpenAI Responses、Anthropic Messages、Google Gemini から選択します。
+3. Agent エディターで **Pi** を選び、Project の互換モデルを選択します。組み込みモデルはカタログのプロトコルを、カスタムモデルは credential で選択したプロトコルを使用します。
 4. ツールを使う代表的なタスクを送り、回答と出力ファイルを確認します。任意の Provider 接続テストの成功だけでは、Pi Run 全体の動作を確認できません。
 
-Pi が現在受け付ける Provider は `openai-compatible` のみです。利用するサービスが組み込み Provider の一覧にあっても、Pi 用には **Add custom model** からカスタム OpenAI-compatible の設定を追加してください。Responses API だけに対応する OpenAI-compatible endpoint では実行できません。認証情報の管理は [Provider とモデル](/docs/ja/providers-and-models)を参照してください。
+Pi は選択したモデルのプロトコルで、ストリーミングとツール呼び出しを行います。Provider 名や OpenAI-compatible という表示だけでは endpoint のプロトコルは確定しません。Responses のみに対応する endpoint は **OpenAI Responses** を選択して利用できます。[プロトコルと runtime の対応表](/docs/ja/providers-and-models#モデルプロトコルと-runtime)を参照してください。
+
+これは Mosoo Project に保存した API key を使用する統合です。単体の Pi が提供するサブスクリプション OAuth、Bedrock、Vertex の環境認証など、すべての認証方式を公開するものではありません。
 
 ## API または CLI で Session を作成する
 
 [v2 クイックスタート](/docs/ja/quickstart)に従って接続先、Project ID、Project API key を設定します。次のリクエストを `pi-session.json` に保存し、`YOUR_CUSTOM_MODEL_ID` を設定済みの正確なモデル ID に置き換えます。
+
+この例はカスタム Provider を使用します。組み込み Provider では `provider` と `model` を対応するカタログ ID に置き換え、`harness: "pi"` は維持してください。プロトコルは credential またはモデルカタログで決まり、Session リクエストでは指定しません。
 
 ```json
 {

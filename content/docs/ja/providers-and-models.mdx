@@ -10,7 +10,7 @@ Provider credential は現在の Project に保存され、Agent の起動時に
 ## Provider key を追加する
 
 1. **Config → Providers** を開きます。
-2. 組み込み Provider の **Add key**、または **Add custom model** を選びます。
+2. 組み込み Provider の **Add key**、または **Add custom provider** を選びます。
 3. 求められた場合は名前、API key、任意の base URL、対応モデル名を入力します。
 4. **Test** で接続を確認してから保存します。
 5. Agent に戻り、runtime とモデルを選択します。
@@ -21,9 +21,28 @@ key は名前付け、編集、テスト、default 指定、削除ができま�
 
 **Runtime availability** card には、runtime が解決する credential が表示されます。対応する key がない場合、セットアップまたは Run は設定エラーで停止します。mosoo が別の Project の credential を流用することはありません。
 
+## モデルプロトコルと runtime
+
+モデルの利用可否は Provider credential、モデルのプロトコル、runtime の組み合わせで決まります。同じ Provider でもモデルごとに異なるプロトコルを使う場合があります。例えば OpenCode Zen はモデルごとに解決します。対応する API key があるだけでは、すべての runtime で利用できるとは限りません。
+
+| モデルプロトコル | Claude Runtime | OpenAI Runtime | OpenCode | Pi |
+| --- | --- | --- | --- | --- |
+| Anthropic Messages | Anthropic Provider のみ | — | 対応 | 対応 |
+| OpenAI Responses | — | 対応 | 対応 | 対応 |
+| OpenAI Chat Completions | — | — | 対応 | 対応 |
+| Google Gemini | — | — | 対応 | 対応 |
+
+組み込みモデルは Mosoo カタログで定義されたプロトコルと endpoint を維持します。組み込み Gemini Provider は、引き続き Google の OpenAI-compatible Chat Completions endpoint を使います。Google のネイティブ API を使う場合は、Google Gemini プロトコルと対応するネイティブ base URL を指定したカスタム Provider を追加してください。
+
 ## Custom endpoint
 
-Project にカスタム OpenAI-compatible Provider だけを設定した場合、デフォルトは OpenCode です。Pi を含むデプロイでは [Pi](/docs/ja/pi-runtime) を明示的に選択することもできます。Pi には Chat Completions のストリーミングとツール呼び出しに対応する HTTPS endpoint が必要です。OpenAI Runtime では、その runtime が使用する Responses API を endpoint が実装している必要もあります。
+HTTPS endpoint が実際に実装する **Model protocol** を選び、提供される正確なモデル ID を入力します。同じ credential 内のすべてのモデルに同じプロトコルが適用されます。複数のプロトコルを提供するサービスには、対応する endpoint とモデル ID ごとにカスタム credential を作成します。接続テストでも実行時と同じプロトコルを使用し、ストリーミングとツールを含む代表的な Run で確認してください。
+
+API 互換性のため、カスタム Provider の `vendorId` は、Anthropic Messages や Google Gemini を選んだ場合でも `openai-compatible` のままです。カスタム credential の作成・更新・テストでは、`modelProtocol` に `openai-chat-completions`、`openai-responses`、`anthropic-messages`、`google-gemini` のいずれかを指定します。
+
+新規のカスタム credential でプロトコルを省略すると Chat Completions が使用されます。プロトコルが未保存の既存 credential は、runtime に基づく従来の解決動作を維持します。編集時には endpoint のプロトコルを明示的に選択してください。更新でフィールドを省略すると現在の値を保持します。明示的な選択により互換性のない runtime が利用不可になることがあるため、変更前に依存する Agent を確認してください。
+
+カスタム Provider だけの Project では、デフォルトは引き続き OpenCode です。[Pi](/docs/ja/pi-runtime) は明示的に選びます。OpenAI Runtime には Responses が必要で、Chat Completions のみの credential は使用できません。Claude Runtime は引き続き Anthropic Provider に限定されます。
 
 ## Credential の境界
 

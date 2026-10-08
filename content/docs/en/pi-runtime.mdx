@@ -1,9 +1,9 @@
 ---
 title: "Pi runtime"
-description: "Choose Pi explicitly for a custom OpenAI-compatible model and continue work in a durable Session."
+description: "Choose Pi explicitly with a compatible Project provider and continue work in a durable Session."
 ---
 
-Pi is an optional runtime for custom OpenAI-compatible models. Select **Pi** in an Agent preset or use `harness: "pi"` in a v2 API request. Adding a custom Provider does not switch existing Agents or Sessions to Pi; when the Project has only a custom OpenAI-compatible Provider, OpenCode remains the default.
+Pi is an optional runtime for the built-in Providers and custom providers configured in your Project. Select **Pi** in an Agent preset or use `harness: "pi"` in a v2 API request. Adding a Provider does not switch existing Agents or Sessions to Pi; OpenCode remains the default when the Project has only a custom provider.
 
 <Callout>
   These instructions require a deployment that includes Pi. Confirm that Pi is available on your selected target before creating a Session. Local test results alone do not establish availability on mosoo Cloud.
@@ -11,16 +11,20 @@ Pi is an optional runtime for custom OpenAI-compatible models. Select **Pi** in 
 
 ## Configure a model
 
-1. In the active Project, open **Config → Providers → Add custom model**.
-2. Save an API key, an HTTPS base URL, and the exact model ID supported by that endpoint. The endpoint must support **Chat Completions streaming and tool calls**.
-3. In the Agent editor, select **Pi**, then select that custom model. Pi has no built-in model preset; the model must come from your Project's custom Provider configuration.
+1. In the active Project, open **Config → Providers**. Add a key for a built-in Provider, or choose **Add custom provider**.
+2. For a custom provider, save the API key, HTTPS base URL, exact model IDs, and **Model protocol** implemented by that endpoint: OpenAI Chat Completions, OpenAI Responses, Anthropic Messages, or Google Gemini.
+3. In the Agent editor, select **Pi**, then select a compatible model from the Project. Built-in models use their catalog protocol; custom models use the credential's selected protocol.
 4. Send a representative task that uses a tool, then check its answer and output files. A successful optional Provider connection test alone does not verify a full Pi Run.
 
-Pi currently accepts only the `openai-compatible` Provider family. Even if your service appears in the built-in Provider catalog, use **Add custom model** to configure an OpenAI-compatible entry for Pi. An OpenAI-compatible Responses-only endpoint is insufficient. See [Providers and models](/docs/providers-and-models) for credential management.
+Pi uses the selected model protocol directly, including streaming and tool calls. A provider name or an OpenAI-compatible label does not establish which protocol an endpoint implements. An endpoint that implements only Responses can be used by selecting **OpenAI Responses**. See the [protocol and runtime matrix](/docs/providers-and-models#model-protocols-and-runtimes).
+
+This covers Mosoo's Project API-key credentials. It does not expose all authentication methods available in standalone Pi, such as subscription OAuth, Bedrock, or Vertex ambient credentials.
 
 ## Create a Session with the API or CLI
 
 Follow the [v2 quickstart](/docs/quickstart) to configure the target, Project ID and Project API key. Save this request as `pi-session.json`, replacing `YOUR_CUSTOM_MODEL_ID` with the exact model ID configured above:
+
+This example uses a custom provider. For a built-in provider, replace `provider` and `model` with its catalog IDs while keeping `harness: "pi"`. The protocol belongs to the provider credential or model catalog, not the Session request.
 
 ```json
 {

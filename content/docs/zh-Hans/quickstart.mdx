@@ -27,7 +27,7 @@ Project key 不能越权访问其他 Project，必须放在后端；应用仍负
 
 请选择该 Project 可用的 harness/provider/model 组合。示例使用 `openai-runtime`；Claude Code 使用 `claude-agent-sdk`，并配合可用的 Anthropic 模型和凭据。会话内固定这一选择；不支持的组合或不可用凭据返回 `readiness_blocked`，不会自动更换模型。直接创建返回 `agent_id: null`。
 
-在已包含 Pi 的目标上使用自定义 OpenAI-compatible 模型时，传入 `harness: "pi"`、`provider: "openai-compatible"` 和准确的已配置模型 ID。endpoint 要求及完整 API/CLI 示例参见 [Pi 运行时](/docs/zh-Hans/pi-runtime)。
+在已包含 Pi 的目标上，传入 `harness: "pi"` 及 Project 中兼容的 Provider 和模型。自定义 Provider 使用 `provider: "openai-compatible"` 和准确的已配置模型 ID，由对应凭据选择上游协议。协议矩阵及完整 API/CLI 示例参见 [Pi 运行时](/docs/zh-Hans/pi-runtime)。
 
 复用私有 Agent 时，将整个 `configuration` 替换为 `{type: "agent", agent_id: "实际 Agent ID"}`，不能混入 inline 字段。现有 `/agents/{agentId}/threads` 仍作为预设兼容入口。
 
