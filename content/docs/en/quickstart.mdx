@@ -30,7 +30,7 @@ without input returns an idle Thread and queues no model work. Copy the returned
 
 Choose a supported harness/provider/model combination for the configured Project. The example uses `openai-runtime`; Claude Code uses `claude-agent-sdk` with an available Anthropic model and credentials. Selection is fixed for this Session. Unsupported combinations or unavailable credentials return `readiness_blocked` without a fallback. Inline creation returns `agent_id: null`.
 
-For a custom OpenAI-compatible model on a target that includes Pi, use `harness: "pi"` and `provider: "openai-compatible"` with the exact configured model ID. See [Pi runtime](/docs/pi-runtime) for endpoint requirements and a complete API/CLI example.
+On a target that includes Pi, use `harness: "pi"` with a compatible Project provider and model. Custom providers use `provider: "openai-compatible"` and the exact configured model ID; their credential selects the upstream protocol. See [Pi runtime](/docs/pi-runtime) for the protocol matrix and a complete API/CLI example.
 
 To reuse a saved Agent, replace the entire `configuration` with `{type: "agent", agent_id: "your Agent ID"}`. Do not combine preset and inline fields. Existing `/agents/{agentId}/threads` remains a preset adapter.
 

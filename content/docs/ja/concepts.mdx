@@ -11,7 +11,7 @@ Project はモデル認証情報・Session・ファイル・再利用設定・�
 
 直接実行では、対応する harness・provider・model・instructions を選択します。Agent は指示・ツール・環境を再利用する任意の保存済みプリセットです。inline フィールドとプリセットを混在させず、設定元を一つ選びます。
 
-実行環境には Claude Agent SDK・OpenAI Runtime・OpenCode があります。[Pi](/docs/ja/pi-runtime) を含むデプロイでは、カスタム OpenAI-compatible モデル向けに Pi を明示的に選択することもできます。Project にカスタム OpenAI-compatible Provider だけを設定した場合、デフォルトは引き続き OpenCode です。選択した runtime とモデルが利用できる認証情報を Project に設定してください。利用できない設定は明示的に失敗し、別の harness やモデルへ自動で切り替えません。
+実行環境には Claude Agent SDK・OpenAI Runtime・OpenCode・[Pi](/docs/ja/pi-runtime) があります。Pi は Project 内の互換性のある組み込み・カスタム Provider で明示的に選択します。カスタム Provider だけの Project のデフォルトは引き続き OpenCode です。互換性は Provider credential、モデルのプロトコル、runtime の組み合わせで決まります。利用できない設定は明示的に失敗し、別の harness やモデルへ自動で切り替えません。
 
 ## Session の状態と継続
 

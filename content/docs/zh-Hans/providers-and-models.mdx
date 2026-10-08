@@ -10,7 +10,7 @@ Provider credential 保存在当前 Project 中，并在 Agent 启动时解析�
 ## 添加模型服务商密钥
 
 1. 打开 **Config → Providers**。
-2. 在内置 Provider 中选择 **Add key**，或选择 **Add custom model**。
+2. 在内置 Provider 中选择 **Add key**，或选择 **Add custom provider**。
 3. 按要求填写名称、API key、可选 base URL 和支持的模型名。
 4. 选择 **Test** 验证连接，然后保存。
 5. 回到 Agent 中选择 runtime 与模型。
@@ -21,9 +21,28 @@ Key 可以命名、编辑、测试、设为默认和删除。可选测试失败�
 
 页面顶部的 **Runtime availability** 会说明每个 runtime 将解析哪一种凭据。若当前 Project 没有匹配的 key，setup 或 Run 会以配置错误停止；mosoo 不会借用其他 Project 的凭据。
 
+## 模型协议与运行时
+
+模型能否调用取决于三个条件：Provider 凭据、模型协议和运行时。同一服务商的不同模型可能使用不同协议，例如 OpenCode Zen 会按模型解析协议；有匹配的 API key 并不代表所有运行时都兼容。
+
+| 模型协议 | Claude Runtime | OpenAI Runtime | OpenCode | Pi |
+| --- | --- | --- | --- | --- |
+| Anthropic Messages | 仅 Anthropic Provider | — | 支持 | 支持 |
+| OpenAI Responses | — | 支持 | 支持 | 支持 |
+| OpenAI Chat Completions | — | — | 支持 | 支持 |
+| Google Gemini | — | — | 支持 | 支持 |
+
+内置模型保留 Mosoo 目录定义的协议和 endpoint。其中，内置 Gemini Provider 继续使用 Google 的 OpenAI-compatible Chat Completions endpoint。要使用 Google 原生 API，请添加自定义 Provider，选择 Google Gemini 协议并填写对应的原生 base URL。
+
 ## 自定义 endpoint
 
-Project 仅配置自定义 OpenAI-compatible Provider 时，仍默认使用 OpenCode。在已包含 Pi 的部署上，也可以显式选择 [Pi](/docs/zh-Hans/pi-runtime)；Pi 要求 HTTPS endpoint 支持 Chat Completions 流式响应和工具调用。OpenAI Runtime 还要求 endpoint 实现该 runtime 使用的 Responses API。
+选择 HTTPS endpoint 实际实现的 **Model protocol**，再填写它提供的准确模型 ID。同一凭据下的所有模型使用该协议；如果服务商提供多个协议，请按对应的 endpoint 和模型 ID 分别创建自定义凭据。连接测试应使用与实际执行相同的协议，再通过包含流式响应和工具调用的代表性 Run 验证。
+
+为保持 API 兼容，自定义 Provider 的 `vendorId` 仍为 `openai-compatible`，即使协议选择 Anthropic Messages 或 Google Gemini。创建、更新和测试自定义凭据时，`modelProtocol` 可选值为 `openai-chat-completions`、`openai-responses`、`anthropic-messages` 或 `google-gemini`。
+
+新建自定义凭据时省略协议会默认使用 Chat Completions。已有未保存协议的凭据保留旧的按运行时推断行为，编辑时建议显式选择 endpoint 的协议。更新时省略该字段会保留原值。显式选择协议可能让不兼容的运行时不可用，因此修改前应检查依赖该凭据的 Agent。
+
+Project 仅配置自定义 Provider 时，仍默认使用 OpenCode；使用 [Pi](/docs/zh-Hans/pi-runtime) 需显式选择。OpenAI Runtime 要求 Responses，不能使用仅支持 Chat Completions 的凭据。Claude Runtime 仍仅支持 Anthropic Provider。
 
 ## 凭据边界
 

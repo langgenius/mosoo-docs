@@ -11,7 +11,7 @@ Project 隔离模型凭据、Session、文件、复用配置和用量。Project 
 
 直调请求选择支持的 harness、provider、model 和 instructions。Agent 是可选的已保存预设，用于复用指令、工具与环境。选择一种配置来源，不要混合 inline 字段和预设。
 
-运行时包括 Claude Agent SDK、OpenAI Runtime 和 OpenCode。已包含 [Pi](/docs/zh-Hans/pi-runtime) 的部署还支持为自定义 OpenAI-compatible 模型显式选择 Pi；Project 仅配置自定义 OpenAI-compatible Provider 时，仍默认使用 OpenCode。Project 必须配置对应运行时与模型支持的账号。不可用的选择会明确失败，不会静默切换 harness 或模型。
+运行时包括 Claude Agent SDK、OpenAI Runtime、OpenCode 和 [Pi](/docs/zh-Hans/pi-runtime)。Pi 可为 Project 中兼容的内置和自定义 Provider 显式选择；Project 仅配置自定义 Provider 时，仍默认使用 OpenCode。兼容性取决于 Provider 凭据、模型协议和运行时。不可用的选择会明确失败，不会静默切换 harness 或模型。
 
 ## Session 状态与续接
 

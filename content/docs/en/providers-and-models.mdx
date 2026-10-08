@@ -10,7 +10,7 @@ Provider credentials are stored inside the active Project and resolved when an A
 ## Add a Provider key
 
 1. Open **Config → Providers**.
-2. Find a built-in Provider and select **Add key**, or choose **Add custom model**.
+2. Find a built-in Provider and select **Add key**, or choose **Add custom provider**.
 3. Enter a name, API key, optional base URL, and supported model names when requested.
 4. Select **Test** to verify connectivity, then save.
 5. Return to the Agent and select the runtime and model.
@@ -21,9 +21,28 @@ Keys can be named, edited, tested, made default, and deleted. Saving is not cond
 
 The **Runtime availability** card explains which credential a runtime will resolve. A missing matching key stops setup or the Run with a configuration error; mosoo never borrows a credential from another Project.
 
+## Model protocols and runtimes
+
+Model access depends on three choices: the provider credential, the model's protocol, and the runtime. The same provider can offer models using different protocols; for example, OpenCode Zen is resolved per model. A matching API key alone does not make every runtime compatible.
+
+| Model protocol | Claude Runtime | OpenAI Runtime | OpenCode | Pi |
+| --- | --- | --- | --- | --- |
+| Anthropic Messages | Anthropic provider only | — | Yes | Yes |
+| OpenAI Responses | — | Yes | Yes | Yes |
+| OpenAI Chat Completions | — | — | Yes | Yes |
+| Google Gemini | — | — | Yes | Yes |
+
+Built-in models keep the protocol and endpoint defined in Mosoo's catalog. In particular, the built-in Gemini provider continues to use Google's OpenAI-compatible Chat Completions endpoint. For Google's native API, add a custom provider with the Google Gemini protocol and the corresponding native base URL.
+
 ## Custom endpoints
 
-When the Project has only a custom OpenAI-compatible Provider, OpenCode remains the default runtime. You can explicitly select [Pi](/docs/pi-runtime) on a deployment that includes it; Pi requires an HTTPS endpoint with Chat Completions streaming and tool calls. OpenAI Runtime additionally requires the endpoint to implement the Responses API used by that runtime.
+Choose the **Model protocol** actually implemented by the HTTPS endpoint, then enter the exact model IDs it serves. Protocol selection applies to all models on that credential. If a service exposes multiple protocols, configure separate custom credentials with the corresponding endpoint and model IDs. Test the credential with the same protocol you will use for execution; then verify a representative Run with streaming and tools.
+
+Custom providers retain `vendorId: "openai-compatible"` in the API for compatibility, even when their selected protocol is Anthropic Messages or Google Gemini. Use `modelProtocol` with one of `openai-chat-completions`, `openai-responses`, `anthropic-messages`, or `google-gemini` when creating, updating, or testing a custom credential.
+
+New custom credentials default to Chat Completions if the protocol is omitted. Existing credentials without a stored protocol keep legacy runtime-based routing; explicitly select the endpoint's protocol when editing them. Omitting the field during an update preserves its current value. Choosing an explicit protocol can make an incompatible runtime unavailable, so check dependent Agents before changing it.
+
+When the Project has only a custom provider, OpenCode remains the default runtime. Select [Pi](/docs/pi-runtime) explicitly. OpenAI Runtime requires Responses; it cannot use a Chat Completions-only credential. Claude Runtime remains limited to the Anthropic provider.
 
 ## Credential boundary
 

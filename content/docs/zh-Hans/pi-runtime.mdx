@@ -1,9 +1,9 @@
 ---
 title: "Pi 运行时"
-description: "为自定义 OpenAI-compatible 模型显式选择 Pi，并在持久 Session 中继续工作。"
+description: "为 Project 中兼容的模型服务商显式选择 Pi，并在持久 Session 中继续工作。"
 ---
 
-Pi 是自定义 OpenAI-compatible 模型的可选运行时。在 Agent 预设中选择 **Pi**，或在 v2 API 请求中传入 `harness: "pi"`。添加自定义 Provider 不会把已有 Agent 或 Session 切换到 Pi；Project 仅配置自定义 OpenAI-compatible Provider 时，仍默认使用 OpenCode。
+Pi 是 Project 内置 Provider 和自定义 Provider 的可选运行时。在 Agent 预设中选择 **Pi**，或在 v2 API 请求中传入 `harness: "pi"`。添加 Provider 不会把已有 Agent 或 Session 切换到 Pi；Project 仅配置自定义 Provider 时，仍默认使用 OpenCode。
 
 <Callout>
   以下操作要求目标部署已包含 Pi。创建 Session 前，请确认所选目标已提供 Pi。本地测试通过本身不能证明 mosoo Cloud 已经上线该运行时。
@@ -11,16 +11,20 @@ Pi 是自定义 OpenAI-compatible 模型的可选运行时。在 Agent 预设中
 
 ## 配置模型
 
-1. 在当前 Project 中打开 **Config → Providers → Add custom model**。
-2. 保存 API key、HTTPS base URL，以及 endpoint 支持的准确模型 ID。endpoint 必须支持 **Chat Completions 流式响应和工具调用**。
-3. 在 Agent 编辑器中选择 **Pi**，再选择该自定义模型。Pi 没有内置模型预设，模型必须来自当前 Project 的自定义 Provider 配置。
+1. 在当前 Project 中打开 **Config → Providers**，为内置 Provider 添加 key，或选择 **Add custom provider**。
+2. 对自定义 Provider，保存 API key、HTTPS base URL、准确模型 ID，以及 endpoint 实现的 **Model protocol**：OpenAI Chat Completions、OpenAI Responses、Anthropic Messages 或 Google Gemini。
+3. 在 Agent 编辑器中选择 **Pi**，再选择 Project 中兼容的模型。内置模型使用目录定义的协议；自定义模型使用凭据中选定的协议。
 4. 发送一个需要调用工具的代表性任务，检查回答和输出文件。可选的 Provider 连接测试通过，并不能证明完整的 Pi Run 可用。
 
-Pi 当前仅接受 `openai-compatible` Provider 类型。即使服务商已出现在内置 Provider 列表中，也需要通过 **Add custom model** 为 Pi 配置自定义 OpenAI-compatible 条目。只支持 Responses API 的 OpenAI-compatible endpoint 无法满足要求。凭据管理参见[模型服务商与模型](/docs/zh-Hans/providers-and-models)。
+Pi 按所选模型协议调用服务商，包括流式响应和工具调用。服务商名称或 OpenAI-compatible 标签不能代替协议选择；仅支持 Responses 的 endpoint 可以通过选择 **OpenAI Responses** 接入。详见[协议与运行时矩阵](/docs/zh-Hans/providers-and-models#模型协议与运行时)。
+
+此范围使用 Mosoo Project 中保存的 API key，不等于开放独立 Pi 的全部认证方式，例如订阅 OAuth、Bedrock 或 Vertex 的环境凭据。
 
 ## 通过 API 或 CLI 创建 Session
 
 按照 [v2 快速开始](/docs/zh-Hans/quickstart)配置目标、Project ID 和 Project API key。将以下请求保存为 `pi-session.json`，并把 `YOUR_CUSTOM_MODEL_ID` 替换为上一步配置的准确模型 ID：
+
+下例使用自定义 Provider。使用内置 Provider 时，将 `provider` 和 `model` 替换为对应目录 ID，并保留 `harness: "pi"`。协议由 Provider 凭据或模型目录决定，不在 Session 请求中指定。
 
 ```json
 {
