@@ -1,0 +1,27 @@
+---
+title: Provider-aware model protocols
+description: Pi supports explicit Chat Completions, Responses, Messages, and Gemini protocols, with provider-aware admission across runtimes.
+date: "2026-10-08"
+version: v0.5.1
+tags: [improvements, fixes]
+---
+
+A patch release that adds explicit provider protocols across Pi and the other harness runtimes.
+
+### Improvements
+
+- Pi can use catalog models and custom OpenAI Chat Completions, OpenAI Responses, Anthropic Messages, and Google Gemini endpoints.
+- OpenCode selects the matching provider adapter. Codex remains Responses-only; Claude SDK retains its Anthropic model allowlist.
+- The console and CLI expose an explicit protocol for custom credentials. Incompatible provider, model, and runtime combinations are rejected before a Run; new Sessions freeze their protocol for continuation.
+- Existing credentials without a selected protocol retain their legacy behavior. Companion CLI v0.6.0 includes the matching contract and `--input-model-protocol` option.
+
+### Compatibility and verification
+
+- D1 migration 0018 adds a nullable column. The Driver and runtime images are unchanged. Preserve the column on rollback; Sessions using an explicit new protocol must not return to the old Chat-only Pi implementation.
+- Staging acceptance covered real tools and file round trips through OpenRouter for Pi/OpenCode Chat, Responses, and Messages, Codex Responses, and Claude SDK Messages. Pi preserved native context and files after Driver restart and full cold-container recreation. Google-native support has deterministic local protocol/tool coverage, not hosted native-provider certification.
+
+### Version numbering
+
+This Host release was initially published as v0.6.0 and corrected to v0.5.1. The original v0.6.0 Git tag remains at the same source commit for traceability; it does not represent an additional Host release. CLI v0.6.0 retains its independent version number.
+
+Full notes: [v0.5.1 on GitHub](https://github.com/langgenius/mosoo/releases/tag/v0.5.1).

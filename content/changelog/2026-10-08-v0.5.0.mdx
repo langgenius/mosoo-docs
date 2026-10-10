@@ -1,0 +1,27 @@
+---
+title: Pi runtime for durable Sessions
+description: Choose Pi in the console or API, use tools and workspace files, and resume through the same durable Project Session.
+date: "2026-10-08"
+version: v0.5.0
+tags: [new-release, improvements, fixes]
+---
+
+Pi joins the selectable runtimes for durable Project Sessions, with a companion Mosoo CLI v0.5.0 release.
+
+### Highlights
+
+- Select Pi in the Agent editor with a custom model, or use `harness: "pi"` and `provider: "openai-compatible"` in an inline execution configuration. Custom providers continue to default to OpenCode until Pi is explicitly selected.
+- Native Pi RPC execution supports streamed text, thinking and tool events, cancellation, usage reporting, workspace files, Skills, and the remote MCP proxy. Native Session state is checkpointed with the workspace for continuation.
+- Completed tool arguments and tool-to-message associations are preserved, including for commands with no output. Missing or mismatched continuation state fails explicitly.
+- Provider keys stay in the control plane; Pi receives a model-scoped proxy grant. Mosoo Health includes Pi and reports Unknown when no production sample has been observed.
+
+### Fixes and compatibility
+
+- Development login is restricted to loopback origins. MCP OAuth endpoints require HTTPS and reject embedded credentials and fragments.
+- This release starts with custom HTTPS endpoints supporting Chat Completions streaming and tool calls. Input is text; files are available through the Session workspace. Execution has full access within its sandbox; per-tool restrictions and interactive approvals are not supported.
+- The matched Driver includes Pi 0.99.2 and retains protocol 6. The API adds the `SandboxPi` binding and an additive Durable Object migration; no new D1 SQL migration is added since v0.4.0.
+- At release, production uses the union image, with the dedicated Pi image deployed and ready. Upgrade and rollback must preserve compatible Session state, sandbox bindings, and a matched Driver.
+
+Staging acceptance verified real tools, file round trips, and continuation after Driver restart with a DeepSeek custom endpoint. See the [Pi runtime guide](/docs/pi-runtime/) and the [production runbook](https://github.com/langgenius/mosoo/blob/v0.5.0/docs/production-deploy-verification.md).
+
+Full notes: [v0.5.0 on GitHub](https://github.com/langgenius/mosoo/releases/tag/v0.5.0).

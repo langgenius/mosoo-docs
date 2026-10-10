@@ -1,0 +1,28 @@
+---
+title: Direct, durable Project Sessions
+description: Run directly from a Project with optional Agent presets, isolated Sessions, durable checkpoints, and clearer runtime failures.
+date: "2026-09-30"
+version: v0.4.0
+tags: [new-release, improvements, fixes]
+---
+
+An Alpha minor release centered on direct, durable Project Sessions.
+
+### Highlights
+
+- The v2 API accepts a Project key and inline runtime, provider, model, and instructions, or an optional saved Agent preset. Upload files, start work, and continue through one stable Session ID without first publishing an Agent. Existing v1 routes retain their published-Agent and end-user identity contract.
+- Each new Session owns an isolated environment and freezes its admitted configuration and native identity. Formal/API Sessions have no recurring inactivity deadline; explicitly enrolled Cloud debug Previews use a separate 30-day policy. Active Pet/Cattle choices and the shared Agent terminal are retired.
+- Successful Runs require committed checkpoints. Recovery preserves checkpoints, retries accepted receipts and Driver finalization, and repairs terminal events. Provider capability rejections, ACP content refusals, and Run failures have clearer diagnostics.
+- Runtime-specific images and bounded cold-start recovery are available. Preview reconnects no longer wake idle execution merely to observe it.
+- Skill snapshots use bounded statements within one atomic batch, fixing startup failures with 25 Skills. Unsupported built-in tool restrictions are rejected before admission.
+
+### Compatibility and upgrade notes
+
+- Removed Pet/Cattle fields and the shared Agent terminal require integration updates. The v1 adapter retains historical Session labels.
+- Driver protocol 6 requires a matched API and Driver rollout with an admission barrier and drained existing connections.
+- D1 migrations 0015–0017 are appended. Migration 0017 rewrites association columns and rebuilds the derived daily usage rollup; it requires explicit production approval, a verified backup/restore, and a compatible rollback plan.
+- Existing shared Sessions require the documented conversion procedure. Preserve Session identity, history, files, frozen configuration, native continuation, and sandbox namespace bindings. An Agent-required build is not a valid rollback target after admitting direct Sessions.
+
+Follow the [production runbook](https://github.com/langgenius/mosoo/blob/v0.4.0/docs/production-deploy-verification.md) and [Session isolation transition](https://github.com/langgenius/mosoo/blob/v0.4.0/docs/session-isolation-transition.md) before upgrading. Publishing this source release did not itself deploy production or apply migrations.
+
+Full notes: [v0.4.0 on GitHub](https://github.com/langgenius/mosoo/releases/tag/v0.4.0).
